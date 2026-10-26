@@ -16,7 +16,7 @@ level-U guard; mark anchors read through every class and Tibetan on the
 OpenType engine; spot colours (`/Separation`, `/DeviceN`) and a joint
 PDF/A-2 + PDF/X-4 claim, with `validatePdfX()` reading inside XObjects;
 JPEG 2000 images passed through as `/JPXDecode`; embedded TrueType subsets
-up to 61 % smaller; twelve issues closed (#80–#92) and the SHA-256 length
+up to 61 % smaller; thirteen issues closed (#80–#92) and the SHA-256 length
 word fixed. Underneath, the zero-breaking-change policy is now proven on
 every pull request — the previous release's test suite and API registry
 replayed against the current sources — and CI runs on Windows and macOS as
@@ -25,9 +25,9 @@ Deno, Bun and Chromium, fuzzes the parser surface and publishes through a
 guard → build → publish → attest pipeline that attests the bytes the
 registry serves. Zero runtime dependencies; 39 exports
 added, none removed; every new behaviour opt-in; existing inputs render
-byte-identically except where the previous output was wrong — seventeen
+byte-identically except where the previous output was wrong — twenty
 causes, each listed in the release note's Upgrade section with the samples
-it re-anchors. 4155+ tests across 174 files; veraPDF-validated.
+it re-anchors. 4206+ tests across 177 files; veraPDF-validated.
 
 ### Added
 
@@ -50,6 +50,9 @@ it re-anchors. 4155+ tests across 174 files; veraPDF-validated.
 - **feat(ci): the zero-breaking-change policy, proven** — `npm run compat:previous` (`scripts/run-compat.ts`) replays the previous release's test suite against the current sources on every pull request, with `tests/compat/allow-<previous>.json` naming what it may skip and why; `tests/tools/api-compat.test.ts` holds every 1.8.0 export, diagnostic code and build-error message; SECURITY.md §Compatibility promise states the rules.
 - **feat(ci): Windows and macOS** as required checks, `workflow lint` (zizmor, actionlint), a `runtimes` smoke job (Deno 2.9.7, Bun 1.4.2, headless Chromium), `node-current` (Node 26, advisory), weekly benchmarks, ClusterFuzzLite with seven targets over the parser surface (`fuzz/`), CodeQL `security-extended` with the `actions` language, Dependabot cooldowns.
 - **feat(ci): the release pipeline** — guard → build → publish → attest: a tag-only guard before any approval, a build job without a token, a publishing job that installs nothing and verifies the handed-on digests with an npm client pinned by content, an attest job that fetches the published tarball back and attests the registry's bytes with CycloneDX, SPDX and toolchain SBOMs and a Sigstore bundle (SLSA Build L2).
+- **feat(core): `layout.actualText`** — every untagged left-to-right shaped run whose glyph order differs from its text (an Indic pre-base vowel sign or reph, a split vowel sign, a Khmer or Myanmar pre-base vowel, a Thai or Lao tone mark set before a below vowel) carries its text as `/Span /ActualText`, so `extractText()` and every reader return the logical string; `false` restores the bare runs (compatibility ledger C20).
+- **feat(core): `TEXT_GLYPH_NOT_COVERED`** — a character no registered font covers is reported once per font with its code points: drawn as `.notdef` in a CID run or written as `?` by the base-14 WinAnsi path (`toWinAnsi(str, onMiss?)`, `pdfString(str, onMiss?)`, `EncodingContext.getUncoveredCodepoints()`); bytes unchanged, `strict` throws.
+- **feat(chart): `ChartSeries.colors`** — one colour per value on the four bar types; the legend swatch keeps the series colour; a length mismatch throws; byte-identical when absent.
 - **docs:** guides *Right-to-left documents* and *Images*; the *Images* playground (fifteen in all); seven recipes (`rtl-document`, `jpx-image`, `spot-colours`, `dual-pdfa-pdfx`, `annotate-link`, `extract-roundtrip`, `ltv-compose-offline`); the `images/` and `bidi-uax9-conformance` samples; `tagged-pdfa2u-taitham` under veraPDF.
 
 ### Changed
@@ -62,6 +65,11 @@ it re-anchors. 4155+ tests across 174 files; veraPDF-validated.
 - **`validatePdfX()`** reads the type-4 tint transform of every Separation and DeviceN space the content selects and reports an operator outside ISO 32000-1 Table 42 or a procedure outside `if` / `ifelse`.
 - **`PdfStreamLimitError.message`** names the remedy that applies to the filter — `setMaxInflateOutputSize()` for FlateDecode, `onStreamError: 'skip'` for the fixed 256 MiB cap of ASCIIHex, ASCII85, LZW and RunLength; classify by `code`, not by the text.
 - **Every embedded TrueType subset** is lean (C6); every font module header carries a `Copyright:` line (C15).
+- **A registered font no character reaches** embeds a `.notdef`-only lean subset with `/W []` instead of the whole program (C18); its objects and the numbering stay.
+- **Untagged shaped runs out of text order carry `/Span /ActualText`** (C20); the tagged emitters pass their structure span's text and never nest a second span (a tagged sara am document loses one redundant span).
+- **Subset font names carry the six-letter tag** of ISO 32000-1 §9.6.4 (`ABCDEF+NotoSans-Regular`, deterministic from the glyph set; withheld under PDF/A-1, which would then require a `/CIDSet` stream) — every sample embedding a font re-anchors (C21).
+- **Kannada and Telugu vowel signs sit before the subjoined consonants** (HarfBuzz `POS_BEFORE_SUB`), so ಕ್ಕಿ, ಸ್ತ್ರೀ and క్కి ligate consonant + sign as ಕಿ and కి do (C22); **Myanmar draws the e-vowel before the medial ra** and keeps a ra + wa/ha stack in one cluster (C23).
+- **Khmer two-part vowels draw their own right piece** — ើ ឿ ៀ ោ ៅ decompose as HarfBuzz does (េ + the sign) and the sign goes through the font's `abvf`/`psts` single; ទៅ no longer reads ទោ (C24).
 - **`verify:bundle`** — the `parseColor` probe budget moves from 4 to 6 KB (4.2 KB measured: spot colours and ink mixes in the `PdfColor` union); the other probes are unchanged.
 - **`setup-verapdf`** hands its install directory back as an output instead of writing `GITHUB_ENV`; `ci.yml`, `codeql.yml` and the publish workflow lost their path filters; every audit-mode `harden-runner` carries a dated reason.
 - **SECURITY.md** states the supported runtimes (Node 22 and 24 LTS required, 26 advisory; Deno, Bun and browsers smoke-tested) and the compatibility promise; the FAQ and the pipeline say SLSA Build L2 (the "L3-equivalent" claim is gone).
@@ -82,12 +90,19 @@ it re-anchors. 4155+ tests across 174 files; veraPDF-validated.
 - **fix(shaping): the second part of a split vowel sign carried no code point** (Bengali, Tamil, Sinhala, Kannada, Malayalam, Odia); each part names its NFD code point, so every glyph is in `/ToUnicode` and Odia ୈ no longer raises `PDFA_GLYPH_WITHOUT_UNICODE` under level U (folded into C4).
 - **fix(parser): a stray `)`, `{` or `}` made the tokenizer return an empty keyword without advancing**, so every token loop — the ToUnicode CMap reader among them — spun forever on a one-byte corruption; found by the fuzz targets before their first container run.
 - **fix(tools): `parseFontData()` read past the end of a malformed font** (DataView `RangeError`); the reader is bounds-checked and refuses with a plain `Error`, in both generators.
+- **fix(core): a registered font no character reached was embedded whole** — `financial/sample-multi` carried twenty-two unused programs (12.5 MB for one page), `tagged/tagged-pdfa2u-taitham` the 2 MB Noto Sans variable font it never drew (C18).
+- **fix(shaping): a ZWJ after a final virama was dropped before the font saw it** — the pre-5.1 spelling of a Malayalam chillu (consonant + virama + ZWJ) drew a visible chandrakkala instead of ൻ ൽ ർ ൾ ൺ, Devanagari क्‍ lost its half form; the joiner stays in its syllable and requests the half form, as HarfBuzz does, and the glyph names its three code points (C19).
+- **fix(samples): six generators set an arrow no font covers** — a `.notdef` box in `shaping/shaping-tamil`, a silent `?` on the base-14 path in six others, a Greek mu for µL in `diverse/diverse-medical-hi`; found by `TEXT_GLYPH_NOT_COVERED`.
+- **fix(shaping): Devanagari ई named only its first piece** — `नई दिल्ली` failed level U and `इकाई` extracted wrong; every piece of a multiple substitution names its code point and the run carries `/ActualText`. **The joiner rules inside a syllable follow HarfBuzz**: a ZWJ after a halant stops the base search (त्‍र), a pre-base sign skips such a halant (ट्‍यि), a nukta keeps the half-form request (क़्‍).
+- **fix(core): the operand-string form of a spot colour** is held to the PDF name alphabet.
+- **fix(parser): `extractText()` word gaps** use each run's measured advance instead of half an em per character — no more `അ വ ൻ` for a short Malayalam word.
 - **fix(ci):** a docs-only pull request no longer leaves the required checks pending (`ci.yml` path filter removed); a `workflow_dispatch` on a branch can no longer publish (the guard refuses before any approval); the attest job no longer attests a rebuild; `package-manager-cache: false` on every release setup-node.
 
 ### Documentation
 
 - Guides *Right-to-left documents* ([rtl.md](docs/guides/rtl.md)) and *Images* ([images.md](docs/guides/images.md)); *Print production* (spot colours, the dual claim, `validatePdfX()` inside XObjects), *Text extraction* (ToUnicode guarantees, `onStreamError`), *Tables* (descenders, `/Scope`), *Outlines* (paginated TOC), *Annotations* (links), *LTV* (offline material), *Signatures* (`ecdsaVerifyHash`), *Charts* (optional label), *Accessibility* (table header semantics, transparency group), *PDF/A* (JPEG 2000 rules, the dual claim), *Typography* (U+202F on base-14), *Troubleshooting* (RTL).
 - The *Images* playground; seven recipes; `docs/data/errors.json` with every new code and message; `docs/assets/api.json` regenerated.
+- Samples: `shaping/shaping-malayalam` (legacy and atomic chillus, split vowel signs, a justified paragraph — 311 in all); `financial/sample-multi` registers the ten fonts its rows use and is tagged (25 PDF/A-claiming samples); `print/print-spot-colours` paints each plate in its ink. The Images playground's three format paragraphs no longer set an arrow Helvetica cannot encode (a silent `?` until `TEXT_GLYPH_NOT_COVERED` named it). The debugging guide documents `TEXT_GLYPH_NOT_COVERED`; the charts guide `ChartSeries.colors`; the text-extraction guide the untagged `/ActualText` rule.
 - SECURITY.md §Supported runtimes and §Compatibility promise; CONTRIBUTING §Compatibility with the previous release and the required-checks list; `.github/instructions/testing` (fuzz targets, compat replay) and `font-engineering` (lean embeds, copyright header).
 
 [#80]: https://github.com/Nizoka/pdfnative/issues/80

@@ -141,10 +141,16 @@ By design (documented, not bugs):
   positional forms and lam-alef ligatures — and the code point that was
   actually encoded has priority over the font's inverted cmap, so a CJK
   glyph reachable from U+2E80 and U+4E00 is named by the one typed and
-  Persian digits stay Persian. Thai and Lao sara am (ำ U+0E33, ຳ U+0EB3),
-  set as nikhahit + sara aa, carry a `/Span /ActualText` per cluster even
-  in untagged output (opt out with `layout.actualText: false`), so
-  extraction restores the character as typed. Under `tagged: 'pdfa2u'`
+  Persian digits stay Persian. A run whose glyphs are not in the order of
+  its text — an Indic pre-base vowel sign drawn before its consonant, a
+  reph moved after the base, a split vowel sign set as its two parts, a
+  Khmer or Myanmar pre-base vowel, Thai and Lao sara am (ำ U+0E33, ຳ U+0EB3)
+  set as nikhahit + sara aa, a Thai tone mark set before a below vowel —
+  carries its text as `/Span /ActualText` even in untagged output (opt out
+  with `layout.actualText: false`), which is what Chrome and Skia write,
+  so extraction of an untagged Hindi, Tamil or Khmer document returns the
+  words as typed rather than in drawing order. Right-to-left runs are left
+  to the reader's bidi reversal. Under `tagged: 'pdfa2u'`
   the `PDFA_GLYPH_WITHOUT_UNICODE` diagnostic names any glyph that still
   has no mapping (a character the font does not cover) — see the
   [PDF/A guide](pdfa.html). What remains geometric is the **order**: runs

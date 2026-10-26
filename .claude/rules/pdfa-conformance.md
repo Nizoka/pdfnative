@@ -90,7 +90,11 @@ paths:
   `PDFA_NO_FONT_ENTRIES` (base-14 text without embedded fonts under a claim),
   `PDFA_UNEMBEDDED_FORM_FONT` (any form field under a claim — the AcroForm
   `/DR /Helv` is an unembedded Type 1), `PDFA_DEVICE_CMYK_IMAGE` (CMYK JPEG
-  against the sRGB OutputIntent).
+  against the sRGB OutputIntent), `PDFA_GLYPH_WITHOUT_UNICODE` (v1.9.0 — a used
+  glyph the ToUnicode CMap cannot name under level U), and outside any claim
+  `TEXT_GLYPH_NOT_COVERED` (v1.9.0 — a character no registered font covers,
+  drawn as `.notdef` or written as `?` by the WinAnsi path; `reportUncoveredGlyphs`
+  reads `EncodingContext.getUncoveredCodepoints()` after layout).
 - When adding a new guard: extend the union (never remove or rename a code),
   include the remedy in the message, and cover both the warn path and the
   `strict` throw path in tests.

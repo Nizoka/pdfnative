@@ -118,9 +118,9 @@
   },
   "derived": {
     "$comment": "Asserted against the filesystem by verify-docs. Never hand-edit to make a check pass — fix the docs or the tree instead.",
-    "testFiles": 174,
+    "testFiles": 177,
     "sampleGenerators": 50,
-    "samplePdfs": 310,
+    "samplePdfs": 311,
     "sampleCategories": 39,
     "guides": 37,
     "playgrounds": 15,
@@ -129,7 +129,7 @@
   },
   "declared": {
     "$comment": "Hand-maintained figures that no filesystem walk can derive. Every doc must echo these exactly.",
-    "tests": 4155,
+    "tests": 4206,
     "coverageStatements": 90,
     "coverageMeasured": 91.5,
     "scripts": 32,
@@ -137,7 +137,7 @@
     "blockTypes": 13,
     "barcodeFormats": 5,
     "chartTypes": 9,
-    "pdfaSamples": 24,
+    "pdfaSamples": 25,
     "pdfxSamples": 4,
     "pdfaLevels": [
       "pdfa1b",

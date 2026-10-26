@@ -280,12 +280,13 @@ the bytes are reproducible once <code>creationDate</code> is pinned.</li>
 </ul>
 <p>Honest limits: there are no custom fonts on the MCP surface — the operator-side
 font sandbox (<code>PDFNATIVE_MCP_FONT_DIR</code>) is on the roadmap, not in v1.7.0; a
-house typeface needs the CLI (<code>render --font-file</code>) or the library. Tai Tham
-under PDF/A-2<strong>u</strong> fails veraPDF (one shaped glyph has no <code>ToUnicode</code> entry,
-rule 6.2.11.7.2), so use <code>pdfa2b</code> whenever <code>nod</code> is in the list — the other
-four new scripts pass level U. Text extraction from an <strong>untagged</strong> PDF returns
-visual order for eleven scripts; a <code>pdfA</code> claim makes the output tagged, which
-is what turns extraction exact. And <code>annotate_pdf</code> has no <code>link</code> annotation
+house typeface needs the CLI (<code>render --font-file</code>) or the library. Every
+script passes PDF/A-2<strong>u</strong> since pdfnative 1.9.0 (every shaper&#39;s glyph is named
+in <code>ToUnicode</code>, and <code>PDFA_GLYPH_WITHOUT_UNICODE</code> names any glyph that still is
+not). Text extraction from an <strong>untagged</strong> PDF returns
+the logical string since pdfnative 1.9.0 (every reordered run carries its text
+as <code>/ActualText</code>); right-to-left lines still come back in visual order unless a
+<code>pdfA</code> claim makes the output tagged. And <code>annotate_pdf</code> has no <code>link</code> annotation
 type yet (the engine&#39;s markup union lacks it); the <code>link</code> block of
 <code>generate_basic_pdf</code> covers new documents.</p>
 <h2 id="see-also">See also<a class="heading-anchor" href="#see-also" aria-label="Link to this section">#</a></h2>

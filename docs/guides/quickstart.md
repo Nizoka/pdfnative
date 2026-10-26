@@ -223,4 +223,4 @@ See the dedicated [CLI guide](cli.html) for the full command reference, security
 - [Accessibility](accessibility.html) — tagged PDF, PDF/UA, PDF/A.
 - [FAQ](faq.html) — fonts, encryption, signatures, comparisons.
 - [Troubleshooting](troubleshooting.html) — common pitfalls and fixes.
-- [Sample generators](https://github.com/Nizoka/pdfnative/tree/main/scripts/generators) — 310 sample PDFs across 39 categories (50 generators).
+- [Sample generators](https://github.com/Nizoka/pdfnative/tree/main/scripts/generators) — 311 sample PDFs across 39 categories (50 generators).

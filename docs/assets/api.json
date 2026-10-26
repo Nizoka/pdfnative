@@ -2220,7 +2220,7 @@
       "name": "createEncodingContext",
       "kind": "value",
       "module": "src/core/encoding-context.ts",
-      "signature": "export function createEncodingContext( fontEntries: FontEntry[], pdfA: boolean = false, normalize: 'NFC' | 'NFD' | 'NFKC' | 'NFKD' | false = false, metrics: Base14Metrics = 'approximate', lang?: string, ): EncodingContext",
+      "signature": "export function createEncodingContext( fontEntries: FontEntry[], pdfA: boolean = false, normalize: 'NFC' | 'NFD' | 'NFKC' | 'NFKD' | false = false, metrics: Base14Metrics = 'approximate', lang?: string, actualText: boolean = true, ): EncodingContext",
       "summary": "Create an encoding context that encapsulates text encoding and font reference logic."
     },
     {
@@ -3179,7 +3179,7 @@
       "name": "pdfString",
       "kind": "value",
       "module": "src/fonts/encoding.ts",
-      "signature": "export function pdfString(str: string): string",
+      "signature": "export function pdfString(str: string, onMiss?: (codePoint: number) => void): string",
       "summary": "Create a PDF string literal: encode to WinAnsi and escape (, ), \\."
     },
     {
@@ -3669,7 +3669,7 @@
       "name": "toWinAnsi",
       "kind": "value",
       "module": "src/fonts/encoding.ts",
-      "signature": "export function toWinAnsi(str: string): string",
+      "signature": "export function toWinAnsi(str: string, onMiss?: (codePoint: number) => void): string",
       "summary": "Encode a JavaScript string to WinAnsiEncoding (ISO-8859-1 superset)."
     },
     {

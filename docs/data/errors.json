@@ -110,6 +110,15 @@
       "standard": "ISO 19005-2 §6.2.11.7.2 (every used character code maps to Unicode; veraPDF fails the file)",
       "remedy": "Register a font that covers the text, or claim 'pdfa2b' (no Unicode requirement); a shaped form left unreported is a bug — file an issue with the text.",
       "guide": "https://pdfnative.dev/guides/pdfa.md"
+    },
+    {
+      "code": "TEXT_GLYPH_NOT_COVERED",
+      "severity": "warning",
+      "since": "1.9.0",
+      "raisedWhen": "A character of the document has no glyph in the font it was routed to: a CID font drew its .notdef box (glyph 0), or the base-14 WinAnsi path wrote '?' for a character outside Windows-1252 (an arrow, a mathematical operator, an emoji). One diagnostic per font, naming up to eight code points with the character. The output bytes are unchanged by the diagnostic.",
+      "standard": "Not a conformance rule — an authoring diagnostic (ISO 32000-1 §9.7.6.3 for .notdef, Annex D for WinAnsiEncoding); under 'pdfa2u' the same .notdef also raises PDFA_GLYPH_WITHOUT_UNICODE",
+      "remedy": "Register a font that covers the characters (registerFont('math', …) for arrows and operators, registerFont('latin', …) with fontEntries when no font is registered at all) or replace them with characters the fonts carry.",
+      "guide": "https://pdfnative.dev/guides/debugging.md"
     }
   ],
   "sink": {

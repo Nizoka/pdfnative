@@ -99,7 +99,7 @@ const bytes = buildDocumentPDFBytes({
 ```
 
 - Five more scripts on the Indic engine: `gu`, `pa`, `kn`, `ml`, `or` (`noto-gujarati`, `noto-gurmukhi`, `noto-kannada`, `noto-malayalam`, `noto-oriya`) — 32 scripts, 36 modules.
-- Every shaper's glyphs are named in `/ToUnicode`; `tagged: 'pdfa2u'` raises `PDFA_GLYPH_WITHOUT_UNICODE` for a glyph that still has none.
+- Every shaper's glyphs are named in `/ToUnicode`; `tagged: 'pdfa2u'` raises `PDFA_GLYPH_WITHOUT_UNICODE` for a glyph that still has none; in every mode `TEXT_GLYPH_NOT_COVERED` names the characters no registered font covers (a `.notdef` box, or `?` on the base-14 path).
 - `extractText()` throws `PdfStreamLimitError` (`PDF_STREAM_LIMIT`) on an over-cap stream — `onStreamError: 'skip'` for the old lenience.
 - `decodePdfTextString()`, `composeLtvData()` (offline LTV material, `match: 'chain'`), `{ type: 'link' }` markup annotations, `ecdsaVerifyHash`, `ChartSeries.label` optional, `buildSyntheticGrayProfile()` on `pdfnative/tools`.
 - Embedded subsets are lean (cmap over the used glyphs, no gasp): every CIDFont document is smaller and its bytes differ from 1.8.0 — rebaseline a downstream byte manifest once.
@@ -140,8 +140,8 @@ Option types are exported: `TypographyOptions`, `PrintOptions`,
 `PrinterMarksOptions`, `ColourBarOptions`, `CustomOutputIntent`,
 `PdfXConformanceTarget`. Every option's default and diagnostic is in the
 [typography guide](https://pdfnative.dev/guides/typography.md) and the
-[print guide](https://pdfnative.dev/guides/print.md); the eight diagnostic
-codes (`PDFA_*`, `PDFX_*`, `TYPOGRAPHY_FEATURE_INEFFECTIVE`) and the
+[print guide](https://pdfnative.dev/guides/print.md); the thirteen diagnostic
+codes (`PDFA_*`, `PDFX_*`, `TYPOGRAPHY_FEATURE_INEFFECTIVE`, `TEXT_GLYPH_NOT_COVERED`) and the
 build-time error messages (`buildErrors`: PDF/X coherence, print geometry,
 OutputIntent profile) are in
 [errors.json](https://pdfnative.dev/data/errors.json), each with its remedy.

@@ -122,6 +122,18 @@ buildDocumentPDFBytes(params, {
 });
 ```
 
+**`TEXT_GLYPH_NOT_COVERED`** (v1.9.0) — a character of the document has no
+glyph in the font it was routed to. In a CID run it is drawn as the font's
+`.notdef` box; on the base-14 path it is written as `?` because
+WinAnsiEncoding has no byte for it (an arrow `→`, a mathematical operator, an
+emoji). The bytes are what they always were — the diagnostic names up to
+eight code points with the character and the font (`U+2192 "→" in /F3
+NotoSansTamil-Regular`), once per font. Register a font that covers the
+characters (`registerFont('math', …)` carries arrows and operators; a Latin
+font through `fontEntries` when no font is registered at all) or change the
+text. Under `tagged: 'pdfa2u'` the same `.notdef` also raises
+`PDFA_GLYPH_WITHOUT_UNICODE`.
+
 **PDF/X coherence errors** — `pdfx: 'pdfx4'` is checked before any byte is
 written, and an incoherent layout throws one of seven messages (each with
 its remedy):

@@ -68,8 +68,8 @@ _Verified on 2026-10-24 against the source tree by `npm run verify:docs`; the ca
 ## Source
 
 - [src/](https://github.com/Nizoka/pdfnative/tree/main/src): Library source (core, crypto, fonts, parser, shaping, types, worker).
-- [scripts/generators/](https://github.com/Nizoka/pdfnative/tree/main/scripts/generators): 50 sample generators producing 310 reference PDFs.
-- [tests/](https://github.com/Nizoka/pdfnative/tree/main/tests): 4155+ tests across 174 files. Coverage thresholds 88 / 80 / 85 / 90 % (statements / branches / functions / lines) enforced by CI; 91.5 % statements at v1.8.0.
+- [scripts/generators/](https://github.com/Nizoka/pdfnative/tree/main/scripts/generators): 50 sample generators producing 311 reference PDFs.
+- [tests/](https://github.com/Nizoka/pdfnative/tree/main/tests): 4206+ tests across 177 files. Coverage thresholds 88 / 80 / 85 / 90 % (statements / branches / functions / lines) enforced by CI; 91.5 % statements at v1.8.0.
 
 ## Playgrounds (zero-install, the engine runs in the browser from a CDN)
 
@@ -88,7 +88,7 @@ _Verified on 2026-10-24 against the source tree by `npm run verify:docs`; the ca
 - [llms-recipes.txt](https://pdfnative.dev/llms-recipes.txt): The executable recipe corpus — standalone TypeScript files importing from `pdfnative`, each executed in CI with its `@expect` assertions verified, so the code you copy is proven to compile and to produce exactly the artefact its header describes.
 - [api.json](https://pdfnative.dev/assets/api.json): The public API surface, derived mechanically from the export statements of `src/index.ts` — name, kind, source module, signature and TSDoc summary where extractable. The substitute for the unpublished `index.d.ts`.
 - [surfaces.json](https://pdfnative.dev/data/surfaces.json): The capability × surface matrix (library / CLI / MCP / React) behind the [Choosing your surface](https://pdfnative.dev/guides/choose.html) guide.
-- [errors.json](https://pdfnative.dev/data/errors.json): The engine's error registry — every diagnostic code of the `PdfDiagnosticCode` union (`PDFA_*`, `PDFX_*`, `TYPOGRAPHY_FEATURE_INEFFECTIVE`) with its meaning and remedy, plus `buildErrors`, the build-time messages the builders throw (PDF/X coherence, print geometry, OutputIntent profile) for downstream error mapping; two-way verified against `src/` by the `error-parity` rule.
+- [errors.json](https://pdfnative.dev/data/errors.json): The engine's error registry — every diagnostic code of the `PdfDiagnosticCode` union (`PDFA_*`, `PDFX_*`, `TYPOGRAPHY_FEATURE_INEFFECTIVE`, `TEXT_GLYPH_NOT_COVERED`) with its meaning and remedy, plus `buildErrors`, the build-time messages the builders throw (PDF/X coherence, print geometry, OutputIntent profile) for downstream error mapping; two-way verified against `src/` by the `error-parity` rule.
 - [playgrounds.json](https://pdfnative.dev/data/playgrounds.json): Inventory of the fifteen live playgrounds — URL, purpose, DOM control ids, the options and exports each exercises, preconditions — so an agent can drive one, or reproduce it outside the browser from the code view, without scraping the page.
 - [llms-index.json](https://pdfnative.dev/llms-index.json): Per-page machine index — HTML and raw-Markdown URL, title, summary, section anchors, and exact byte / approximate token sizes for every artefact, so you can decide what to fetch before spending the tokens.
 - Every guide serves its raw Markdown at the same URL with `.md` instead of `.html`, declared via `<link rel="alternate" type="text/markdown">` in each page head. All of these URLs are listed in the sitemap.
@@ -186,7 +186,7 @@ Detailed docs: [CLI guide](docs/guides/cli.md) · [MCP guide](docs/guides/mcp.md
 - **FlateDecode compression** — zlib stream compression (50–90% size reduction), zero-dependency, platform-native
 - **Web Worker support** — off-main-thread generation for large datasets
 - **Tree-shakeable** — ESM + CJS dual build with TypeScript declarations
-- **Heavily tested** — 4155+ tests across 174 files, fuzz suite, dual-mode visual-regression suite, performance benchmarks; 91.5 % statement coverage measured at the v1.8.0 release, with CI enforcing ≥88% statements / 80% branches / 85% functions / 90% lines (vitest.config.ts)
+- **Heavily tested** — 4206+ tests across 177 files, fuzz suite, dual-mode visual-regression suite, performance benchmarks; 91.5 % statement coverage measured at the v1.8.0 release, with CI enforcing ≥88% statements / 80% branches / 85% functions / 90% lines (vitest.config.ts)
 - **Zero breaking changes, proven** (v1.9.0) — the previous release's test suite is replayed against the current sources on every pull request (`compat-previous`), its API and error registries held by `tests/tools/api-compat.test.ts`; required checks on Linux (Node 22 and 24), Windows and macOS; the workflows linted (zizmor, actionlint), the built package smoke-tested on Deno, Bun and Chromium, the parser surface fuzzed by ClusterFuzzLite — see [SECURITY.md](SECURITY.md#compatibility-promise)
 - **NPM provenance** — SLSA Build L2: a guard → build → publish → attest release pipeline publishes through npm Trusted Publishing (OIDC) and attests the bytes the registry serves, with CycloneDX and SPDX SBOMs and a Sigstore bundle on the GitHub release (v1.9.0)
 - **On-device generation** — runs in Node, browsers, Workers, Deno, Bun. No SaaS round-trip; documents never leave the calling process unless your application explicitly sends them
@@ -217,7 +217,7 @@ npm install pdfnative
 - 🤖 **Agentic workflows:** [docs/guides/agentic-workflows.md](docs/guides/agentic-workflows.md) — extend the engine at runtime (register fonts without a release) and embed agent-generated images.
 - 🛠️ **Troubleshooting:** [docs/guides/troubleshooting.md](docs/guides/troubleshooting.md) — common pitfalls.
 - 🎮 **Playgrounds:** fifteen interactive demos at [docs/playgrounds/](docs/playgrounds/) — [images](docs/playgrounds/images.html) (JPEG, PNG and JPEG 2000 embedded without decoding, the PDF/A rules), [typography](docs/playgrounds/typography.html) (each typographic option against the default), [print](docs/playgrounds/print.html) (bleed, CMYK, PDF/X-4 and its validation report), [extreme-scripts](docs/playgrounds/extreme-scripts.html) (live BiDi/Indic stress tests), [all-scripts](docs/playgrounds/all-scripts.html) (every Unicode script), [scale](docs/playgrounds/scale.html) (1k-100k pages, Web Worker + true streaming), [authoring-plus](docs/playgrounds/authoring-plus.html) (SVG text, layout overlay, annotations), [toolkit](docs/playgrounds/toolkit.html) (bookmarks, page labels, viewer prefs, merge/split/extract, and v1.6.0 form fill/flatten), [charts](docs/playgrounds/charts.html) (native vector charts — all 9 v1.7.0 types), [inspect](docs/playgrounds/inspect.html) (drop any PDF and read a full report, entirely client-side), [reproducible](docs/playgrounds/reproducible.html) (build twice under a pinned creation date, compare SHA-256), [docspec-lint](docs/playgrounds/docspec-lint.html) (pdfnative-react's 37 lint rules), plus [cli](docs/playgrounds/cli.html), [mcp](docs/playgrounds/mcp.html) and [react](docs/playgrounds/react.html) ecosystem explorers.
-- 🧪 **Sample PDFs:** [scripts/generators/](scripts/generators/) — 310 sample PDFs across 39 categories (50 generators) (see [Sample PDFs](#sample-pdfs) below).
+- 🧪 **Sample PDFs:** [scripts/generators/](scripts/generators/) — 311 sample PDFs across 39 categories (50 generators) (see [Sample PDFs](#sample-pdfs) below).
 - 🎓 **Learn:** [docs/learn/](docs/learn/) — an eight-step guided path from installing the package to generating 100,000 pages, live at [pdfnative.dev/learn/](https://pdfnative.dev/learn/).
 - 🤖 **Machine-readable:** [llms.txt](llms.txt) (doc index for LLMs), [AGENTS.md](AGENTS.md) (agent guidance), and [docs/assets/ecosystem.json](docs/assets/ecosystem.json) — the canonical manifest of ecosystem versions and counts, enforced by `npm run verify:docs`.
 
@@ -230,7 +230,7 @@ pdfnative was designed for teams that need **ISO-compliant, production-grade PDF
 | Runtime dependencies | **0** | 3 | 6 | 4 | 3 |
 | TypeScript declarations | Built-in | Built-in | @types/* | Built-in | @types/* |
 | PDF/A (ISO 19005) | 1b, 2b, 2u, 3b | — | — | — | — |
-| Tagged PDF / PDF/UA | ✅ | — | ✅ | — | — |
+| Tagged PDF (structure tree, `/ActualText`; PDF/UA `/Lang` and artifacts in 1.9.1) | ✅ | — | ✅ | — | — |
 | Encryption (read + write) | AES-128/256 + RC4 read | write (RC4) | write | — | write |
 | Complex text shaping (GSUB/GPOS) | ✅ Thai, Arabic, ten Indic scripts (Devanagari … Odia), Sinhala, Khmer, Myanmar, Tibetan, Lao, USE, Latin marks | — | Via fontkit | Via @pdf-lib/fontkit | Via pdfkit |
 | BiDi (RTL) layout | ✅ | — | — | — | — |
@@ -628,7 +628,7 @@ Generate sample PDFs for all supported languages to visually verify output:
 npm run test:generate
 ```
 
-This creates **310 sample PDFs** in `test-output/` (git-ignored), organized in 39 categories produced by 50 generators (including `charts/` native vector charts, `bidi/` Persian and mirroring showcases, `signatures/` LTV pipelines, and `print/` prepress output added in v1.7.0).
+This creates **311 sample PDFs** in `test-output/` (git-ignored), organized in 39 categories produced by 50 generators (including `charts/` native vector charts, `bidi/` Persian and mirroring showcases, `signatures/` LTV pipelines, and `print/` prepress output added in v1.7.0).
 See [scripts/README.md](scripts/README.md) for the modular generator architecture.
 
 ### Financial Statements (per language)
@@ -1474,8 +1474,8 @@ src/
 
 fonts/                    # Pre-built font data modules (32 scripts)
 tools/                    # CLI: build-font-data.cjs (TTF → JS module)
-scripts/                  # Modular sample PDF generation (50 generators, 310 PDFs)
-tests/                    # 4155+ tests (174 files: unit + integration + fuzz + parser + docs)
+scripts/                  # Modular sample PDF generation (50 generators, 311 PDFs)
+tests/                    # 4206+ tests (177 files: unit + integration + fuzz + parser + docs)
 bench/                    # Performance benchmarks (vitest bench)
 ```
 
@@ -1487,9 +1487,9 @@ cd pdfnative
 npm install
 
 npm run build            # tsup → dist/ (ESM + CJS + .d.ts)
-npm run test             # vitest run (4155+ tests)
+npm run test             # vitest run (4206+ tests)
 npm run test:coverage    # vitest with v8 coverage (91.5 % statements at the v1.8.0 release; CI gates: 88/80/85/90)
-npm run test:generate       # Generate 310 sample PDFs → test-output/ (dates are written in UTC, so the bytes are host-independent — see §Reproducible builds)
+npm run test:generate       # Generate 311 sample PDFs → test-output/ (dates are written in UTC, so the bytes are host-independent — see §Reproducible builds)
 npm run lint                # ESLint 9 + typescript-eslint strict
 npm run typecheck           # tsc --noEmit (src/)
 npm run typecheck:tests     # tsc --project tsconfig.test.json
@@ -1505,7 +1505,7 @@ npm run verify:diagrams     # Documentation diagrams render without overflow, ov
 
 | Metric | Value |
 |--------|-------|
-| Tests | 4155+ (174 files) |
+| Tests | 4206+ (177 files) |
 | Statement coverage | 91.5 % (measured at the v1.8.0 release; CI enforces ≥88%, vitest.config.ts) |
 | Branch coverage | 82.71% (measured at the v1.8.0 release; CI enforces ≥80%) |
 | Function coverage | 96.87% (measured at the v1.8.0 release; CI enforces ≥85%; lines gate: ≥90%) |
@@ -1528,10 +1528,10 @@ For scripts with combining marks — **Thai**, **Devanagari**, **Vietnamese tone
 | Latin, Greek, Polish, Turkish | ✅ Perfect | ✅ Perfect |
 | CJK (Japanese, Chinese, Korean) | ✅ Perfect | ✅ Perfect |
 | Vietnamese (combining diacritics) | ✅ Perfect | ⚠️ May show Win-1252 fallback artifacts |
-| Thai (GSUB + GPOS shaping) | ✅ Perfect | ⚠️ Combining marks may be reordered |
-| Devanagari (matras, conjuncts) | ✅ Perfect | ✅ Conjuncts map to their letters (v1.8.0); marks may be reordered by spatial extractors |
-| Bengali (conjuncts, GPOS marks) | ✅ Perfect | ✅ Conjuncts map to their letters (v1.8.0); marks may be reordered by spatial extractors |
-| Tamil (split vowels, GSUB) | ✅ Perfect | ✅ Ligatures map to their letters (v1.8.0); split vowels may be reordered by spatial extractors |
+| Thai (GSUB + GPOS shaping) | ✅ Perfect | ✅ Sara am and tone-before-below clusters carry `/ActualText` (v1.9.0); other marks may be reordered by spatial extractors |
+| Devanagari (matras, conjuncts) | ✅ Perfect | ✅ Conjuncts map to their letters (v1.8.0); a reordered syllable carries `/ActualText`, tagged or not (v1.9.0) |
+| Bengali (conjuncts, GPOS marks) | ✅ Perfect | ✅ Conjuncts map to their letters (v1.8.0); a reordered syllable carries `/ActualText`, tagged or not (v1.9.0) |
+| Tamil (split vowels, GSUB) | ✅ Perfect | ✅ Ligatures map to their letters (v1.8.0); split vowels carry `/ActualText`, tagged or not (v1.9.0) |
 | Yoruba / Igbo (Latin combining marks) | ✅ Perfect | ✅ Composed marks map to base + mark (v1.8.0) |
 
 ### Why this happens
@@ -1842,7 +1842,7 @@ The `label` is drawn as a visible text label next to the widget. pdfnative does 
 docker run --rm -v "$PWD:/data" verapdf/cli --format text /data/my-document.pdf
 ```
 
-veraPDF is the reference PDF/A validator. The pdfnative test suite generates 310 sample PDFs and the PDF/A samples are validated against veraPDF on every release.
+veraPDF is the reference PDF/A validator. The pdfnative test suite generates 311 sample PDFs and the PDF/A samples are validated against veraPDF on every release.
 
 ### PAC 2024 (PDF/UA)
 
@@ -2732,6 +2732,7 @@ interface ChartBlock {
     label?: string;              // optional since v1.9.0 — an unlabelled series is listed as "Series N"
     values: number[];
     color?: PdfColor;
+    colors?: PdfColor[];         // one colour per value on bar charts — the legend keeps `color` (v1.9.0)
     xValues?: (number | string)[]; // x positions for scatter / linear / time x-axes (v1.7.0)
     yAxis?: 'left' | 'right';      // bind the series to the secondary right axis (v1.7.0)
   }[];
@@ -2761,6 +2762,11 @@ interface ChartBlock {
 Colours accept the same forms as the rest of pdfnative — `'#4e79a7'`,
 `[78, 121, 167]`, or a PDF RGB string — and are validated (injection-safe). When
 omitted, a built-in 8-colour categorical palette is used deterministically.
+On the four bar types a series may also carry `colors`, one entry per value, so
+each category's bar takes its own ink — an ink-coverage chart paints the C, M, Y
+and K plates in their process colours and the fifth plate in its spot colour
+(`{ spot: 'PANTONE 300 C' }`). The legend swatch keeps the series `color`; the
+array must be as long as `values` or the build throws.
 
 ## Examples
 
@@ -5005,6 +5011,18 @@ buildDocumentPDFBytes(params, {
   onDiagnostic: (d) => console.error(d.code, d.message), // TYPOGRAPHY_FEATURE_INEFFECTIVE
 });
 ```
+
+**`TEXT_GLYPH_NOT_COVERED`** (v1.9.0) — a character of the document has no
+glyph in the font it was routed to. In a CID run it is drawn as the font's
+`.notdef` box; on the base-14 path it is written as `?` because
+WinAnsiEncoding has no byte for it (an arrow `→`, a mathematical operator, an
+emoji). The bytes are what they always were — the diagnostic names up to
+eight code points with the character and the font (`U+2192 "→" in /F3
+NotoSansTamil-Regular`), once per font. Register a font that covers the
+characters (`registerFont('math', …)` carries arrows and operators; a Latin
+font through `fontEntries` when no font is registered at all) or change the
+text. Under `tagged: 'pdfa2u'` the same `.notdef` also raises
+`PDFA_GLYPH_WITHOUT_UNICODE`.
 
 **PDF/X coherence errors** — `pdfx: 'pdfx4'` is checked before any byte is
 written, and an incoherent layout throws one of seven messages (each with
@@ -7687,7 +7705,7 @@ engine PR — see [.github/workflows/verapdf.yml](https://github.com/Nizoka/pdfn
 and again as a blocking gate before every npm publish.
 
 Detection is automatic and guarded: every sample declaring
-`pdfaid:part` — currently the 24 PDF/A-claiming samples — is validated
+`pdfaid:part` — currently the 25 PDF/A-claiming samples — is validated
 without any registration, and a **coverage canary** fails the run if the
 detected count drifts from `declared.pdfaSamples` in
 `docs/assets/ecosystem.json` (bump it when adding or removing a
@@ -8349,7 +8367,7 @@ See the dedicated [CLI guide](cli.html) for the full command reference, security
 - [Accessibility](accessibility.html) — tagged PDF, PDF/UA, PDF/A.
 - [FAQ](faq.html) — fonts, encryption, signatures, comparisons.
 - [Troubleshooting](troubleshooting.html) — common pitfalls and fixes.
-- [Sample generators](https://github.com/Nizoka/pdfnative/tree/main/scripts/generators) — 310 sample PDFs across 39 categories (50 generators).
+- [Sample generators](https://github.com/Nizoka/pdfnative/tree/main/scripts/generators) — 311 sample PDFs across 39 categories (50 generators).
 
 ---
 <!-- source: docs/guides/react.md -->
@@ -10437,10 +10455,16 @@ By design (documented, not bugs):
   positional forms and lam-alef ligatures — and the code point that was
   actually encoded has priority over the font's inverted cmap, so a CJK
   glyph reachable from U+2E80 and U+4E00 is named by the one typed and
-  Persian digits stay Persian. Thai and Lao sara am (ำ U+0E33, ຳ U+0EB3),
-  set as nikhahit + sara aa, carry a `/Span /ActualText` per cluster even
-  in untagged output (opt out with `layout.actualText: false`), so
-  extraction restores the character as typed. Under `tagged: 'pdfa2u'`
+  Persian digits stay Persian. A run whose glyphs are not in the order of
+  its text — an Indic pre-base vowel sign drawn before its consonant, a
+  reph moved after the base, a split vowel sign set as its two parts, a
+  Khmer or Myanmar pre-base vowel, Thai and Lao sara am (ำ U+0E33, ຳ U+0EB3)
+  set as nikhahit + sara aa, a Thai tone mark set before a below vowel —
+  carries its text as `/Span /ActualText` even in untagged output (opt out
+  with `layout.actualText: false`), which is what Chrome and Skia write,
+  so extraction of an untagged Hindi, Tamil or Khmer document returns the
+  words as typed rather than in drawing order. Right-to-left runs are left
+  to the reader's bidi reversal. Under `tagged: 'pdfa2u'`
   the `PDFA_GLYPH_WITHOUT_UNICODE` diagnostic names any glyph that still
   has no mapping (a character the font does not cover) — see the
   [PDF/A guide](pdfa.html). What remains geometric is the **order**: runs
@@ -11351,12 +11375,13 @@ What you gain, concretely:
 
 Honest limits: there are no custom fonts on the MCP surface — the operator-side
 font sandbox (`PDFNATIVE_MCP_FONT_DIR`) is on the roadmap, not in v1.7.0; a
-house typeface needs the CLI (`render --font-file`) or the library. Tai Tham
-under PDF/A-2**u** fails veraPDF (one shaped glyph has no `ToUnicode` entry,
-rule 6.2.11.7.2), so use `pdfa2b` whenever `nod` is in the list — the other
-four new scripts pass level U. Text extraction from an **untagged** PDF returns
-visual order for eleven scripts; a `pdfA` claim makes the output tagged, which
-is what turns extraction exact. And `annotate_pdf` has no `link` annotation
+house typeface needs the CLI (`render --font-file`) or the library. Every
+script passes PDF/A-2**u** since pdfnative 1.9.0 (every shaper's glyph is named
+in `ToUnicode`, and `PDFA_GLYPH_WITHOUT_UNICODE` names any glyph that still is
+not). Text extraction from an **untagged** PDF returns
+the logical string since pdfnative 1.9.0 (every reordered run carries its text
+as `/ActualText`); right-to-left lines still come back in visual order unless a
+`pdfA` claim makes the output tagged. And `annotate_pdf` has no `link` annotation
 type yet (the engine's markup union lacks it); the `link` block of
 `generate_basic_pdf` covers new documents.
 

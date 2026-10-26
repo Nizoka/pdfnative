@@ -239,12 +239,13 @@ What you gain, concretely:
 
 Honest limits: there are no custom fonts on the MCP surface — the operator-side
 font sandbox (`PDFNATIVE_MCP_FONT_DIR`) is on the roadmap, not in v1.7.0; a
-house typeface needs the CLI (`render --font-file`) or the library. Tai Tham
-under PDF/A-2**u** fails veraPDF (one shaped glyph has no `ToUnicode` entry,
-rule 6.2.11.7.2), so use `pdfa2b` whenever `nod` is in the list — the other
-four new scripts pass level U. Text extraction from an **untagged** PDF returns
-visual order for eleven scripts; a `pdfA` claim makes the output tagged, which
-is what turns extraction exact. And `annotate_pdf` has no `link` annotation
+house typeface needs the CLI (`render --font-file`) or the library. Every
+script passes PDF/A-2**u** since pdfnative 1.9.0 (every shaper's glyph is named
+in `ToUnicode`, and `PDFA_GLYPH_WITHOUT_UNICODE` names any glyph that still is
+not). Text extraction from an **untagged** PDF returns
+the logical string since pdfnative 1.9.0 (every reordered run carries its text
+as `/ActualText`); right-to-left lines still come back in visual order unless a
+`pdfA` claim makes the output tagged. And `annotate_pdf` has no `link` annotation
 type yet (the engine's markup union lacks it); the `link` block of
 `generate_basic_pdf` covers new documents.
 

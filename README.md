@@ -82,7 +82,7 @@ Detailed docs: [CLI guide](docs/guides/cli.md) · [MCP guide](docs/guides/mcp.md
 - **FlateDecode compression** — zlib stream compression (50–90% size reduction), zero-dependency, platform-native
 - **Web Worker support** — off-main-thread generation for large datasets
 - **Tree-shakeable** — ESM + CJS dual build with TypeScript declarations
-- **Heavily tested** — 4155+ tests across 174 files, fuzz suite, dual-mode visual-regression suite, performance benchmarks; 91.5 % statement coverage measured at the v1.8.0 release, with CI enforcing ≥88% statements / 80% branches / 85% functions / 90% lines (vitest.config.ts)
+- **Heavily tested** — 4206+ tests across 177 files, fuzz suite, dual-mode visual-regression suite, performance benchmarks; 91.5 % statement coverage measured at the v1.8.0 release, with CI enforcing ≥88% statements / 80% branches / 85% functions / 90% lines (vitest.config.ts)
 - **Zero breaking changes, proven** (v1.9.0) — the previous release's test suite is replayed against the current sources on every pull request (`compat-previous`), its API and error registries held by `tests/tools/api-compat.test.ts`; required checks on Linux (Node 22 and 24), Windows and macOS; the workflows linted (zizmor, actionlint), the built package smoke-tested on Deno, Bun and Chromium, the parser surface fuzzed by ClusterFuzzLite — see [SECURITY.md](SECURITY.md#compatibility-promise)
 - **NPM provenance** — SLSA Build L2: a guard → build → publish → attest release pipeline publishes through npm Trusted Publishing (OIDC) and attests the bytes the registry serves, with CycloneDX and SPDX SBOMs and a Sigstore bundle on the GitHub release (v1.9.0)
 - **On-device generation** — runs in Node, browsers, Workers, Deno, Bun. No SaaS round-trip; documents never leave the calling process unless your application explicitly sends them
@@ -113,7 +113,7 @@ npm install pdfnative
 - 🤖 **Agentic workflows:** [docs/guides/agentic-workflows.md](docs/guides/agentic-workflows.md) — extend the engine at runtime (register fonts without a release) and embed agent-generated images.
 - 🛠️ **Troubleshooting:** [docs/guides/troubleshooting.md](docs/guides/troubleshooting.md) — common pitfalls.
 - 🎮 **Playgrounds:** fifteen interactive demos at [docs/playgrounds/](docs/playgrounds/) — [images](docs/playgrounds/images.html) (JPEG, PNG and JPEG 2000 embedded without decoding, the PDF/A rules), [typography](docs/playgrounds/typography.html) (each typographic option against the default), [print](docs/playgrounds/print.html) (bleed, CMYK, PDF/X-4 and its validation report), [extreme-scripts](docs/playgrounds/extreme-scripts.html) (live BiDi/Indic stress tests), [all-scripts](docs/playgrounds/all-scripts.html) (every Unicode script), [scale](docs/playgrounds/scale.html) (1k-100k pages, Web Worker + true streaming), [authoring-plus](docs/playgrounds/authoring-plus.html) (SVG text, layout overlay, annotations), [toolkit](docs/playgrounds/toolkit.html) (bookmarks, page labels, viewer prefs, merge/split/extract, and v1.6.0 form fill/flatten), [charts](docs/playgrounds/charts.html) (native vector charts — all 9 v1.7.0 types), [inspect](docs/playgrounds/inspect.html) (drop any PDF and read a full report, entirely client-side), [reproducible](docs/playgrounds/reproducible.html) (build twice under a pinned creation date, compare SHA-256), [docspec-lint](docs/playgrounds/docspec-lint.html) (pdfnative-react's 37 lint rules), plus [cli](docs/playgrounds/cli.html), [mcp](docs/playgrounds/mcp.html) and [react](docs/playgrounds/react.html) ecosystem explorers.
-- 🧪 **Sample PDFs:** [scripts/generators/](scripts/generators/) — 310 sample PDFs across 39 categories (50 generators) (see [Sample PDFs](#sample-pdfs) below).
+- 🧪 **Sample PDFs:** [scripts/generators/](scripts/generators/) — 311 sample PDFs across 39 categories (50 generators) (see [Sample PDFs](#sample-pdfs) below).
 - 🎓 **Learn:** [docs/learn/](docs/learn/) — an eight-step guided path from installing the package to generating 100,000 pages, live at [pdfnative.dev/learn/](https://pdfnative.dev/learn/).
 - 🤖 **Machine-readable:** [llms.txt](llms.txt) (doc index for LLMs), [AGENTS.md](AGENTS.md) (agent guidance), and [docs/assets/ecosystem.json](docs/assets/ecosystem.json) — the canonical manifest of ecosystem versions and counts, enforced by `npm run verify:docs`.
 
@@ -126,7 +126,7 @@ pdfnative was designed for teams that need **ISO-compliant, production-grade PDF
 | Runtime dependencies | **0** | 3 | 6 | 4 | 3 |
 | TypeScript declarations | Built-in | Built-in | @types/* | Built-in | @types/* |
 | PDF/A (ISO 19005) | 1b, 2b, 2u, 3b | — | — | — | — |
-| Tagged PDF / PDF/UA | ✅ | — | ✅ | — | — |
+| Tagged PDF (structure tree, `/ActualText`; PDF/UA `/Lang` and artifacts in 1.9.1) | ✅ | — | ✅ | — | — |
 | Encryption (read + write) | AES-128/256 + RC4 read | write (RC4) | write | — | write |
 | Complex text shaping (GSUB/GPOS) | ✅ Thai, Arabic, ten Indic scripts (Devanagari … Odia), Sinhala, Khmer, Myanmar, Tibetan, Lao, USE, Latin marks | — | Via fontkit | Via @pdf-lib/fontkit | Via pdfkit |
 | BiDi (RTL) layout | ✅ | — | — | — | — |
@@ -524,7 +524,7 @@ Generate sample PDFs for all supported languages to visually verify output:
 npm run test:generate
 ```
 
-This creates **310 sample PDFs** in `test-output/` (git-ignored), organized in 39 categories produced by 50 generators (including `charts/` native vector charts, `bidi/` Persian and mirroring showcases, `signatures/` LTV pipelines, and `print/` prepress output added in v1.7.0).
+This creates **311 sample PDFs** in `test-output/` (git-ignored), organized in 39 categories produced by 50 generators (including `charts/` native vector charts, `bidi/` Persian and mirroring showcases, `signatures/` LTV pipelines, and `print/` prepress output added in v1.7.0).
 See [scripts/README.md](scripts/README.md) for the modular generator architecture.
 
 ### Financial Statements (per language)
@@ -1370,8 +1370,8 @@ src/
 
 fonts/                    # Pre-built font data modules (32 scripts)
 tools/                    # CLI: build-font-data.cjs (TTF → JS module)
-scripts/                  # Modular sample PDF generation (50 generators, 310 PDFs)
-tests/                    # 4155+ tests (174 files: unit + integration + fuzz + parser + docs)
+scripts/                  # Modular sample PDF generation (50 generators, 311 PDFs)
+tests/                    # 4206+ tests (177 files: unit + integration + fuzz + parser + docs)
 bench/                    # Performance benchmarks (vitest bench)
 ```
 
@@ -1383,9 +1383,9 @@ cd pdfnative
 npm install
 
 npm run build            # tsup → dist/ (ESM + CJS + .d.ts)
-npm run test             # vitest run (4155+ tests)
+npm run test             # vitest run (4206+ tests)
 npm run test:coverage    # vitest with v8 coverage (91.5 % statements at the v1.8.0 release; CI gates: 88/80/85/90)
-npm run test:generate       # Generate 310 sample PDFs → test-output/ (dates are written in UTC, so the bytes are host-independent — see §Reproducible builds)
+npm run test:generate       # Generate 311 sample PDFs → test-output/ (dates are written in UTC, so the bytes are host-independent — see §Reproducible builds)
 npm run lint                # ESLint 9 + typescript-eslint strict
 npm run typecheck           # tsc --noEmit (src/)
 npm run typecheck:tests     # tsc --project tsconfig.test.json
@@ -1401,7 +1401,7 @@ npm run verify:diagrams     # Documentation diagrams render without overflow, ov
 
 | Metric | Value |
 |--------|-------|
-| Tests | 4155+ (174 files) |
+| Tests | 4206+ (177 files) |
 | Statement coverage | 91.5 % (measured at the v1.8.0 release; CI enforces ≥88%, vitest.config.ts) |
 | Branch coverage | 82.71% (measured at the v1.8.0 release; CI enforces ≥80%) |
 | Function coverage | 96.87% (measured at the v1.8.0 release; CI enforces ≥85%; lines gate: ≥90%) |
@@ -1424,10 +1424,10 @@ For scripts with combining marks — **Thai**, **Devanagari**, **Vietnamese tone
 | Latin, Greek, Polish, Turkish | ✅ Perfect | ✅ Perfect |
 | CJK (Japanese, Chinese, Korean) | ✅ Perfect | ✅ Perfect |
 | Vietnamese (combining diacritics) | ✅ Perfect | ⚠️ May show Win-1252 fallback artifacts |
-| Thai (GSUB + GPOS shaping) | ✅ Perfect | ⚠️ Combining marks may be reordered |
-| Devanagari (matras, conjuncts) | ✅ Perfect | ✅ Conjuncts map to their letters (v1.8.0); marks may be reordered by spatial extractors |
-| Bengali (conjuncts, GPOS marks) | ✅ Perfect | ✅ Conjuncts map to their letters (v1.8.0); marks may be reordered by spatial extractors |
-| Tamil (split vowels, GSUB) | ✅ Perfect | ✅ Ligatures map to their letters (v1.8.0); split vowels may be reordered by spatial extractors |
+| Thai (GSUB + GPOS shaping) | ✅ Perfect | ✅ Sara am and tone-before-below clusters carry `/ActualText` (v1.9.0); other marks may be reordered by spatial extractors |
+| Devanagari (matras, conjuncts) | ✅ Perfect | ✅ Conjuncts map to their letters (v1.8.0); a reordered syllable carries `/ActualText`, tagged or not (v1.9.0) |
+| Bengali (conjuncts, GPOS marks) | ✅ Perfect | ✅ Conjuncts map to their letters (v1.8.0); a reordered syllable carries `/ActualText`, tagged or not (v1.9.0) |
+| Tamil (split vowels, GSUB) | ✅ Perfect | ✅ Ligatures map to their letters (v1.8.0); split vowels carry `/ActualText`, tagged or not (v1.9.0) |
 | Yoruba / Igbo (Latin combining marks) | ✅ Perfect | ✅ Composed marks map to base + mark (v1.8.0) |
 
 ### Why this happens
