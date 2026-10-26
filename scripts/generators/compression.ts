@@ -74,7 +74,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
             title: 'Compressed + Encrypted (AES-128)',
             infoItems: [
                 { label: 'Algorithm', value: 'AES-128 (V4/R4/AESV2)' },
-                { label: 'Compression', value: 'FlateDecode → AES-CBC' },
+                { label: 'Compression', value: 'FlateDecode, then AES-CBC' },
                 { label: 'Owner Password', value: 'compress-owner' },
             ],
             balanceText: 'Doubly Protected',

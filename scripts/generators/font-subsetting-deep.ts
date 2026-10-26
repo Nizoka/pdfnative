@@ -21,7 +21,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
                 { type: 'heading', text: 'Pipeline Stages', level: 2 },
                 { type: 'list', style: 'numbered', items: [
                     'Collect unique codepoints from all text content',
-                    'Map codepoints → glyph IDs (GIDs) via the cmap table',
+                    'Map codepoints to glyph IDs (GIDs) via the cmap table',
                     'Always preserve GID 0 (.notdef) per PDF/A spec',
                     'Extract required TTF tables: head, hhea, maxp, OS/2, name, cmap, loca, glyf, hmtx, post',
                     'Remap GIDs to sequential order (0, 1, 2, ...)',

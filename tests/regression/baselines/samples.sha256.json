@@ -7,218 +7,218 @@
   "entries": {
     "alphabet/alphabet-arabic.pdf": {
       "mode": "bytes",
-      "hash": "2ff6d09c204a03c400b1c9632d29fc40adbade19396b0e768fcd149f7e7ffbcd",
-      "size": 53693,
+      "hash": "1f19978ca149ebb7c7ec34314dd9f11a23b453de8e797f98f8c1f84f0884c507",
+      "size": 53714,
       "since": "1.9.0"
     },
     "alphabet/alphabet-armenian.pdf": {
       "mode": "bytes",
-      "hash": "0604cbe131e6103cf7a7bb130a834a2146703e0b61fc650c7ed90d26fe4e4c22",
-      "size": 33808,
+      "hash": "990107106a5a5bdff2132d45d9f8cecd3e606a6410c5ba2bb2d98c8456aad0ef",
+      "size": 33829,
       "since": "1.9.0"
     },
     "alphabet/alphabet-bengali.pdf": {
       "mode": "bytes",
-      "hash": "72c700ca8e2e42f2f9913117df74aab41702cd696ea62b74d2d9eb8ad1471e2d",
-      "size": 52504,
+      "hash": "65ec3f9ee99d9699dfe6ffafd30dd72db03959f22489ae26510751b2ec3ad5e0",
+      "size": 53537,
       "since": "1.9.0"
     },
     "alphabet/alphabet-cham.pdf": {
       "mode": "bytes",
-      "hash": "77442edbb062ab53565e1e6aa47255ae27d4c4fcc66954ed4fd19bf361dd8a44",
-      "size": 37146,
+      "hash": "9ae19e9d226862b4fb97ef3c1d5eb3fe33ce96ce48b20eec60fa81ab6a32e70c",
+      "size": 37325,
       "since": "1.9.0"
     },
     "alphabet/alphabet-chinese.pdf": {
       "mode": "bytes",
-      "hash": "39e28aa2c3e8db6030f8c5d22ec63c58e5cf6e3f68e57f44740bc3ecb94c30ba",
-      "size": 295197,
+      "hash": "c257dbb76547e7ca1da012a0f2b3940eafda7a2f218fc8838965fa6a160c9ff1",
+      "size": 295218,
       "since": "1.9.0"
     },
     "alphabet/alphabet-cyrillic.pdf": {
       "mode": "bytes",
-      "hash": "41ad1cfda2a300dfa0053e9cfe260485962a1e13642c544200b999c9a6b32465",
-      "size": 65278,
+      "hash": "a5c12a7d44ee4175b2cc3e13928643dfa50380491674977514a7ac7731a114ca",
+      "size": 65299,
       "since": "1.9.0"
     },
     "alphabet/alphabet-devanagari.pdf": {
       "mode": "bytes",
-      "hash": "a956581468bfdfee723ae76aa323ab4a05910b5442769a33d3e1028b93538994",
-      "size": 53153,
+      "hash": "4a3f951e7dc940d7dd284ddc9fa5f035b9f75cdb5c9b77f95b13627a418883b0",
+      "size": 53601,
       "since": "1.9.0"
     },
     "alphabet/alphabet-ethiopic.pdf": {
       "mode": "bytes",
-      "hash": "531e8bfa877743f8ee53abcd87475ac87b012c7eb4b25d41c15de89b412d54f8",
-      "size": 34437,
+      "hash": "927f2f68d59102590086b7a456495c0e7c788504f049a1ec7d21a3da8b4c77ba",
+      "size": 34458,
       "since": "1.9.0"
     },
     "alphabet/alphabet-georgian.pdf": {
       "mode": "bytes",
-      "hash": "f60bb170c530b248ee2c4b0b182ddb447c42db44d3619a1297f9f7e8940a46ae",
-      "size": 26799,
+      "hash": "c178a32cd453bcbab904d6771657643411d06fc9505d81914e65fa46bddc4154",
+      "size": 26820,
       "since": "1.9.0"
     },
     "alphabet/alphabet-greek.pdf": {
       "mode": "bytes",
-      "hash": "96282ca7007bf1030ffa87fe880fbb339c0735f43d9af5c8c09e595ee39b3020",
-      "size": 63890,
+      "hash": "e93a790a2e452178029cd79362a653c2b17ae7f2e1594b18750efd1420e292a7",
+      "size": 63911,
       "since": "1.9.0"
     },
     "alphabet/alphabet-gujarati.pdf": {
       "mode": "bytes",
-      "hash": "39a6966adeaf4e016d0208e64e481447b5476dd52b6c54f20739ba7b10d52b09",
-      "size": 52573,
+      "hash": "1d451770a22a5713a6e5f78c778378264195d4060c42ecdc8b832ec143b72608",
+      "size": 52927,
       "since": "1.9.0"
     },
     "alphabet/alphabet-gurmukhi.pdf": {
       "mode": "bytes",
-      "hash": "3d2cb3f84bc28d22083d6d1aeffafcbe167f90bd4c5baba51100e96b1c3cf16b",
-      "size": 46613,
+      "hash": "bb07fdf0c30605bc69c71af0263c7eb3697a53b9952434682cad649082d39327",
+      "size": 47160,
       "since": "1.9.0"
     },
     "alphabet/alphabet-hausa.pdf": {
       "mode": "bytes",
-      "hash": "fc983b86554b67682323ebcf6fc15ce4a73d7e822d7078f3ea2b10d79b7b75ae",
-      "size": 58835,
+      "hash": "37e200dcd74adb06bf9e98650f6848e7b64cfbfd99ec16e9cd32661f19f9d4d4",
+      "size": 58856,
       "since": "1.9.0"
     },
     "alphabet/alphabet-hebrew.pdf": {
       "mode": "bytes",
-      "hash": "7d78312df50b2489afce569ce703de83b2d8e3d7051773a01a70a099a5beb069",
-      "size": 24647,
+      "hash": "ac43a3afc7a901a294acddea2909a3fd751e9ef56460fc80bc0068f1c072f2bd",
+      "size": 24668,
       "since": "1.9.0"
     },
     "alphabet/alphabet-igbo.pdf": {
       "mode": "bytes",
-      "hash": "5b689d0fb17bc64c4fa6f4288e80c377a5c0cb1f2d62c2a152af6df782f43a56",
-      "size": 56889,
+      "hash": "bc7877636a5a03166cafdbb8f9259b7ae4828023951fb7fc662bc014a8c0c73f",
+      "size": 56993,
       "since": "1.9.0"
     },
     "alphabet/alphabet-japanese.pdf": {
       "mode": "bytes",
-      "hash": "766aa92852ade62c620958663a878d88eb5e09887ddbe8a343c14eba9f8e238f",
-      "size": 189651,
+      "hash": "69b0ee846c7c1a158b3521f4ad6445ebc500780635a887331b073f7190ad8a6b",
+      "size": 189672,
       "since": "1.9.0"
     },
     "alphabet/alphabet-kannada.pdf": {
       "mode": "bytes",
-      "hash": "a1d1d6e07131a9c651155e24d48b7612be6d251e8c42829ce5a603d7b2a54a33",
-      "size": 61381,
+      "hash": "8c5cc1bb0bcfe56eb3a2736c23d1bcbc07b1c9fb49a096edb0604154f05f5e30",
+      "size": 62755,
       "since": "1.9.0"
     },
     "alphabet/alphabet-khmer.pdf": {
       "mode": "bytes",
-      "hash": "5b68e0b7287d8148d16cb8a455c947726882339f1dcd2390b24d836bf72d4f56",
-      "size": 34452,
+      "hash": "69b57874a929154c31dd8828bb3577e5e1427d35a1aed02e0076534536273304",
+      "size": 34895,
       "since": "1.9.0"
     },
     "alphabet/alphabet-korean.pdf": {
       "mode": "bytes",
-      "hash": "7c732b2e47fb43dfe00586dd920ad9c1539980b0394baddac9daf347f3fab091",
-      "size": 235989,
+      "hash": "b8d9c8a2c1a3d02c9d665f2253150f7ee612665287540750deac16955b767620",
+      "size": 236010,
       "since": "1.9.0"
     },
     "alphabet/alphabet-lao.pdf": {
       "mode": "bytes",
-      "hash": "97503a9e67f116530632e5a9ae30b828e3d9f7d9eea89be340a7336721462404",
-      "size": 39536,
+      "hash": "afdd53a382d970cf22e05c98b67e2b932b3c646f0720f7f444029c6ea4ac2a13",
+      "size": 39557,
       "since": "1.9.0"
     },
     "alphabet/alphabet-malayalam.pdf": {
       "mode": "bytes",
-      "hash": "9d899c83d9d90cd46447c52f1f00c75ab04ea501f8645e0e455f9f704c6705c7",
-      "size": 57273,
+      "hash": "c268f3f3e8bf986514b37e7c90b5db538741dfec60c59206919229ce7c5b6682",
+      "size": 57631,
       "since": "1.9.0"
     },
     "alphabet/alphabet-myanmar.pdf": {
       "mode": "bytes",
-      "hash": "b9aa2c5a5cd7bc683b5bec535ca188e88738b0996d0a652778a1c92ccabddfbc",
-      "size": 37015,
+      "hash": "e2c407d85b76f626c46d87061dff65f2aa2547730ef9c2a51c3d42796e4200f0",
+      "size": 37553,
       "since": "1.9.0"
     },
     "alphabet/alphabet-newtailue.pdf": {
       "mode": "bytes",
-      "hash": "d1ade5501fb04f1c3c4b7e6c8a229a3ab50a0c032e4d5b1f98621e8010634fe5",
-      "size": 30660,
+      "hash": "b1a8bad87b6381a33d4f7984be4f5a0eb499ac8a34777ebee6cd1a7588b969aa",
+      "size": 30681,
       "since": "1.9.0"
     },
     "alphabet/alphabet-odia.pdf": {
       "mode": "bytes",
-      "hash": "4958b021b4671baa8c6489bc45b7c251648467f5710dc78ff3cffacdfe28430f",
-      "size": 54423,
+      "hash": "b98c40b4c74ef10991002a52efd89b315ab337af033b764764279f54d7c6627c",
+      "size": 54559,
       "since": "1.9.0"
     },
     "alphabet/alphabet-polish.pdf": {
       "mode": "bytes",
-      "hash": "7a02c42c19fdc8d2e904e3443b31d1e1e861e6451dfdbef66424db373fb3dfca",
-      "size": 59709,
+      "hash": "b524773d99cb8b4eb12fe1c635291695be6d3f0424ae75c7dc6a2489d082372c",
+      "size": 59730,
       "since": "1.9.0"
     },
     "alphabet/alphabet-sinhala.pdf": {
       "mode": "bytes",
-      "hash": "dffcaeb2391d6ca594ab77a92fa3d9961fa901d90517d1200446db485f0c4f21",
-      "size": 47563,
+      "hash": "d58fd0eadd3e469f324704b0c11dbc073cef86aaa86154b1e3a3cb362a81ce88",
+      "size": 47933,
       "since": "1.9.0"
     },
     "alphabet/alphabet-swahili.pdf": {
       "mode": "bytes",
-      "hash": "fd0f9243cdf413fc10f6e8f6540c5a4e0ca5f9f76085e04ba510706d9c7987b3",
-      "size": 55293,
+      "hash": "a371df34904e7c66149448af47b7529d1145f8399ec727fda8d993fa20a9f3b3",
+      "size": 55314,
       "since": "1.9.0"
     },
     "alphabet/alphabet-taile.pdf": {
       "mode": "bytes",
-      "hash": "0f947c51cbcfc51211b91ee0f3e3ea9fc2649cd075ff8f3fd28ef82b51ef6983",
-      "size": 34485,
+      "hash": "79d8107a2fdb2aafed279eaf8c004f42e201c38bea7be5a296e389f5774cd8a7",
+      "size": 34506,
       "since": "1.9.0"
     },
     "alphabet/alphabet-taitham.pdf": {
       "mode": "bytes",
-      "hash": "1f57ff8a4bc5bbdae020bf413a9edc6c96330ae6826a82cebdea074fc5bef6ea",
-      "size": 42738,
+      "hash": "e80be9070e55eae5e5d16cd97568c50b530cb3e97be6eba5a226c8702bd72011",
+      "size": 42759,
       "since": "1.9.0"
     },
     "alphabet/alphabet-tamil.pdf": {
       "mode": "bytes",
-      "hash": "072fd62603aaa848cdaa9bed3cbe29a0c3353138f91291f862f6386c7abc6a59",
-      "size": 50627,
+      "hash": "d763d929191e8561cc6a623f99dc8f2da5c7fa7fb8c6ac4b4d807f2823cc5855",
+      "size": 51155,
       "since": "1.9.0"
     },
     "alphabet/alphabet-telugu.pdf": {
       "mode": "bytes",
-      "hash": "3ea1405c0168c061012eedbcd087ecddfc9b9ad986623b64ff2ba71a2e1e851e",
-      "size": 57962,
+      "hash": "eac58aa4678bbcfe20f741d7239f45b06c86d2d7e6acded7260dc359c233112b",
+      "size": 58996,
       "since": "1.9.0"
     },
     "alphabet/alphabet-thai.pdf": {
       "mode": "bytes",
-      "hash": "db0256c9809e105a4089dfccdace493567360cfa6940b5b2891a2f88381b6096",
-      "size": 42680,
+      "hash": "a84a92c97eff70e867bd851532345c66b87760a89d2f8b485755c2720573395b",
+      "size": 42701,
       "since": "1.9.0"
     },
     "alphabet/alphabet-tibetan.pdf": {
       "mode": "bytes",
-      "hash": "a43ba3c1a4d199d1c7372ea23f39ad31dcb5a638b70bd32a7d7998f03b37354d",
-      "size": 47999,
+      "hash": "045285e88e8ed8ac5b15557d5b8936e7ead2a22955d94e535a91d2f7c4505b33",
+      "size": 48020,
       "since": "1.9.0"
     },
     "alphabet/alphabet-turkish.pdf": {
       "mode": "bytes",
-      "hash": "b2fa6804fbfa56c20de7ffe284dce112587e14c3fe9ee42a6381f555030da242",
-      "size": 60089,
+      "hash": "5750a0ba226a80f47752dbb680a9ec566c4b63db267c8f43e1cf9e1a8fd08459",
+      "size": 60110,
       "since": "1.9.0"
     },
     "alphabet/alphabet-vietnamese.pdf": {
       "mode": "bytes",
-      "hash": "c8eb4f0e52f0e5e551bb1580f01358abdbc8e9ecf5fc4ee1a23483360413c5a1",
-      "size": 68322,
+      "hash": "573a963dcdecea7260a92532a81af59d8bad304d83832b25f0de936b071531fb",
+      "size": 68343,
       "since": "1.9.0"
     },
     "alphabet/alphabet-yoruba.pdf": {
       "mode": "bytes",
-      "hash": "83703afd3eb1c37c9b297c9264ce2a6b070c26ce41f86001df5431a9062aeab8",
-      "size": 60232,
+      "hash": "ab16739bcf0c8f412353dc7c3a7d58a0080011b3ccb3ecd06f7ae627da865523",
+      "size": 60625,
       "since": "1.9.0"
     },
     "annotations/annotated-contract.pdf": {
@@ -259,44 +259,44 @@
     },
     "barcode/barcode-tagged.pdf": {
       "mode": "bytes",
-      "hash": "3e9e5411ffb88bc3f903dfe2238c3e96c0f0f0a5262c9c8a40ef367c027b0ea7",
-      "size": 58724,
+      "hash": "e52fe4bf0219e9ceed02dce8870d3a1dc46ae6a9fdbf3987c1373b740afccc4e",
+      "size": 58759,
       "since": "1.9.0"
     },
     "bidi/bidi-algorithm.pdf": {
       "mode": "bytes",
-      "hash": "6177d924185aaffb74e940a9a9d10c881eeb033262763fb7ac2f9d63fc953cf7",
-      "size": 51099,
+      "hash": "efba6ff90d4493021a9e7c75b02a506f89e2504807cd6c386722c3f72ff15138",
+      "size": 51141,
       "since": "1.9.0"
     },
     "bidi/bidi-arabic-shaping.pdf": {
       "mode": "bytes",
-      "hash": "b95e5f50beeb25e5905797358d244cb4407968c256ed0085d6d11f64051b9da0",
-      "size": 74740,
+      "hash": "fec1a5648cb887c92e40faf948f341a119db181a4370b4bcfd43297f94c7a4a2",
+      "size": 54641,
       "since": "1.9.0"
     },
     "bidi/bidi-digits-mirroring.pdf": {
       "mode": "bytes",
-      "hash": "7029a7498a8ace0a54b0bcaca1cf26b2c8fd1e2f7aa27836bfc0fde9c476f35f",
-      "size": 55397,
+      "hash": "51054db48123e246003520c55eba1b9602e9b978fc08a1da8609e313eddf39fa",
+      "size": 55439,
       "since": "1.9.0"
     },
     "bidi/bidi-embeddings-showcase.pdf": {
       "mode": "bytes",
-      "hash": "ac267d145dd836221db48fcd43ab860e843748851203af53cd0d5a9ca91143f8",
-      "size": 16095,
+      "hash": "fc187064049a31e8a6e25706a4d261473d21a34858fca5beb89c68602fc5ed95",
+      "size": 16116,
       "since": "1.9.0"
     },
     "bidi/bidi-uax9-conformance.pdf": {
       "mode": "bytes",
-      "hash": "59d2ede427ba174214507a8764e586ad46116f3b74a9b8c42fbcf6555aa2e7d5",
-      "size": 84204,
+      "hash": "62baed6fe66c27d68aae999ed5f6ea639a9998f02897c79e1002b6d8082d5c4a",
+      "size": 84246,
       "since": "1.9.0"
     },
     "bidi/persian-showcase.pdf": {
       "mode": "bytes",
-      "hash": "9f03c4fbc9ccbd3d027860240fe02d76119c6ecf5999f0a683a29914465fe57b",
-      "size": 58233,
+      "hash": "62213f3b263cf77470aec36d38cba619f72fe8a6e4a143640c5050fc0f413e48",
+      "size": 58254,
       "since": "1.9.0"
     },
     "charts/charts-showcase.pdf": {
@@ -307,8 +307,8 @@
     },
     "charts/charts-tagged.pdf": {
       "mode": "bytes",
-      "hash": "2201ce04a136fc7905836595b0ecc8b4fa4585bfb7b41291274acd922ffada15",
-      "size": 49442,
+      "hash": "b82959050a45a2d275f97e7cadcee45b92687871706dc2ac6528c8731fb4e6a4",
+      "size": 49477,
       "since": "1.9.0"
     },
     "charts/charts-v2-showcase.pdf": {
@@ -319,20 +319,20 @@
     },
     "compression/compressed-arabic.pdf": {
       "mode": "bytes",
-      "hash": "7183eee0338a1039d7e38352dde435d6188fe4a5862de1d230f6eceac56a9cc3",
-      "size": 18520,
+      "hash": "632f51380bb41c2d614240b073f59a1c064c18cbe22e926a8a731e55c5928208",
+      "size": 18541,
       "since": "1.9.0"
     },
     "compression/compressed-encrypted-aes128.pdf": {
       "mode": "semantic",
-      "hash": "cbf93a782fc5bebff7defcddb665b5fff3357b5983b1025790729cd755cc5da4",
+      "hash": "1a074d38d4d7d794d6559a6ec9736578542532c64f831d54dbace846308e046b",
       "size": 3604,
-      "since": "1.7.0"
+      "since": "1.9.0"
     },
     "compression/compressed-japanese.pdf": {
       "mode": "bytes",
-      "hash": "5183fcec9e16b02ac9727fe29eeb79f610b3a5a7b892db3907986819a3e46c1b",
-      "size": 35101,
+      "hash": "9092dbdead4a95ab8e3970ada22c13f53c61af111b1e59a63d4cae65a14ea065",
+      "size": 35122,
       "since": "1.9.0"
     },
     "compression/compressed-latin-100rows.pdf": {
@@ -343,14 +343,14 @@
     },
     "compression/compressed-tagged-pdfa2b.pdf": {
       "mode": "bytes",
-      "hash": "452a224986ac0a7d559d9884afaef5ec10caff3bdb0b37c6a6d12e3f0f092279",
-      "size": 27281,
+      "hash": "7ba519244dd72133deed81ed1d23bf452452aefc177af47dfe3813047a712c3a",
+      "size": 27316,
       "since": "1.9.0"
     },
     "compression/compressed-thai.pdf": {
       "mode": "bytes",
-      "hash": "c527bf7f0434ff593f407a4d90433b4ace573846825ca97b823d4c1490c198ff",
-      "size": 15257,
+      "hash": "2ce3ceff37692d4f9e3f99adf89fe65ee54adb7603f2d5b7e09697befd6ae238",
+      "size": 15297,
       "since": "1.9.0"
     },
     "compression/doc-compressed.pdf": {
@@ -367,9 +367,9 @@
     },
     "crypto/crypto-showcase.pdf": {
       "mode": "bytes",
-      "hash": "c9e1b63dfa81cb2cee489605ae04e6aeab59c3801b59ea66454b4c3aa5eddc04",
-      "size": 7764,
-      "since": "1.7.0"
+      "hash": "409317b3ba939b06a7c874e89be947eba9fc9e72c1a3d935f86bfa8c329f1e12",
+      "size": 7780,
+      "since": "1.9.0"
     },
     "currency/currency-base14.pdf": {
       "mode": "bytes",
@@ -379,14 +379,14 @@
     },
     "currency/currency-extended.pdf": {
       "mode": "bytes",
-      "hash": "d81a31a30a3196454705b54ed9b38b41331daccce894171af91c175602607308",
-      "size": 66725,
+      "hash": "f5ddaa1e5e1f1db05808645b07c964fc35943ee4de962ce1d9760cb1c4278610",
+      "size": 66767,
       "since": "1.9.0"
     },
     "currency/currency-multi.pdf": {
       "mode": "bytes",
-      "hash": "9f9b243751643e1f90724f6369e244a36e8eff65da2124f97cb3576929629975",
-      "size": 276081,
+      "hash": "1cc6573ddc9e49837b832e3eb6bf24cbc6db559ccfbf4cca95e5f6c591d5a21a",
+      "size": 62125,
       "since": "1.9.0"
     },
     "debug/layout-clean.pdf": {
@@ -409,56 +409,56 @@
     },
     "diverse/diverse-inventory-zh.pdf": {
       "mode": "bytes",
-      "hash": "ad68936983b2a6953d840dc8e5306ad01cb4eaf5a29d10e9783af17b0d3f2cab",
-      "size": 287947,
+      "hash": "b1befbb95f11e99d849dca62b4fe02cfbaef34750f961016a29441ba48902b96",
+      "size": 287968,
       "since": "1.9.0"
     },
     "diverse/diverse-library-el.pdf": {
       "mode": "bytes",
-      "hash": "7f0babca7e7cc2f5c30543369ea257a4b20adc90b94742f4c474e76dbc481033",
-      "size": 58543,
+      "hash": "ddb8f224db6cace704b9a31828fc57a38a040843cc30e2cc75268d6500afe4ac",
+      "size": 58564,
       "since": "1.9.0"
     },
     "diverse/diverse-marketplace-ar.pdf": {
       "mode": "bytes",
-      "hash": "a7e2e59309caf16df0a4041a46bc7cd48cf1db267d24800569a909326f40367c",
-      "size": 60589,
+      "hash": "225c715b1abd2648929f9ef9e5e86b7a200e59933f786e41d7939cb4a1680849",
+      "size": 60610,
       "since": "1.9.0"
     },
     "diverse/diverse-medical-hi.pdf": {
       "mode": "bytes",
-      "hash": "93d64dce4bd89288d2091a4188ac2d1055f0cc734650f55736abb78eedf45046",
-      "size": 48333,
+      "hash": "6879542a32d9406c92e3b189ee753b000cc76d795ee014fc4b2755900af110a8",
+      "size": 49988,
       "since": "1.9.0"
     },
     "diverse/diverse-menu-tr.pdf": {
       "mode": "bytes",
-      "hash": "a75b3411f0af3ae849233e520b570f6774e6f858af3427c1042bfcfb83f0dab1",
-      "size": 58775,
+      "hash": "e6d26b4e8a4b03275cde392158a04987427382a5625ad5cfa1f475700b370e4b",
+      "size": 58796,
       "since": "1.9.0"
     },
     "diverse/diverse-museum-he.pdf": {
       "mode": "bytes",
-      "hash": "09d0453721a563cd5d3fe0a6ff33ff9317c88f726da6d52de42544f8277eeb8b",
-      "size": 23781,
+      "hash": "66106ae3d1ca6bb3b185cd24e10a1e1fe47b7a87a7f0fb4564f7b43f27ae4170",
+      "size": 23802,
       "since": "1.9.0"
     },
     "diverse/diverse-recipe-th.pdf": {
       "mode": "bytes",
-      "hash": "2a37c5c4ef01fb205678691777a6517496d083889dabbac0c8e1d608c0fbd194",
-      "size": 42002,
+      "hash": "0f099c9ce74d5332b2805b7767dda96514a285737b6126b98ee376654b301917",
+      "size": 42086,
       "since": "1.9.0"
     },
     "diverse/diverse-server-ja.pdf": {
       "mode": "bytes",
-      "hash": "84ea38e341006f0609ae74c079fb7549af0ec02d1710c07f992c61fbeaf92232",
-      "size": 173801,
+      "hash": "647f0d0c281c7c33e74838ef8c9649dbc105966cd05d0cb3de112c1b42ac172c",
+      "size": 173822,
       "since": "1.9.0"
     },
     "diverse/diverse-sports-ko.pdf": {
       "mode": "bytes",
-      "hash": "4c701c92098ecd90e08dc1a378d127ac4d1fe746ddbc6727b3fb203675578563",
-      "size": 229320,
+      "hash": "403c9f40c005eb9f5e9a915e7ffd2b1582291e433f6ada1bda04c3a1c987df04",
+      "size": 229341,
       "since": "1.9.0"
     },
     "diverse/diverse-student-transcript.pdf": {
@@ -469,56 +469,56 @@
     },
     "diverse/diverse-train-pl.pdf": {
       "mode": "bytes",
-      "hash": "7fd73221a69fcf9b617db96c5d0d2a19072ea439cdee630d69be755d0532a400",
-      "size": 58142,
+      "hash": "693f249ceede57b9d301014ec3c092f2ee6f30a25992c80fd9b8deb7e82f0070",
+      "size": 58163,
       "since": "1.9.0"
     },
     "diverse/diverse-weather-vi.pdf": {
       "mode": "bytes",
-      "hash": "ca7ce94a1782301c7fbc4dfda26048b37690ff69f49232ceddd42e207dcf3efe",
-      "size": 59053,
+      "hash": "858b032398e5b54d491a34e099c5e32cef4f2299d2ad02a5854a50f186c7f018",
+      "size": 59074,
       "since": "1.9.0"
     },
     "document/doc-amharic.pdf": {
       "mode": "bytes",
-      "hash": "1bc178e54e0588da04aac81ca310d2cd612ff1c56db3b8896e66556cc7c75eae",
-      "size": 34903,
+      "hash": "45b4cb76e42544e11844270ca25fdfc9fb8df036697de8efd5b13c0e3f208160",
+      "size": 34924,
       "since": "1.9.0"
     },
     "document/doc-arabic.pdf": {
       "mode": "bytes",
-      "hash": "aa3aa5f464fef60ebc895c18c7b1f711885fd626f968064cdbd90b7de8501f5e",
-      "size": 65903,
+      "hash": "8dca7a928364b01656c3f3e374519f6cac3f08f8850e7bd811a79bdfc82af830",
+      "size": 65924,
       "since": "1.9.0"
     },
     "document/doc-armenian.pdf": {
       "mode": "bytes",
-      "hash": "24510e70fa9f1608bebf709f67bb3351bc94c90dfc66f127d1fc708552e0c655",
-      "size": 29565,
+      "hash": "f02974d9b421676b5a2ce3587a05a56024bf5bf5651b0688b58e4b008bf54a21",
+      "size": 29586,
       "since": "1.9.0"
     },
     "document/doc-bengali.pdf": {
       "mode": "bytes",
-      "hash": "ea038713fefd7dd7bbb678de653c639a0fd80d42ae52b46e1a5d117e511e6142",
-      "size": 64798,
+      "hash": "cd880fe9bb46a43c1273bceb50bf6cb365ded4ff453ebc0b7416c8e07e2926bd",
+      "size": 67473,
       "since": "1.9.0"
     },
     "document/doc-cham.pdf": {
       "mode": "bytes",
-      "hash": "1aac819044854b2bec2cb518955390b04aa8159ba8ec3872e10504cb060aeb85",
-      "size": 41533,
+      "hash": "eec1e010cd188bdb2726f316c52ddd4cc182da8f7ee1ad904ddb4cbb06b61bc2",
+      "size": 42687,
       "since": "1.9.0"
     },
     "document/doc-chinese-catalog.pdf": {
       "mode": "bytes",
-      "hash": "a1f43f1bece3b9ff9dd3f962b26d483d206231dd3e5f5b2355abad919ea70458",
-      "size": 322391,
+      "hash": "e1245d7a187c7206e39cc11ef5a64355a2379be582b31edfe114d4648e0e8663",
+      "size": 322412,
       "since": "1.9.0"
     },
     "document/doc-contract-bilingual.pdf": {
       "mode": "bytes",
-      "hash": "4cd54fb0c234b2fb98910fc226ef68ed53fbde56613a224a1fea68de07c2f83e",
-      "size": 66987,
+      "hash": "67966cbd1ddf48151045ef96b8e918e5cea4f0d159dc89bca07edfd9b124e3ca",
+      "size": 67008,
       "since": "1.9.0"
     },
     "document/doc-custom-colors.pdf": {
@@ -529,14 +529,14 @@
     },
     "document/doc-cyrillic.pdf": {
       "mode": "bytes",
-      "hash": "14035d6edcdec023b3359b1acf12113c8a3bc2c3652228063255cbd6631bfb5c",
-      "size": 67411,
+      "hash": "7a5e4e23a945803e9dd5ede03977864f6b54291906d52e088b8d1ae4fdf0a1da",
+      "size": 67432,
       "since": "1.9.0"
     },
     "document/doc-devanagari.pdf": {
       "mode": "bytes",
-      "hash": "7be46062bfcbc1a66932d1dab859d51d710e7a29bacece0d4c29ab49e38023a5",
-      "size": 73798,
+      "hash": "6560e0704bc23dddcd2cc07c6473ee9a61ee87f376aeebb9c353dc8f851c7193",
+      "size": 76448,
       "since": "1.9.0"
     },
     "document/doc-encrypted-aes128.pdf": {
@@ -553,32 +553,32 @@
     },
     "document/doc-georgian.pdf": {
       "mode": "bytes",
-      "hash": "e528e17e40d313e9c9be67fa446f791867731fd8b4b8c5e3064c0362fa0d72d8",
-      "size": 33212,
+      "hash": "fa49a4cd6521bb6e99777e6bbf7a29265d1337e90fb3d613bda35d206bd35c38",
+      "size": 33233,
       "since": "1.9.0"
     },
     "document/doc-greek.pdf": {
       "mode": "bytes",
-      "hash": "cbb115108ef3d6daa50da1fbddebba22cadda7c183ccecfdf60631f665436ed2",
-      "size": 64910,
+      "hash": "4a6a69cf2f403af3e5ae2bcc0dabf866bfa5ab2aca905d7fc10c243a34f3f97a",
+      "size": 64931,
       "since": "1.9.0"
     },
     "document/doc-gujarati.pdf": {
       "mode": "bytes",
-      "hash": "81836d8d2906972f2973762a0aaad77185897f3ae7dbad2a8a3d9c424daa5140",
-      "size": 69749,
+      "hash": "858defc0cfa7c93cf05c084c811efcad135fe071872efa4d95dbfbf16d31d97b",
+      "size": 71624,
       "since": "1.9.0"
     },
     "document/doc-gurmukhi.pdf": {
       "mode": "bytes",
-      "hash": "5512a9420a60ac470286d8c29ba6d76ecf2548df608b73cd7acf02f5e5eee485",
-      "size": 61086,
+      "hash": "af528ba6ebf751c4029cb986e2889643569ebbf143d090fd05b179e734325487",
+      "size": 62921,
       "since": "1.9.0"
     },
     "document/doc-hausa.pdf": {
       "mode": "bytes",
-      "hash": "b1fd475a21af086d1149cbb4878a88fc9fd5f918c546bf4b908c45414d20684a",
-      "size": 58611,
+      "hash": "cc5a12f1e83f90bb511f06e8f557019940b10931b17db21fd235fddde31e8fa3",
+      "size": 58632,
       "since": "1.9.0"
     },
     "document/doc-headings-paragraphs.pdf": {
@@ -589,14 +589,14 @@
     },
     "document/doc-hebrew.pdf": {
       "mode": "bytes",
-      "hash": "aabb40b0f7bd9c35c426a964af450a1418362dd37667689a2560c7170a62098b",
-      "size": 24012,
+      "hash": "adb4f160dc1df3fb918143e5c6f019b002859d867d79699a381ad31ae3fca662",
+      "size": 24033,
       "since": "1.9.0"
     },
     "document/doc-igbo.pdf": {
       "mode": "bytes",
-      "hash": "c8f907ae825cdd6f3cd14052482251a2d4a68af1cc6c758cc83c8d5841191151",
-      "size": 58082,
+      "hash": "655737c5743732560c9dbb120a03984bb51880e20ada6d1933dc6c80d4c08bf5",
+      "size": 58186,
       "since": "1.9.0"
     },
     "document/doc-image.pdf": {
@@ -613,32 +613,32 @@
     },
     "document/doc-japanese.pdf": {
       "mode": "bytes",
-      "hash": "ef824f606b5c91ff2e45ab62dfe0e484483c05d7a02931921665b414f1d355ed",
-      "size": 182500,
+      "hash": "7a164ac3e88e97f4cb47ca864956ff97897597d3f8ef0e0552cea9bba78342e6",
+      "size": 182521,
       "since": "1.9.0"
     },
     "document/doc-kannada.pdf": {
       "mode": "bytes",
-      "hash": "6b6a7e25efada7031e4163768dc75eee98a6612f6e2f4bb6d62d14baccf8fd84",
-      "size": 71926,
+      "hash": "4ef1996bedd437c6cfffe55186d5d9f3a4f6c6d50056bd1d26262e4520c3902d",
+      "size": 75112,
       "since": "1.9.0"
     },
     "document/doc-khmer.pdf": {
       "mode": "bytes",
-      "hash": "eb0cfe219c93c871ac602ba6d688748ea23ed7609b5d15e5aaed8588c1afb210",
-      "size": 39348,
+      "hash": "2e4f8f2333dce0b24f78c239a278c2568b42a1513ae190702f5fddfff19238a6",
+      "size": 40701,
       "since": "1.9.0"
     },
     "document/doc-korean.pdf": {
       "mode": "bytes",
-      "hash": "f8895a3beb9feaaefe2c09d62055e76ef1a5a6f30da7946adf7bd04d141be56d",
-      "size": 244457,
+      "hash": "f21911061afa15626210036426b8a301a3a3eb48402f3c6cefac14734cf6cf60",
+      "size": 244478,
       "since": "1.9.0"
     },
     "document/doc-lao.pdf": {
       "mode": "bytes",
-      "hash": "695255bb911749c6602cf32a56eb373adb0b9bcae273a790ec5443e920574c5e",
-      "size": 60157,
+      "hash": "d74d976d983fb41562fe17e4b61a9aa4d477ddd99b2775ec3e2a8a397350815d",
+      "size": 60313,
       "since": "1.9.0"
     },
     "document/doc-links.pdf": {
@@ -655,20 +655,20 @@
     },
     "document/doc-malayalam.pdf": {
       "mode": "bytes",
-      "hash": "41dd41d71973af1d7a133797e7a3713ede5c9c1783c1b903525bb9b9fe3fbca3",
-      "size": 72783,
+      "hash": "93ca4b768f906c7b65046c63136d4998e331d8cbdae6c4d26f2d6a36d4a5f8a3",
+      "size": 74912,
       "since": "1.9.0"
     },
     "document/doc-multi-language.pdf": {
       "mode": "bytes",
-      "hash": "f8259ed35750116925f17c96ab7fccc4f97df38f27c0deca7800b879c83b2a8a",
-      "size": 1501465,
+      "hash": "3f11c95eb2a493c981ff25638168f350e5cdd799668ceed0cce8d39d4eb48a65",
+      "size": 1398160,
       "since": "1.9.0"
     },
     "document/doc-myanmar.pdf": {
       "mode": "bytes",
-      "hash": "08feaae8bca878e7c5060a4e49dd26bdf1819afe8dcffdf94abae30c02c24ee6",
-      "size": 42645,
+      "hash": "688ec168a43f8c31602008fabd03b2ee52c567796bc810d4a03ae48ea207487c",
+      "size": 43648,
       "since": "1.9.0"
     },
     "document/doc-nested-lists.pdf": {
@@ -679,20 +679,20 @@
     },
     "document/doc-newtailue.pdf": {
       "mode": "bytes",
-      "hash": "ead1ed75db7957d61ac3ee68e57bcd2ee156e7b644b75432a1667f1179a946fc",
-      "size": 30851,
+      "hash": "5e802c7fa337969fc7a8f2306f5ed92494e21837c12d734596bf18740a978fa3",
+      "size": 30872,
       "since": "1.9.0"
     },
     "document/doc-odia.pdf": {
       "mode": "bytes",
-      "hash": "91addb9830a0fefd65f99e3f21a26fb4c62e3d301a50635b06911671dae76395",
-      "size": 65640,
+      "hash": "5b068878cd3bd104f60ed2f98e2613df5ab9d3bc7a3741b595bfb2d1065b92d7",
+      "size": 67550,
       "since": "1.9.0"
     },
     "document/doc-polish.pdf": {
       "mode": "bytes",
-      "hash": "62dae493678e9c665bbe3e2708c122b8dc85bdc4d9a2680d1fa63e5a8b1c22ff",
-      "size": 60201,
+      "hash": "e54ade8c2cb4e26e62fa78417d033e94420e60c0b901c2195085484bb0f5bc6b",
+      "size": 60222,
       "since": "1.9.0"
     },
     "document/doc-report-multipage.pdf": {
@@ -709,8 +709,8 @@
     },
     "document/doc-sinhala.pdf": {
       "mode": "bytes",
-      "hash": "1acb3748e08d66a0314efc7c5e5777f5b8bdfbd878cd6de37923e726a6b663cf",
-      "size": 62081,
+      "hash": "f64c87c4bfe9790dea56a30edfd191caaff4d88ca3192554101a2910c9468ed9",
+      "size": 64084,
       "since": "1.9.0"
     },
     "document/doc-spacer-pagebreak.pdf": {
@@ -721,8 +721,8 @@
     },
     "document/doc-swahili.pdf": {
       "mode": "bytes",
-      "hash": "a310301803c652041d106307e56fbd238ad857321138ca7ebe90aceca301d0ee",
-      "size": 57584,
+      "hash": "71d7193a600eb378205d59893367752d51822a4d08b275465b4ce8266ce58ed9",
+      "size": 57605,
       "since": "1.9.0"
     },
     "document/doc-table.pdf": {
@@ -733,56 +733,56 @@
     },
     "document/doc-taile.pdf": {
       "mode": "bytes",
-      "hash": "4e1bcce13fa0bba563f220749ae9f3e02b9a07bc4df5e55d01194e14a4f5a9bb",
-      "size": 34843,
+      "hash": "2ceddc46006036504592d7c073eeba2af250c599f30d0496db2d6a423e6f7e24",
+      "size": 34864,
       "since": "1.9.0"
     },
     "document/doc-taitham.pdf": {
       "mode": "bytes",
-      "hash": "3f72d4d45581a53173e4aa5fe7b1cd07af09172794d3320337797071f1a7d63f",
-      "size": 51485,
+      "hash": "a65203c75709543134b3af1df5a1663112e9c8787703c92bc94e0ddbe8264af3",
+      "size": 51816,
       "since": "1.9.0"
     },
     "document/doc-tamil.pdf": {
       "mode": "bytes",
-      "hash": "4c877623c83db8f919bbc27959bcf47e21c0e4e830a35e0c3012afdb434f4d5c",
-      "size": 61119,
+      "hash": "3665ef32c61f7848d95a19a0d7ac86beef8d65d9072169818d2ea69d0fe88976",
+      "size": 62604,
       "since": "1.9.0"
     },
     "document/doc-telugu.pdf": {
       "mode": "bytes",
-      "hash": "5a84c51602999828e03b35770530abfaa67e93e57961d62d4dee998cf58489fd",
-      "size": 75473,
+      "hash": "fafa64cdb06b216335d8c72c24d9ec79e965ebcab39b3365b4695f5e9504ebf1",
+      "size": 77865,
       "since": "1.9.0"
     },
     "document/doc-thai.pdf": {
       "mode": "bytes",
-      "hash": "5ea3dfa2046da9318d0f9ec361c93322ce82c64ebf42ff4ed30d890fd356041f",
-      "size": 62536,
+      "hash": "5a9dd80d80d4e06edc4da9ece48a0aa507a5c4594518d38bde805445debba1c6",
+      "size": 63177,
       "since": "1.9.0"
     },
     "document/doc-tibetan.pdf": {
       "mode": "bytes",
-      "hash": "db04df5dd2b7d37d6556246716c7e1adf85055c2606e768e93a942479f282d47",
-      "size": 53485,
+      "hash": "737b57f9d2d9f9ac2403ab644d0163af1a8a1e983431b176750f2aee0c3fcbc3",
+      "size": 53506,
       "since": "1.9.0"
     },
     "document/doc-turkish.pdf": {
       "mode": "bytes",
-      "hash": "5bf36a2f8193723ef89bea456e5459a166fd2706a8e575cb90c56b249ba0ee95",
-      "size": 61465,
+      "hash": "e51319aa6d10735683c13a0c096cb3b445411f4f167e4f568b5365a0b8bbfc35",
+      "size": 61486,
       "since": "1.9.0"
     },
     "document/doc-vietnamese.pdf": {
       "mode": "bytes",
-      "hash": "48bf42b947b7807afc34e7f4c634847ea276bfb789881c80b7172cf278ed159d",
-      "size": 67390,
+      "hash": "0f11cac7af4ae5718ce9944c808c12866fffeed1382963f427522cb72fbd3278",
+      "size": 67411,
       "since": "1.9.0"
     },
     "document/doc-yoruba.pdf": {
       "mode": "bytes",
-      "hash": "6303d9122a7092f856ba37ed8bde3d89f4dbc1e5d744c5d846acc806b2246005",
-      "size": 70092,
+      "hash": "1da521747c6a3d5eaf6c80f477df242e8b531d182dd9551e312f64ab99990d2d",
+      "size": 71454,
       "since": "1.9.0"
     },
     "document/table-cell-borders.pdf": {
@@ -817,50 +817,50 @@
     },
     "emoji/color-emoji-basic.pdf": {
       "mode": "bytes",
-      "hash": "5d152d9aa41425b39b30932d0f62d14944cc39b44dc52a731c40619f5211df0a",
-      "size": 2141454,
+      "hash": "ff00a0bfd0ab64ef1e168a8a3cea34fd193ee12290404fe1799cbd9e37b1f907",
+      "size": 2141496,
       "since": "1.9.0"
     },
     "emoji/color-emoji-mixed.pdf": {
       "mode": "bytes",
-      "hash": "dc69b181388aa69330e82379b51c90d4fd8827b2f91585299ccc4356e412a058",
-      "size": 411669,
+      "hash": "933c22220fba4fdb41d4c9c92804f6266eca44fdc253185a70261426e9cfd77b",
+      "size": 411711,
       "since": "1.9.0"
     },
     "emoji/color-emoji-real.pdf": {
       "mode": "bytes",
-      "hash": "fb63e02dcc8fc69ba6a31649d1233757db3ae65634d52bc497a6fa509e4adfba",
-      "size": 504267,
+      "hash": "e236ff987fbce34c5b97d4185930efe7e5f93195b0fe106663154df7959fcf5e",
+      "size": 504309,
       "since": "1.9.0"
     },
     "emoji/color-emoji-sequences.pdf": {
       "mode": "bytes",
-      "hash": "611bcd24df5be2d59e661f30ce2b0818e0d0af9b51ff6525bfaf055119bf7f7d",
-      "size": 1396784,
+      "hash": "00e7f595f0fd90c9d4851fbe59d9aa16c737d14a8946eed9709e975753d319ad",
+      "size": 1396826,
       "since": "1.9.0"
     },
     "emoji/color-emoji-skin-tones.pdf": {
       "mode": "bytes",
-      "hash": "91e75ebbe006271f23a662e10bfc1e1173c316b52981801425b711678b5288dc",
-      "size": 1194048,
+      "hash": "bb8e79f39ef67d87c3a6c644f7e7996ed24c5c1dceeca0b88576aacc7b3b5dda",
+      "size": 1194090,
       "since": "1.9.0"
     },
     "emoji/emoji-basic.pdf": {
       "mode": "bytes",
-      "hash": "d58f25720b08c4428feddce05a71065b78608ac1ae3d4f95d3a63b74a3d5fa79",
-      "size": 115652,
+      "hash": "3d8ca820d82c6bbcd65eb1253e25349aa5ceb32e77fea6df7b603102abba342f",
+      "size": 115694,
       "since": "1.9.0"
     },
     "emoji/emoji-multi-script.pdf": {
       "mode": "bytes",
-      "hash": "e38d95bf917fc30f853b5ef8ff14187d69d1cd444dbad73063e8fc3cb53ad1aa",
-      "size": 217794,
+      "hash": "bdf9c141eb46e7ca3081c8aa6ce29f2731c30ec2693d9cad450c3633bdc8b849",
+      "size": 217857,
       "since": "1.9.0"
     },
     "emoji/emoji-table.pdf": {
       "mode": "bytes",
-      "hash": "0cc09273e5253bdfa23af0f7d5307d8b6c14c8d34e938b1ed186395b84f7b8c0",
-      "size": 72729,
+      "hash": "ad7147c39b50b2345ca671988b76351e9d7637071474163d99387aec8a4ff68a",
+      "size": 72771,
       "since": "1.9.0"
     },
     "encryption/encrypted-aes128-user.pdf": {
@@ -901,68 +901,68 @@
     },
     "extreme/extreme-arabic-harakat.pdf": {
       "mode": "bytes",
-      "hash": "0d0e9cb02caa09b2297c753e017d562e4047932de907a9e9ce2fb0a35b4f774e",
-      "size": 52993,
+      "hash": "4ff2a08cd0fe018c08b5c604504896ccd35def08263a571bc51cdf75e0246ad9",
+      "size": 53014,
       "since": "1.9.0"
     },
     "extreme/extreme-bengali-devanagari.pdf": {
       "mode": "bytes",
-      "hash": "4f08e2dd4399feeca473c0c85698666d4d773d55faed1ef3c2686fa804c89f97",
-      "size": 121741,
+      "hash": "360dd4b3aa4c2296a2302b1a80defac72a912fc55d38e8e85151921af4ce26c9",
+      "size": 125962,
       "since": "1.9.0"
     },
     "extreme/extreme-bidi-isolates.pdf": {
       "mode": "bytes",
-      "hash": "408426091a38210a6a66a059042de6ed8af2a2c3b9d8369071893900e097f937",
-      "size": 40262,
+      "hash": "e466460dae2ae54e2122d6f22ffa61a9e5da1315255de5794423d6cdd3b046d2",
+      "size": 40304,
       "since": "1.9.0"
     },
     "extreme/extreme-bidi.pdf": {
       "mode": "bytes",
-      "hash": "de6fea320d6119fb90048cce958ee02a66db573b2199b7b7e1b4a2536f8543bc",
-      "size": 101941,
+      "hash": "13d124534bad45008364312de630b4b260183d7318416e8c22d56993f1913617",
+      "size": 102004,
       "since": "1.9.0"
     },
     "extreme/extreme-tamil.pdf": {
       "mode": "bytes",
-      "hash": "0dceb458c8fbc6ffd3a16f1ed7ca6b3b4244be5dc97d2ad0b98a28e48875bea9",
-      "size": 82150,
+      "hash": "fd46c21b66fc28cc8b3a6a40052c0017486de1fa7bfeda3644e17cc6344d1434",
+      "size": 85158,
       "since": "1.9.0"
     },
     "financial/sample-ar.pdf": {
       "mode": "bytes",
-      "hash": "25c0184a9612ffa0dbe4f1aade6b29705ad3f64455aef591004937ce7247e16f",
-      "size": 47406,
+      "hash": "2ece1bf64f23a85ba22216ffa551295bb7835dcd7c88db1ab57d695129a560ae",
+      "size": 47427,
       "since": "1.9.0"
     },
     "financial/sample-el.pdf": {
       "mode": "bytes",
-      "hash": "8d27d64ad875d3f7d6b9f89317d45eb4faa39b3e1440a33d311316a34334e2bb",
-      "size": 57166,
+      "hash": "926f4bf884bfc99ff65cdd4f72f7209f2d018c2c253eb2e495c41511486d8f90",
+      "size": 57187,
       "since": "1.9.0"
     },
     "financial/sample-he.pdf": {
       "mode": "bytes",
-      "hash": "abff5747e3cc545d6ecb6d1b6393509222554bcdb774a5c69f7becef0f4eb493",
-      "size": 20622,
+      "hash": "befa54813aebf992ce2993e8123cc91b88826d8b3f4c0a3323387d99e80fd548",
+      "size": 20643,
       "since": "1.9.0"
     },
     "financial/sample-hi.pdf": {
       "mode": "bytes",
-      "hash": "269ed37821c0e85880ced4159d8e1368251c0dec03ef067edff876c482ec0c5d",
-      "size": 38983,
+      "hash": "aa84c1e8960c65f8b25c412ecdbe3a47b78a6bcca09513ba9e378331e11d6c1e",
+      "size": 40016,
       "since": "1.9.0"
     },
     "financial/sample-ja.pdf": {
       "mode": "bytes",
-      "hash": "3b3e4a9d7d7ff27ce81a3373a6286c9c040e5c50ebee6cf5c4cb04dc3939eb6a",
-      "size": 176372,
+      "hash": "894b8fe3aa34b6ad8cd8227a6548707b7e7ff81b6194c287ddfc63d358aa153b",
+      "size": 176393,
       "since": "1.9.0"
     },
     "financial/sample-ko.pdf": {
       "mode": "bytes",
-      "hash": "27d7433b89c3dc644c32f3a6d8ec2f3762c828c14d25868ec60ceb93c59a9ec4",
-      "size": 224619,
+      "hash": "0b2aa06dbf5ab143805582a600a71f4af56c4b6be077e8951cb0856129cd2613",
+      "size": 224640,
       "since": "1.9.0"
     },
     "financial/sample-latin.pdf": {
@@ -973,8 +973,8 @@
     },
     "financial/sample-multi.pdf": {
       "mode": "bytes",
-      "hash": "371f625752f9cae7f41a1039f2b81d9c7c57a6349fcc40af2fe838a70570bfec",
-      "size": 12499863,
+      "hash": "68784c6235677e26a8e960b848e0b19b01b5916aede1e8daa20a9a9b09dc7101",
+      "size": 826670,
       "since": "1.9.0"
     },
     "financial/sample-pagination.pdf": {
@@ -985,45 +985,45 @@
     },
     "financial/sample-pl.pdf": {
       "mode": "bytes",
-      "hash": "2180cff60e9660da5ad248e416c192e23bb41554ebdf47f51f1400339301381b",
-      "size": 55877,
+      "hash": "89474d0ef5612d27a694afa256dd911f99f5c14530dc2dc7d7cbf2f63a711fff",
+      "size": 55898,
       "since": "1.9.0"
     },
     "financial/sample-th.pdf": {
       "mode": "bytes",
-      "hash": "63da67e215fd7d8ad5b5553a013547afa7d86a1c08f7a44aac20f9b95560083d",
-      "size": 35602,
+      "hash": "8e100a026cb5869a5df50033fc7b95124d7d4898465dc9f24ba76cd2f0dea2f7",
+      "size": 35694,
       "since": "1.9.0"
     },
     "financial/sample-tr.pdf": {
       "mode": "bytes",
-      "hash": "e6f7aa08d71e5b0f14b9503c24381adc28957df0b898734cd6d30d4bfd8c6aaa",
-      "size": 55648,
+      "hash": "6dd182d9e36e5af9e9ef379182bd0a953a17649fa4e89e5f82f89249a1488acd",
+      "size": 55669,
       "since": "1.9.0"
     },
     "financial/sample-vi.pdf": {
       "mode": "bytes",
-      "hash": "c8f34e1bd7c1d56605d7a08397567780ddb20c4a957c01b9e17060a374c22492",
-      "size": 57927,
+      "hash": "9e56c234bffd140e1c843557304b982d548210ddb3d27c60d7ddd8606ed7bfd4",
+      "size": 57948,
       "since": "1.9.0"
     },
     "financial/sample-zh.pdf": {
       "mode": "bytes",
-      "hash": "f955398a934c20634d358b4aedf4e2c8274cb0ce882bf0cf2750f5ee26d2198b",
-      "size": 279361,
+      "hash": "3327b65e22188277f9c5ec51f806d03fdaa68c6879f53afa2b51b476ce3055cf",
+      "size": 279382,
       "since": "1.9.0"
     },
     "font/font-subsetting-multiscript.pdf": {
       "mode": "bytes",
-      "hash": "ff23403331b5573be56796e8ff41849ff3d4f12d16f81da77c78e72c349b1044",
-      "size": 331262,
+      "hash": "ed1ff01770bbe1f3080c9041c0bb997633dfcf41972ca82c47fc2fe5a8c65833",
+      "size": 332450,
       "since": "1.9.0"
     },
     "font/font-subsetting-overview.pdf": {
       "mode": "bytes",
-      "hash": "f9f56d1baaf5c6750d6862fbc2901a114d975feb93f8615bd42927982df9e897",
-      "size": 6690,
-      "since": "1.7.0"
+      "hash": "64904508082092ea3b2f76acb2dbbc6a59bd716f87c5db78af570ec066bccf12",
+      "size": 6691,
+      "since": "1.9.0"
     },
     "fonts/font-validation-report.pdf": {
       "mode": "bytes",
@@ -1045,8 +1045,8 @@
     },
     "form/form-pdfa2b.pdf": {
       "mode": "bytes",
-      "hash": "f9e6fa153ceb6ea98b2a8b67fc4ee3cd4a1792a331d069f87f46174dccfdb251",
-      "size": 186072,
+      "hash": "d44839b2528bc68549fbe492cc94aefd4314ce94c1cec48de636924fc572e056",
+      "size": 186107,
       "since": "1.9.0"
     },
     "forms/fill-blank.pdf": {
@@ -1099,14 +1099,14 @@
     },
     "headers/header-footer-tagged.pdf": {
       "mode": "bytes",
-      "hash": "c2858f3567fec20f2bf1287e75457b866b5eeccfcedd55bf7660c17078c3ec41",
-      "size": 158567,
+      "hash": "6a1304227da0bcdda36424f0112bfe3cf5eeb0ceb8cd02011ab90c21227d6131",
+      "size": 158602,
       "since": "1.9.0"
     },
     "images/image-formats-pdfa2b.pdf": {
       "mode": "bytes",
-      "hash": "f77440479703fc40bf627958185a636c31375325f57e0b3f4f2f7301dd84d7a8",
-      "size": 56090,
+      "hash": "4f75cb0d82bb8d11395d5a6f1086f45c74db6de2ea299862e6b8be71a788b127",
+      "size": 56125,
       "since": "1.9.0"
     },
     "images/image-jpx-jp2.pdf": {
@@ -1129,14 +1129,14 @@
     },
     "manipulation/incremental-metadata-original.pdf": {
       "mode": "bytes",
-      "hash": "ff08c5353481dcf2db40a4267a853808c05813017a38a23f2c78f3fed4f83972",
-      "size": 58551,
+      "hash": "26db043c5957c330fee170ec5b9ebf443a4386c026509c5e63ef94dfab8eff9c",
+      "size": 58586,
       "since": "1.9.0"
     },
     "manipulation/incremental-metadata-updated.pdf": {
       "mode": "bytes",
-      "hash": "35452b4066f1acb784947415b8f47e9cefd8eb07b5965031ba92ce26cc8f7393",
-      "size": 60373,
+      "hash": "64e816228a4d3617290e3dc8edd977f5d6fe2f40f1d53df840b58b99a0b79d45",
+      "size": 60408,
       "since": "1.9.0"
     },
     "manipulation/merged-reencrypted.pdf": {
@@ -1201,8 +1201,8 @@
     },
     "math/math-symbols.pdf": {
       "mode": "bytes",
-      "hash": "168729095e0b0e848b64bb573f048dd018e70160bf1d4f4fc5d89d4d6d4fc515",
-      "size": 113608,
+      "hash": "b4b4bcbe024dbc3b9e4a624aa5a7afa188b086dd03db57a576ec9a26cf7ffd0c",
+      "size": 113650,
       "since": "1.9.0"
     },
     "outline/outline-auto.pdf": {
@@ -1291,9 +1291,9 @@
     },
     "parser/parser-xref-chain.pdf": {
       "mode": "bytes",
-      "hash": "dcb09bb226d524cb49b5f729eea629c6efaeed7acfd3787412f495774d843a34",
-      "size": 6446,
-      "since": "1.7.0"
+      "hash": "649f51cd73b0ec7a73b0e7d543ba1a7b9ee2568f555074f8aeaca8ab2e8be0d9",
+      "size": 6444,
+      "since": "1.9.0"
     },
     "parser/text-extract-encrypted-report.pdf": {
       "mode": "bytes",
@@ -1321,20 +1321,20 @@
     },
     "pdfa-latin/pdfa-latin-pdfa2b.pdf": {
       "mode": "bytes",
-      "hash": "25c8b4194cf8ec949debd45b9ccd5799a8cee511192b9a37e7a0512a6c4ac6cd",
-      "size": 71458,
+      "hash": "ec6570343ee83819168bc6af468af1f8d6c547d63711e77982ea11386e48d1fa",
+      "size": 71493,
       "since": "1.9.0"
     },
     "pdfa-latin/pdfa-latin-pdfa2u.pdf": {
       "mode": "bytes",
-      "hash": "bdac9e2002d5d23bcefb4bbf76092510a4bb4c3cb940ef653c811285e7cc7501",
-      "size": 71458,
+      "hash": "716ac03c9a36cb2d8db2b5e0590a52573145082683a7a7e4093b82051c0d3312",
+      "size": 71493,
       "since": "1.9.0"
     },
     "pdfa-latin/pdfa-latin-pdfa3b.pdf": {
       "mode": "bytes",
-      "hash": "aab5d1f14b25cc7fde10884cabc9b49f1a7a73ca0d3d1496a7ade5a6ccdbb473",
-      "size": 71458,
+      "hash": "a99439e8327063ac9027fa25ff7fd8b344e588cefa71e75f2d5b4b3ab39e3d9d",
+      "size": 71493,
       "since": "1.9.0"
     },
     "print/print-bleed-marks.pdf": {
@@ -1345,20 +1345,20 @@
     },
     "print/print-cmyk-pdfa2b.pdf": {
       "mode": "bytes",
-      "hash": "78817828389e78260181f1898ad5083f10dab432624058ddec1951e9c62a2739",
-      "size": 68439,
+      "hash": "8a239981c0000193558d14b2ff548e388e40406be34ee14c99aa8464acddf68e",
+      "size": 68474,
       "since": "1.9.0"
     },
     "print/print-cmyk-pdfx4.pdf": {
       "mode": "bytes",
-      "hash": "3f92628a842f55447b75647a23f3fd3c150962f7bcfab9b69d87d612ada1eaa8",
-      "size": 65512,
+      "hash": "17b5b9b877bbc971cd5ec994e37870c89ba47919a25f1a7afadb36c998baa836",
+      "size": 65547,
       "since": "1.9.0"
     },
     "print/print-dual-pdfa2b-pdfx4.pdf": {
       "mode": "bytes",
-      "hash": "b21bf354736b947dfdf038750490a9eae61ef32a108c496e9a42d09370cb3610",
-      "size": 69115,
+      "hash": "c0f77d3375eb6f2f9de7495e36039899075571be3c0e4cd081784b93fa227ffa",
+      "size": 69150,
       "since": "1.9.0"
     },
     "print/print-explicit-boxes.pdf": {
@@ -1369,8 +1369,8 @@
     },
     "print/print-gray-pdfx4.pdf": {
       "mode": "bytes",
-      "hash": "9b0530e0861211ba2c11c4f9ccc13cfa736da7f0a3d4396dd7fcb1648e9d0b5a",
-      "size": 52615,
+      "hash": "9539c0d755c8e772ff5eafa13da0c2db32de684c627c7cf2237e211e706d1fa2",
+      "size": 52650,
       "since": "1.9.0"
     },
     "print/print-large-format.pdf": {
@@ -1381,68 +1381,74 @@
     },
     "print/print-output-intent.pdf": {
       "mode": "bytes",
-      "hash": "0b1da64bdc111139a81105ff31b3313b34836fd4f69102336a3752dfb1b0477c",
-      "size": 53890,
+      "hash": "c41c566d8870fa57a7596e37b0796e61807c32f1222d56c29cdae6429b41d60c",
+      "size": 53925,
       "since": "1.9.0"
     },
     "print/print-spot-colours.pdf": {
       "mode": "bytes",
-      "hash": "103cb9c7dfe295eef08298e1fc71e4217cbc2c82b6fcb9813716cb915e22a1ec",
-      "size": 67165,
+      "hash": "8f832f86c2ad3493c857bc7a58c5abf71f5043d0c4d69a291d798f79316e8e9c",
+      "size": 67108,
       "since": "1.9.0"
     },
     "shaping/shaping-bengali.pdf": {
       "mode": "bytes",
-      "hash": "dce333725fee45c0fc59019a3b4442429fc266ba9b2b0a3a0fe6e94dcfa12c55",
-      "size": 49491,
+      "hash": "0300a6a99f825064e6056541d95a00693317dba281ca8d72d99b348c6be60d28",
+      "size": 50512,
       "since": "1.9.0"
     },
     "shaping/shaping-khmer.pdf": {
       "mode": "bytes",
-      "hash": "daae3af27f41b29871fa963758206da79e5573c2cef211f278c167060680b3bd",
-      "size": 27935,
+      "hash": "0a008d3b20673fe45f623f7caa15df55f6819b2b36c84d2be55f9638ce69493e",
+      "size": 28440,
+      "since": "1.9.0"
+    },
+    "shaping/shaping-malayalam.pdf": {
+      "mode": "bytes",
+      "hash": "024ccb17130990c25db68e71edc8c47af7dcca4b8fca7805adcbcbf00eab3252",
+      "size": 70076,
       "since": "1.9.0"
     },
     "shaping/shaping-myanmar.pdf": {
       "mode": "bytes",
-      "hash": "b4d44f35a22385e013508daf710b1584d603b3ae6dbe69a32faed258b902a16f",
-      "size": 30736,
+      "hash": "cbb8f1c5a46365915faaed89e086e792e3c1e61db097777ecf0de2c21961642f",
+      "size": 31244,
       "since": "1.9.0"
     },
     "shaping/shaping-sinhala.pdf": {
       "mode": "bytes",
-      "hash": "1fdf67f956ae108b1069d845424178637cf0c0bcbf98f0c1dec3239afdbd61c4",
-      "size": 37895,
+      "hash": "61ef0c374e3df77378c07c40f833b1c07f4f98fc98ba102d1c2b809e2df826d3",
+      "size": 38702,
       "since": "1.9.0"
     },
     "shaping/shaping-tamil.pdf": {
       "mode": "bytes",
-      "hash": "9cde8e140fc16a2550650ed979fafb1e2a9ba28f489adf3ae0e7a6dcb2601aa1",
-      "size": 47961,
+      "hash": "f739e0a0e94cfd3cc50e7c3829415c157e13b3fd03bfd99a98add2a44bb3d663",
+      "size": 49445,
       "since": "1.9.0"
     },
     "shaping/shaping-telugu.pdf": {
       "mode": "bytes",
-      "hash": "e7d3c869c8881382e574f7d93440836e6845516152a0bc91e9d05708ced6fcbf",
-      "size": 45372,
+      "hash": "e84f4c5eefa0bdfcfc9640c28866dfa5aa61917e64e684407e03d0de927360f2",
+      "size": 45794,
       "since": "1.9.0"
     },
     "shaping/shaping-thai.pdf": {
       "mode": "bytes",
-      "hash": "b804b9e8f7cb1ffca7fabbcde951a3c4d34e1e5a5d4645bb5eb6470c57125d03",
-      "size": 43498,
+      "hash": "477e4c76ccb9305ecf2b31ffdd12e407605cc5f2b3383bfea5842ae67c16352f",
+      "size": 43750,
       "since": "1.9.0"
     },
     "shaping/shaping-tibetan.pdf": {
       "mode": "bytes",
-      "hash": "3de5899dd70e156fba2233975e5928a44fc9cb556f9366a11f26451eafeedf22",
-      "size": 39905,
+      "hash": "178af74560c3a9ad0fc3d83b859436e83d22ddc04b7c3f7334bcb01ff2859cbe",
+      "size": 39926,
       "since": "1.9.0"
     },
     "shaping/use-lite-clusters.pdf": {
       "mode": "bytes",
-      "hash": "355e9ab7ddb2b7724cbdcb753b587371e0a48a64d9e714dd1437f6145ffec993",
-      "size": 51419,
+      "hash": "fb4807f6c7522543d34442a7e25f1c5c900f34081b245ff70c8f811c8a6cfb24",
+      "size": 52083,
       "since": "1.9.0"
     },
     "signature/digital-signature-ecdsa.pdf": {
@@ -1453,9 +1459,9 @@
     },
     "signature/digital-signature-info.pdf": {
       "mode": "bytes",
-      "hash": "2d94f9c896e806bb7cfd5557cece550c78f6845fd5f46a6d3a84a673240a314f",
-      "size": 10120,
-      "since": "1.8.0"
+      "hash": "4e79b84388dccbaa3c2d8f12abde5af492b734acfd8a692127a66131ffd8456d",
+      "size": 10121,
+      "since": "1.9.0"
     },
     "signature/digital-signature-provider.pdf": {
       "mode": "bytes",
@@ -1543,8 +1549,8 @@
     },
     "stress/doc-extreme-bidi-wrapping.pdf": {
       "mode": "bytes",
-      "hash": "7562117468af03a550d49417b6f93237cd40e560ee0cd5589c118fb317f29780",
-      "size": 203624,
+      "hash": "212cfc1499aa4122aac36acea913d8de44107edcbc683897703b0dabbf24d1d9",
+      "size": 203687,
       "since": "1.9.0"
     },
     "stress/doc-heavy-buffer-5mb.pdf": {
@@ -1597,8 +1603,8 @@
     },
     "stress/tagged-accessibility-complex.pdf": {
       "mode": "bytes",
-      "hash": "ef5b01cce829cc3a4b2752a66bd1ab03439ae2f490afa783c4c57aa056b5c54c",
-      "size": 78763,
+      "hash": "55f5368e7de47dec42ca550d37ca118ddcc4d4a6d7f03345babb792a8ada5e94",
+      "size": 78798,
       "since": "1.9.0"
     },
     "stress/zero-content-empty-doc.pdf": {
@@ -1645,32 +1651,32 @@
     },
     "tagged/tagged-pdfa2b-default.pdf": {
       "mode": "bytes",
-      "hash": "44f3a98347b549153b54dff61b3bc977418baaa3d1ef90827f2c45fb416b3ccd",
-      "size": 60336,
+      "hash": "a4c29fb996f7997b2e1f9d515edb4dee4bd22066b6d841ebf619d32f024ce2b3",
+      "size": 60371,
       "since": "1.9.0"
     },
     "tagged/tagged-pdfa2b-explicit.pdf": {
       "mode": "bytes",
-      "hash": "f052a3152077cc245755f4d9d179ecd22ef5e52a73b787e0e46d337d3a590f79",
-      "size": 60019,
+      "hash": "b1696aad5f06c11ad4dbe59142e7a190176ae0b070ce7366e99ab41a27da3073",
+      "size": 60054,
       "since": "1.9.0"
     },
     "tagged/tagged-pdfa2u-taitham.pdf": {
       "mode": "bytes",
-      "hash": "1221c1c05a8b27fb43086c2e51d62c423495abb25f2e9a9ac3cb7da032b241c4",
-      "size": 2109125,
+      "hash": "21bd8e76525f8d09e0ab982d66ef9ee323b7e1b8c90219954f72bcc9457cef36",
+      "size": 81818,
       "since": "1.9.0"
     },
     "tagged/tagged-pdfa2u.pdf": {
       "mode": "bytes",
-      "hash": "f0289ed09e38550834709162c1e22024396746a86095a955c737d22ec4a7c23f",
-      "size": 60006,
+      "hash": "968ce1aecbe92e913c071f2041dc5b6891bbcb89f09e9dca98752bf421f3cf5b",
+      "size": 60041,
       "since": "1.9.0"
     },
     "tagged/tagged-pdfa3b.pdf": {
       "mode": "bytes",
-      "hash": "80221600b29b93f33f3fe6b374aabc4b26d4a038f959073725ba88fa2ffd5d0c",
-      "size": 60728,
+      "hash": "092bd97126c7951cd0228dcedf41b90bffdd892a526553aa86a0a358f99ee091",
+      "size": 60763,
       "since": "1.9.0"
     },
     "toc/toc-full.pdf": {
@@ -1687,8 +1693,8 @@
     },
     "toc/toc-tagged.pdf": {
       "mode": "bytes",
-      "hash": "163dd153687f42bd16835585fe727de1b5cf891ddcee3fe157c51583ff3b7b84",
-      "size": 60018,
+      "hash": "58728de5aba67889376487f0724bb5579df451f9de4a5d4252a1a9e6bdbd247f",
+      "size": 60053,
       "since": "1.9.0"
     },
     "tools/font-compiler-report.pdf": {
@@ -1723,8 +1729,8 @@
     },
     "typography/breaks-split-tagged.pdf": {
       "mode": "bytes",
-      "hash": "154a99973942e17d831517cc5317a8df7db7313531ab75bd15246420548c365f",
-      "size": 189758,
+      "hash": "572457bb7f2bb41fce20a41234a300f30ed8e3dfcd93c82c5167e6c7f22c24a5",
+      "size": 189793,
       "since": "1.9.0"
     },
     "typography/breaks-split.pdf": {
@@ -1735,26 +1741,26 @@
     },
     "typography/features-default.pdf": {
       "mode": "bytes",
-      "hash": "73b356a376119731574ae089f3ba4564e7747f93678f79969a4758204d8ce84a",
-      "size": 54380,
+      "hash": "cd13d790d1f45d29d40c41cb5acfa3b176c65b5845cc9225a2a3437f307e6376",
+      "size": 54401,
       "since": "1.9.0"
     },
     "typography/features-oldstyle-smallcaps.pdf": {
       "mode": "bytes",
-      "hash": "8ba80e0ed8ea3657657a7516e92067cb64de115e911739888340997a83b8a0b9",
-      "size": 58069,
+      "hash": "e876c9d70adcf4fe4a7d249a2996c33ed96e1f46ebd1ae498fd521d01788b518",
+      "size": 58090,
       "since": "1.9.0"
     },
     "typography/features-proportional.pdf": {
       "mode": "bytes",
-      "hash": "e9706970c712422fee8c572af1545b7fb4f567e03e83605d963418cf265504b7",
-      "size": 55631,
+      "hash": "48df93481c1962b2ee3ca3363c283d1ea775a0aba1149faf1680613ee8b6a148",
+      "size": 55652,
       "since": "1.9.0"
     },
     "typography/hyphenation-provider.pdf": {
       "mode": "bytes",
-      "hash": "f753e8ac35041b546f3b3e4eb9b746e2306a92361cb449a3884a88e8319be655",
-      "size": 51822,
+      "hash": "463a35832d60c53e27337d123a2e45295d2b168a8b867a1b52c589347af8625b",
+      "size": 51843,
       "since": "1.9.0"
     },
     "typography/keep-with-next-off.pdf": {
@@ -1771,14 +1777,14 @@
     },
     "typography/kerning-off.pdf": {
       "mode": "bytes",
-      "hash": "23ab89ff985091c22a10eccd3da561ceccab80f13371c6afb3dfb754aab29a2d",
-      "size": 52203,
+      "hash": "a12c9c9883825284a4c9b1bbe3ccfdd3c34c435fa2ded7c018f8f6b9589cd3f2",
+      "size": 52224,
       "since": "1.9.0"
     },
     "typography/kerning-on.pdf": {
       "mode": "bytes",
-      "hash": "689376e0aa430e4b9159234aad14118e62e77ce7c6f3e518db2d06d6ff68d4d5",
-      "size": 53635,
+      "hash": "d5afa6c6f56ff9efd3e24efcb319a250609342d536e56ef4c84fa360dab99ac9",
+      "size": 53656,
       "since": "1.9.0"
     },
     "typography/metrics-approximate.pdf": {
@@ -1807,14 +1813,14 @@
     },
     "typography/text-plain.pdf": {
       "mode": "bytes",
-      "hash": "76b70f5a1bc77edd8c461af5ffd27bb7351f3d2960d79d42337c1f0eea0ceb18",
-      "size": 54891,
+      "hash": "73f3ed1c2a2975ab35cd93b3a4e40f3d1743105d6be7b705bdd6c7b3e3bc09c8",
+      "size": 54912,
       "since": "1.9.0"
     },
     "typography/text-refined.pdf": {
       "mode": "bytes",
-      "hash": "55254de6d05a93ad0754adde2cc1f97d1cc7eefb55c62d98416bc79a25a9d9ea",
-      "size": 54950,
+      "hash": "8e3140f0d9ba4e4527a12b254f8db2a1e8ab40aee38324d0af27421145b866cf",
+      "size": 54971,
       "since": "1.9.0"
     },
     "viewer/viewer-fullscreen-kiosk.pdf": {

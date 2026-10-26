@@ -68,7 +68,11 @@ export async function generate(ctx: GenerateContext): Promise<void> {
     // emits — the MA+E ligature among them — maps back to its code points in
     // the ToUnicode CMap, which level U requires (ISO 19005-2 §6.2.11.7.2).
     {
-        const taitham = await loadSelectedFontEntries(['nod', 'latin']);
+        // The Latin face first: the English prose is set in Noto Sans, and the
+        // Tai Tham font draws the Tai Tham lines (language match). Before
+        // 1.9.0 the order was reversed and Noto Sans was registered but never
+        // reached, so the whole 2 MB variable font was embedded unused (C18).
+        const taitham = await loadSelectedFontEntries(['latin', 'nod']);
         const params: DocumentParams = {
             title: 'PDF/A-2u — Tai Tham (Northern Thai)',
             blocks: [

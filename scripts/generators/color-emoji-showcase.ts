@@ -127,7 +127,13 @@ export async function generate(ctx: GenerateContext): Promise<void> {
         footerText: 'pdfnative - emoji sequences (GSUB ligatures)',
         fontEntries,
     };
-    ctx.writeSafe(resolve(ctx.outputDir, 'emoji', 'color-emoji-sequences.pdf'), 'emoji/color-emoji-sequences.pdf', buildDocumentPDFBytes(params4));
+    // The fallback paragraph draws two placeholder boxes on purpose, which the
+    // engine reports as TEXT_GLYPH_NOT_COVERED (1.9.0): expected here, every
+    // other diagnostic would be a regression of the sample.
+    const sequences = buildDocumentPDFBytes(params4, {
+        onDiagnostic: d => { if (d.code !== 'TEXT_GLYPH_NOT_COVERED') throw new Error(`color-emoji-sequences: ${d.message}`); },
+    });
+    ctx.writeSafe(resolve(ctx.outputDir, 'emoji', 'color-emoji-sequences.pdf'), 'emoji/color-emoji-sequences.pdf', sequences);
 
     // ── 5. Skin tones (v1.8.0) ──────────────────────────────────────
     // The bundled set carries 20 gestures and 10 generic people in all five

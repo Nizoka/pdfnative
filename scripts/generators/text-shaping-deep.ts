@@ -83,7 +83,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
 
                 { type: 'heading', text: 'Split Vowel Signs', level: 2 },
                 { type: 'paragraph', text: 'கொ (க + ொ), கோ (க + ோ), கௌ (க + ௌ)' },
-                { type: 'paragraph', text: 'Each split vowel is decomposed: ொ → ெ + ா, ோ → ே + ா, ௌ → ெ + ௗ. The left part renders before the consonant, the right part after.' },
+                { type: 'paragraph', text: 'Each split vowel is decomposed: ொ = ெ + ா, ோ = ே + ா, ௌ = ெ + ௗ. The left part renders before the consonant, the right part after.' },
 
                 { type: 'heading', text: 'Dependent Vowels', level: 2 },
                 { type: 'paragraph', text: 'கா கி கீ கு கூ கெ கே கை' },
@@ -200,5 +200,36 @@ export async function generate(ctx: GenerateContext): Promise<void> {
             footerText: 'pdfnative – Myanmar Shaping Deep Dive',
         };
         ctx.writeSafe(resolve(ctx.outputDir, 'shaping', 'shaping-myanmar.pdf'), 'shaping/shaping-myanmar.pdf', buildDocumentPDFBytes(params));
+    }
+
+    // ── 9. Malayalam chillus, split vowels and a justified paragraph (1.9.0) ──
+    {
+        const fontEntries = await loadSelectedFontEntries(['ml']);
+        // The language document's introduction, repeated so the paragraph wraps
+        // over several lines and the justification opens the word gaps only.
+        const intro = 'ഇത് pdfnative ലൈബ്രറി ഉപയോഗിച്ച് മലയാളത്തിൽ PDF നിർമ്മിക്കുന്നതിന്റെ ഒരു ഉദാഹരണമാണ്. ഈ രേഖയിൽ തലക്കെട്ടുകൾ, ഖണ്ഡികകൾ, പട്ടികകൾ, ലിസ്റ്റുകൾ എന്നിവയുണ്ട്; ഓരോ കൂട്ടക്ഷരവും ഒരേ പേജിൽ കാണാം.';
+        const params: DocumentParams = {
+            title: 'Malayalam Text Shaping – Chillus, Split Vowels, Justification',
+            blocks: [
+                { type: 'heading', text: 'Malayalam Text Shaping — Indic Engine', level: 1 },
+                { type: 'paragraph', text: 'Malayalam runs on the Indic OpenType engine: the pre-base ്ര, the dot reph, two-part vowel signs decomposed to their NFD parts, and the chillu letters in both spellings.' },
+
+                { type: 'heading', text: 'Chillu Letters — Atomic and Legacy Spellings', level: 2 },
+                { type: 'paragraph', text: 'അവൻ കാൽ അവർ അവൾ (atomic U+0D7B U+0D7D U+0D7C U+0D7E)' },
+                { type: 'paragraph', text: 'അവന്‍ കാല്‍ അവര്‍ അവള്‍ (consonant + virama + ZWJ, the pre-5.1 spelling)' },
+                { type: 'paragraph', text: 'Both rows draw the same glyphs: the joiner stays inside its syllable and the font forms the chillu through its akhn feature. The ToUnicode CMap names the code points that were written, so each row extracts as its own spelling.' },
+
+                { type: 'heading', text: 'Two-part Vowel Signs', level: 2 },
+                { type: 'paragraph', text: 'കോ (ക + ോ = േ + ാ), കൌ (ക + ൌ = െ + ൗ), കൊ (ക + ൊ = െ + ാ)' },
+                { type: 'paragraph', text: 'The left part is drawn before the consonant and names U+0D46 or U+0D47; the right part follows and names U+0D3E or U+0D57.' },
+
+                { type: 'heading', text: 'Justified Paragraph', level: 2 },
+                { type: 'paragraph', text: `${intro} ${intro} ${intro}`, align: 'justify' },
+                { type: 'paragraph', text: 'Justification opens the word gaps only: a TJ adjustment follows each space glyph, never a syllable. The split vowel signs and the chillus above keep their width on every line.' },
+            ],
+            fontEntries,
+            footerText: 'pdfnative – Malayalam Shaping Deep Dive',
+        };
+        ctx.writeSafe(resolve(ctx.outputDir, 'shaping', 'shaping-malayalam.pdf'), 'shaping/shaping-malayalam.pdf', buildDocumentPDFBytes(params));
     }
 }

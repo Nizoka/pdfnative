@@ -42,11 +42,11 @@ export async function generate(ctx: GenerateContext): Promise<void> {
 
             { type: 'heading', text: 'RSA PKCS#1 v1.5 Signatures', level: 2 },
             { type: 'paragraph', text: 'Pure-JS modular exponentiation (BigInt). Signs DigestInfo ASN.1 structure: OID + SHA-256 hash. Used for PDF digital signatures (ISO 32000-1 §12.8).' },
-            { type: 'paragraph', text: 'Key operations: rsaSign(privateKey, data) → DER-encoded signature bytes.' },
+            { type: 'paragraph', text: 'Key operations: rsaSign(privateKey, data) returns DER-encoded signature bytes.' },
 
             { type: 'heading', text: 'ECDSA P-256 Signatures', level: 2 },
             { type: 'paragraph', text: 'Elliptic curve digital signatures over secp256r1 (NIST P-256). Point multiplication, modular inverse via extended Euclidean algorithm.' },
-            { type: 'paragraph', text: 'Key operations: ecdsaSign(privateKey, data) → (r, s) signature pair encoded as DER.' },
+            { type: 'paragraph', text: 'Key operations: ecdsaSign(privateKey, data) returns the (r, s) signature pair encoded as DER.' },
 
             { type: 'heading', text: 'X.509 Certificate Parsing', level: 2 },
             { type: 'paragraph', text: 'DER-encoded X.509v3 certificate parser. Extracts subject, issuer, validity period, public key, and signature algorithm. Used to embed signer certificates in CMS SignedData.' },

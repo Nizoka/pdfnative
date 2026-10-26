@@ -204,7 +204,11 @@ export async function generate(ctx: GenerateContext): Promise<void> {
                 { type: 'paragraph', text: 'Process black for the running text; the colour bar and the marks stay in the registration colour.' },
                 {
                     type: 'chart', chartType: 'bar', title: 'Ink coverage per plate', categories: ['C', 'M', 'Y', 'K', '300 C'],
-                    series: [{ label: 'Coverage (%)', values: [38, 22, 41, 64, 17], color: { spot: 'PANTONE 300 C' } }],
+                    series: [{
+                        label: 'Coverage (%)', values: [38, 22, 41, 64, 17],
+                        // Each plate's bar in its own ink: the four process inks, then the spot plate (1.9.0).
+                        colors: [[100, 0, 0, 0], [0, 100, 0, 0], [0, 0, 100, 0], [0, 0, 0, 100], { spot: 'PANTONE 300 C' }],
+                    }],
                 },
             ],
             footerText: 'pdfnative - spot colours',
