@@ -51,6 +51,10 @@ export const KANNADA_CONFIG: IndicScriptConfig = {
         0x0CCA: [0x0CC6, 0x0CC2],          // ೊ = ೆ + ೂ
         0x0CCB: [0x0CC6, 0x0CC2, 0x0CD5],  // ೋ = ೆ + ೂ + length mark
     },
+    // HarfBuzz `gen-indic-table.py`: every above and below sign, and a right
+    // sign outside U+0CC3–U+0CD6 (ಾ ು ೂ), sits before the subjoined
+    // consonants; ೃ ೄ and the length marks come after them.
+    matraBeforeSub: (cp: number): boolean => cp === 0x0CC6 || cp === 0x0CCC || cp < 0x0CC3 || cp > 0x0CD6,
 };
 
 /**

@@ -24,11 +24,11 @@ import type {
     PdfColor,
 } from '../types/pdf-types.js';
 import { createEncodingContext, applyDocumentFeatures, applyDocumentKerning } from './encoding-context.js';
-import { createDiagnosticEmitter, pdfaNoFontEntriesDiagnostic, pdfaDeviceCmykContentDiagnostic, pdfaIccProfileVersionDiagnostic, pdfxNoFontEntriesDiagnostic, pdfxDeviceCmykDiagnostic, reportIneffectiveFeatures, pdfa1JpxImageDiagnostic, pdfaJpxImageDiagnostic, pdfaGlyphWithoutUnicodeDiagnostic } from './pdf-diagnostics.js';
+import { createDiagnosticEmitter, pdfaNoFontEntriesDiagnostic, pdfaDeviceCmykContentDiagnostic, pdfaIccProfileVersionDiagnostic, pdfxNoFontEntriesDiagnostic, pdfxDeviceCmykDiagnostic, reportIneffectiveFeatures, reportUncoveredGlyphs, pdfa1JpxImageDiagnostic, pdfaJpxImageDiagnostic, pdfaGlyphWithoutUnicodeDiagnostic } from './pdf-diagnostics.js';
 import { scanDeviceColour } from './pdf-content-colour.js';
 import { spotColourResources, type SpotFunctionStream } from './pdf-spot.js';
 import { truncate, buildWinAnsiToUnicodeCMap } from '../fonts/encoding.js';
-import { buildToUnicodeCMap, buildSubsetWidthArray, unmappedUsedGids } from '../fonts/font-embedder.js';
+import { buildToUnicodeCMap, buildSubsetWidthArray, unmappedUsedGids, subsetTag } from '../fonts/font-embedder.js';
 import { getDecodedFontBytes } from '../fonts/font-loader.js';
 import { subsetTTF, uint8ToBinaryString } from '../fonts/font-subsetter.js';
 import { txt, txtR, txtC, txtTagged, txtRTagged, txtCTagged, fmtNum, encodePdfTextString } from './pdf-text.js';
@@ -343,7 +343,7 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
         emitDiagnostic(pdfaIccProfileVersionDiagnostic(outputIntent.iccVersion));
     }
 
-    const encBase = createEncodingContext(fontEntries, embedFonts, layoutOptions?.normalize ?? false, layoutOptions?.typography?.metrics, layoutOptions?.typography?.hyphenationLanguage);
+    const encBase = createEncodingContext(fontEntries, embedFonts, layoutOptions?.normalize ?? false, layoutOptions?.typography?.metrics, layoutOptions?.typography?.hyphenationLanguage, layoutOptions?.actualText ?? true);
     const encFeat = applyDocumentFeatures(encBase, layoutOptions?.typography?.fontFeatures);
     const enc = applyDocumentKerning(encFeat, layoutOptions?.typography?.kerning);
 
@@ -631,6 +631,7 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
         outputIntent, [registrationEntry, spotRes.entries].filter(Boolean).join(' '));
 
     reportIneffectiveFeatures(layoutOptions?.typography?.fontFeatures, fontEntries, enc, emitDiagnostic);
+    reportUncoveredGlyphs(fontEntries, enc, emitDiagnostic);
 
     // Build the table structure element (inserted before footer /P elements)
     if (tagged && tableRows.length > 0) {
@@ -670,12 +671,23 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
         }
         emitObj(2, `<< /Type /Pages /Kids [${kids.join(' ')}] /Count ${totalPages} >>`);
 
+        // The name of an embedded font: a subset carries the six-letter tag of
+        // ISO 32000-1 §9.6.4 in front of the face name (C21); the whole program
+        // (no used-glyph set) keeps the bare name.
+        const embeddedFontName = (entry: FontEntry): string => {
+            const clean = entry.fontData.fontName.replace(/[^A-Za-z0-9-]/g, '');
+            // Under PDF/A-1 the tag is withheld: ISO 19005-1 §6.3.5 then asks for a
+            // CIDSet stream the builders do not write yet (a tagged subset without it
+            // fails veraPDF 6.3.5-3); the untagged name is what every 1.8.0 file carried.
+            const used = (tagged && pdfaConfig.pdfaPart === 1) ? null : (enc.getUsedGids ? enc.getUsedGids().get(entry.fontRef) : null);
+            return used ? `/${subsetTag(entry.fontData.fontName, used)}+${clean}` : `/${clean}`;
+        };
         if (embedFonts) {
             // PDF/A and PDF/X: /F1 and /F2 must reference embedded fonts. Alias both to
             // primary font's Type0 (sharing FontFile2 stream). Bold renders as
             // regular under PDF/A — register a separate Bold font for true bold.
             const pf = fontEntries[0];
-            const bfName = `/${pf.fontData.fontName.replace(/[^A-Za-z0-9-]/g, '')}`;
+            const bfName = embeddedFontName(pf);
             const primaryBase = 5;
             const refDict = `<< /Type /Font /Subtype /Type0 /BaseFont ${bfName} ` +
                 `/Encoding /Identity-H /DescendantFonts [${primaryBase + 1} 0 R] /ToUnicode ${primaryBase + 4} 0 R >>`;
@@ -696,13 +708,17 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
             const fontBytes = getDecodedFontBytes(fd);
             const usedGids = enc.getUsedGids ? enc.getUsedGids().get(fe.fontRef) : null;
             // Identity CIDToGIDMap: the viewer never reads the font's cmap, so
-            // the embed carries one over the used glyphs only (v1.9.0).
-            const ttfBinary = usedGids && usedGids.size > 0
+            // the embed carries one over the used glyphs only (v1.9.0). A
+            // registered font no character reached keeps its five objects (the
+            // page resources name it, and ISO 19005-2 §6.2.11.4.1 wants a
+            // program behind every referenced font) but embeds the .notdef-only
+            // subset, not the whole file (C18).
+            const ttfBinary = usedGids
                 ? subsetTTF(fontBytes, usedGids, { lean: { cmap: fd.cmap } })
                 : uint8ToBinaryString(fontBytes);
 
             const fm = fd.metrics;
-            const bfName = `/${fd.fontName.replace(/[^A-Za-z0-9-]/g, '')}`;
+            const bfName = embeddedFontName(fe);
             const overrides = enc.getToUnicodeOverrides?.().get(fe.fontRef);
             const encoded = enc.getToUnicodeEncoded?.().get(fe.fontRef);
             const toUnicodeCMap = usedGids && usedGids.size > 0
@@ -715,7 +731,8 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
             }
 
             const subsetW = buildSubsetWidthArray(fd.widths, usedGids ?? new Set());
-            const wArray = subsetW || fd.pdfWidthArray;
+            // An unused font carries `/W []`: /DW covers its only glyph (C18).
+            const wArray = subsetW ?? (usedGids && usedGids.size === 0 ? '' : fd.pdfWidthArray);
 
             // Type0 (Composite Font)
             emitObj(base,

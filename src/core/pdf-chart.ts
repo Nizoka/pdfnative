@@ -162,6 +162,12 @@ function validate(block: ChartBlock): void {
         if (catCount !== undefined && !positional && s.values.length !== catCount) {
             throw new Error(`chart: series "${name}" length (${s.values.length}) does not match categories (${catCount})`);
         }
+        if (s.colors !== undefined) {
+            if (!Array.isArray(s.colors) || s.colors.length !== s.values.length) {
+                throw new Error(`chart: series "${name}" colors length (${Array.isArray(s.colors) ? s.colors.length : 0}) does not match values (${s.values.length})`);
+            }
+            for (const c of s.colors) parseColor(c);
+        }
         if (positional) {
             if (!s.xValues) {
                 throw new Error(`chart: series "${name}" needs xValues for xAxis.type '${xType}'`);
@@ -433,6 +439,12 @@ function fmtDataLabel(v: number, opt: ChartBlock['dataLabels']): string {
 function seriesColor(block: ChartBlock, index: number, s?: ChartSeries): string {
     const explicit = s?.color ?? block.colors?.[index];
     return parseColor(explicit ?? (PALETTE[index % PALETTE.length] as PdfColor));
+}
+
+/** The fill of one bar: the series' colour for that value when given, else the series colour (1.9.0). */
+function barColor(block: ChartBlock, index: number, s: ChartSeries, valueIndex: number): string {
+    const own = s.colors?.[valueIndex];
+    return own !== undefined ? parseColor(own) : seriesColor(block, index, s);
 }
 
 // ── Rendering entry point ────────────────────────────────────────────
@@ -771,7 +783,7 @@ function renderCartesian(
                 if (v >= 0) pos = to; else neg = to;
                 const x0 = plotX + frac01(from) * plotW;
                 const x1 = plotX + frac01(to) * plotW;
-                ops.push(`${fillOp(seriesColor(block, si, s))}`);
+                ops.push(`${fillOp(barColor(block, si, s, ci))}`);
                 ops.push(`${fmtNum(Math.min(x0, x1))} ${fmtNum(yb - barH)} ${fmtNum(Math.abs(x1 - x0))} ${fmtNum(barH)} re f`);
                 if (dataLabels && Math.abs(x1 - x0) >= helveticaWidth(fmtDataLabel(v, dataLabels), LABEL_SIZE) + 4) {
                     ops.push(fillOp('1 1 1'), txtCentered(fmtDataLabel(v, dataLabels), (x0 + x1) / 2, yb - barH / 2 - LABEL_SIZE / 2 + 1, LABEL_SIZE, enc));
@@ -791,7 +803,7 @@ function renderCartesian(
                 const x0 = plotX + zeroFrac * plotW;
                 const x1 = plotX + frac01(v) * plotW;
                 const yb = slotTop - slot * 0.15 - barH * si;
-                ops.push(`${fillOp(seriesColor(block, si, s))}`);
+                ops.push(`${fillOp(barColor(block, si, s, ci))}`);
                 ops.push(`${fmtNum(Math.min(x0, x1))} ${fmtNum(yb - barH)} ${fmtNum(Math.abs(x1 - x0))} ${fmtNum(barH)} re f`);
                 if (dataLabels) {
                     const lx = Math.max(x0, x1) + 3 + helveticaWidth(fmtDataLabel(v, dataLabels), LABEL_SIZE) / 2;
@@ -815,7 +827,7 @@ function renderCartesian(
                 if (v >= 0) pos = to; else neg = to;
                 const y0 = plotBottom + frac01(from) * plotH;
                 const y1 = plotBottom + frac01(to) * plotH;
-                ops.push(`${fillOp(seriesColor(block, si, s))}`);
+                ops.push(`${fillOp(barColor(block, si, s, ci))}`);
                 ops.push(`${fmtNum(xb)} ${fmtNum(Math.min(y0, y1))} ${fmtNum(barW)} ${fmtNum(Math.abs(y1 - y0))} re f`);
                 if (dataLabels && Math.abs(y1 - y0) >= LABEL_SIZE + 2) {
                     ops.push(fillOp('1 1 1'), txtCentered(fmtDataLabel(v, dataLabels), xb + barW / 2, (y0 + y1) / 2 - LABEL_SIZE / 2 + 1, LABEL_SIZE, enc));
@@ -840,7 +852,7 @@ function renderCartesian(
                 const yv = plotBottom + sc.frac01(v) * plotH;
                 const base = sc === scale ? zeroY : plotBottom + sc.frac01(0) * plotH;
                 const xb = slotX + slot * 0.15 + barW * si;
-                ops.push(`${fillOp(seriesColor(block, si, s))}`);
+                ops.push(`${fillOp(barColor(block, si, s, ci))}`);
                 ops.push(`${fmtNum(xb)} ${fmtNum(Math.min(base, yv))} ${fmtNum(barW)} ${fmtNum(Math.abs(yv - base))} re f`);
                 if (dataLabels) {
                     ops.push(fillOp('0 0 0'), pointLabel(v, xb + barW / 2, yv));

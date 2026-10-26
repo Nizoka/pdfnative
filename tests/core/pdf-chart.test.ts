@@ -7,6 +7,7 @@ import { describe, it, expect } from 'vitest';
 import { buildDocumentPDFBytes } from '../../src/core/pdf-document.js';
 import { openPdf } from '../../src/parser/pdf-reader.js';
 import { niceTicks, renderChartBlock } from '../../src/core/pdf-chart.js';
+import { parseColor, fillOp } from '../../src/core/pdf-color.js';
 import type { ChartBlock } from '../../src/types/pdf-document-types.js';
 import type { DocumentParams } from '../../src/types/pdf-document-types.js';
 
@@ -447,6 +448,52 @@ describe('data labels', () => {
     it('omits labels when disabled (default)', () => {
         const content = pageContent(chartDoc(barChart));
         expect(content).not.toContain('(120)');
+    });
+});
+
+describe('per-value colours (ChartSeries.colors, 1.9.0)', () => {
+    const plates: ChartBlock = {
+        type: 'chart', chartType: 'bar', categories: ['C', 'M', 'Y', 'K', 'Spot'],
+        series: [{ label: 'Coverage', values: [38, 22, 41, 64, 17], color: '#123456',
+            colors: ['#ff0000', '#00ff00', '#0000ff', '#000000', [100, 44, 0, 0]] }],
+        legend: 'bottom',
+    };
+    const bars = (content: string): string[] =>
+        [...content.matchAll(/((?:[\d.]+ ){3}rg|(?:[\d.]+ ){4}k)\n[\d.]+ [\d.]+ [\d.]+ [\d.]+ re f/g)].map(m => m[1]);
+
+    it('paints each bar of one series with its own colour, in category order', () => {
+        const fills = bars(pageContent(chartDoc(plates)));
+        expect(fills.slice(0, 5)).toEqual(['1 0 0 rg', '0 1 0 rg', '0 0 1 rg', '0 0 0 rg', '1 0.44 0 0 k']);
+    });
+
+    it('keeps the series colour on the legend swatch', () => {
+        const content = pageContent(chartDoc(plates));
+        const swatches = [...content.matchAll(/((?:[\d.]+ ){3}rg)\n[\d.]+ [\d.]+ 9 9 re f/g)].map(m => m[1]);
+        expect(swatches).toEqual([fillOp(parseColor('#123456'))]);
+        expect(content.split(fillOp(parseColor('#123456')))).toHaveLength(2);
+    });
+
+    it('applies to barH and the stacked variants', () => {
+        for (const chartType of ['barH', 'stackedBar', 'stackedBarH'] as const) {
+            const fills = bars(pageContent(chartDoc({ ...plates, chartType, legend: 'none' })));
+            expect(fills.slice(0, 5)).toEqual(['1 0 0 rg', '0 1 0 rg', '0 0 1 rg', '0 0 0 rg', '1 0.44 0 0 k']);
+        }
+    });
+
+    it('is byte-identical when every entry repeats the series colour, and when the array is absent', () => {
+        const plain: ChartBlock = { ...plates, series: [{ label: 'Coverage', values: [38, 22, 41, 64, 17], color: '#123456' }] };
+        const same: ChartBlock = { ...plates, series: [{ ...plain.series[0], colors: ['#123456', '#123456', '#123456', '#123456', '#123456'] }] };
+        expect(Buffer.from(chartDoc(same)).equals(Buffer.from(chartDoc(plain)))).toBe(true);
+    });
+
+    it('rejects a colors array whose length differs from values, and an invalid entry', () => {
+        expect(() => chartDoc({ ...plates, series: [{ label: 'Coverage', values: [1, 2, 3, 4, 5], colors: ['#ff0000'] }] }))
+            .toThrow(/colors length \(1\) does not match values \(5\)/);
+        expect(() => chartDoc({ ...plates, series: [{ label: 'Coverage', values: [1, 2, 3, 4, 5], colors: ['#ff0000', '#00ff00', '#0000ff', '#000000', 'red) 0 0 1 rg ('] }] }))
+            .toThrow();
+        // The operand-string form of a spot colour is held to the PDF name alphabet: no delimiter reaches the stream.
+        expect(() => chartDoc({ ...plates, series: [{ label: 'Coverage', values: [1, 2, 3, 4, 5], colors: ['#ff0000', '#00ff00', '#0000ff', '#000000', '/Spot_Foo>>/Bad 1'] }] }))
+            .toThrow(/Invalid color/);
     });
 });
 

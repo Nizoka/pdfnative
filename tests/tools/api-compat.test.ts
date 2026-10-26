@@ -41,6 +41,12 @@ const SIGNATURE_LEDGER: Readonly<Record<string, string>> = {
     PdfColorSpace: 'Added — spot colours',
     // Added (JPEG 2000): 'jpx' joins the result union; 'jpeg', 'png' and null are unchanged.
     detectImageFormat: 'Added — JPEG 2000 pass-through',
+    // Added (TEXT_GLYPH_NOT_COVERED): an optional trailing callback that receives each character
+    // WinAnsi cannot encode; every 1.8.0 call and every output byte are unchanged.
+    toWinAnsi: 'Added — optional onMiss callback (TEXT_GLYPH_NOT_COVERED)',
+    pdfString: 'Added — optional onMiss callback (TEXT_GLYPH_NOT_COVERED)',
+    // Added (C20): an optional trailing `actualText` flag, default true — the 1.8.0 call shape is unchanged.
+    createEncodingContext: 'Added — optional actualText flag (C20)',
 };
 
 /**

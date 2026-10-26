@@ -154,6 +154,24 @@ export function buildToUnicodeCMap(
  * @param usedGids - Set of used glyph IDs
  * @returns Compact /W array string, or null if no valid entries
  */
+/**
+ * The six-uppercase-letter tag ISO 32000-1 §9.6.4 puts in front of a subset
+ * font's name (`ABCDEF+NotoSans-Regular`), derived from the font name and the
+ * kept glyph set (FNV-1a, base 26): two subsets of one face differ, identical
+ * ones agree, and the bytes stay deterministic (1.9.0, C21). Preflight tools
+ * and font-merging RIPs read the tag to tell subsets apart.
+ */
+export function subsetTag(fontName: string, usedGids: ReadonlySet<number>): string {
+    let h = 0x811C9DC5;
+    const mix = (v: number): void => { h ^= v & 0xFF; h = Math.imul(h, 0x01000193) >>> 0; };
+    for (let i = 0; i < fontName.length; i++) mix(fontName.charCodeAt(i));
+    for (const g of [...usedGids].sort((a, b) => a - b)) { mix(g); mix(g >>> 8); }
+    let tag = '';
+    let x = h;
+    for (let i = 0; i < 6; i++) { tag += String.fromCharCode(65 + (x % 26)); x = Math.floor(x / 26); }
+    return tag;
+}
+
 export function buildSubsetWidthArray(widths: Record<number, number>, usedGids: Set<number>): string | null {
     if (!usedGids || usedGids.size === 0) return null;
     // GIDs without a width entry are omitted here on purpose: the CIDFont

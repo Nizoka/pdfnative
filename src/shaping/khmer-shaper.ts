@@ -47,16 +47,23 @@ export { KHMER_START, KHMER_END, containsKhmer };
 const COENG = KHMER_COENG; // 0x17D2
 
 /**
- * Decomposition of Khmer two-part dependent vowels into
- * [pre-base (left) part, ...post-base parts].
+ * Decomposition of the Khmer two-part dependent vowels, as HarfBuzz's
+ * `decompose_khmer` does it (Unicode gives them no decomposition): the
+ * pre-base េ, then the sign itself. The font's cmap glyph of the sign is its
+ * presentation form over a dotted circle; the `abvf` / `psts` single
+ * substitutions of the module's flat `gsub` table turn it into the right
+ * piece the shaper draws after the base — ី for ើ, the hooks of ឿ ៀ ៅ, ា
+ * for ោ (1.9.0, C24; until then ើ ៅ ឿ ៀ were drawn with the right part of
+ * ោ, ី, ឹ).
  */
 const TWO_PART_VOWELS: Record<number, number[]> = {
-    0x17BE: [0x17C1, 0x17B6], // ើ
-    0x17BF: [0x17C1, 0x17B8], // ឿ  (approx: e + y-like)
-    0x17C0: [0x17C1, 0x17B9], // ៀ  (approx)
-    0x17C4: [0x17C1, 0x17B6], // ោ  (e + aa)
-    0x17C5: [0x17C1, 0x17B6], // ៅ  (e + aa-like)
+    0x17BE: [0x17C1, 0x17BE], // ើ
+    0x17BF: [0x17C1, 0x17BF], // ឿ
+    0x17C0: [0x17C1, 0x17C0], // ៀ
+    0x17C4: [0x17C1, 0x17C4], // ោ
+    0x17C5: [0x17C1, 0x17C5], // ៅ
 };
+const isTwoPartRightPiece = (cp: number): boolean => cp >= 0x17BE && cp <= 0x17C5 && cp !== 0x17C1 && cp !== 0x17C2 && cp !== 0x17C3;
 
 /**
  * Khmer character type classification.
@@ -76,13 +83,13 @@ function khmerCharType(cp: number): number {
     if (cp >= 0x17A3 && cp <= 0x17B5) return 1;
     // Pre-base vowels (left)
     if (cp === 0x17C1 || cp === 0x17C2 || cp === 0x17C3) return 4;
-    // Above vowels
+    // Above vowels (ើ's right piece is the above mark ី once substituted)
     if (cp === 0x17B7 || cp === 0x17B8 || cp === 0x17B9 || cp === 0x17BA ||
-        cp === 0x17BB || cp === 0x17BD) return 2;
+        cp === 0x17BB || cp === 0x17BD || cp === 0x17BE) return 2;
     // Below vowels
     if (cp === 0x17BC) return 3;
-    // Post-base spacing vowels
-    if (cp === 0x17B6 || cp === 0x17C4 || cp === 0x17C5) return 5;
+    // Post-base spacing vowels, the right pieces of ឿ ៀ ោ ៅ among them
+    if (cp === 0x17B6 || cp === 0x17BF || cp === 0x17C0 || cp === 0x17C4 || cp === 0x17C5) return 5;
     // Signs / diacritics (above): nikahit, reahmuk, etc.
     if (cp >= 0x17C6 && cp <= 0x17D1) return 6;
     if (cp === 0x17CB || cp === 0x17CD || cp === 0x17CE || cp === 0x17CF ||
@@ -173,7 +180,14 @@ export function shapeKhmerText(str: string, fontData: FontData): ShapedGlyph[] {
 
     function resolveGid(cp: number): number {
         const normCp = (cp === 0x202F || cp === 0xA0) ? 0x20 : cp;
-        return cmap[normCp] || 0;
+        const gid = cmap[normCp] || 0;
+        // The right piece of a two-part vowel: the font's single substitution
+        // (abvf / psts) of its presentation form, when the font has one.
+        if (gid !== 0 && isTwoPartRightPiece(cp) && fontData.gsub) {
+            const sub = fontData.gsub[gid];
+            if (sub !== undefined && sub !== 0) return sub;
+        }
+        return gid;
     }
 
     function tryLig(gids: number[]) {

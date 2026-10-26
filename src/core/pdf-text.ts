@@ -128,18 +128,70 @@ function latinShow(str: string, enc: EncodingContext): string {
     return items.length === 1 ? `${items[0]} Tj` : `[${items.join(' ')}] TJ`;
 }
 
+/** Characters a shaper may drop or that name no glyph of their own: joiners, variation selectors, bidi controls, the soft hyphen. */
+function isIgnorableForOrder(cp: number): boolean {
+    return cp === 0x00AD || cp === 0x034F || (cp >= 0x200B && cp <= 0x200F) || (cp >= 0x202A && cp <= 0x202E)
+        || (cp >= 0x2060 && cp <= 0x206F) || (cp >= 0xFE00 && cp <= 0xFE0F) || cp === 0xFEFF
+        || (cp >= 0xE0100 && cp <= 0xE01EF) || cp < 0x20 || cp === 0x7F;
+}
+
 /**
- * Does a shaped run's text contain a character the shaper decomposes into
- * glyphs no per-glyph ToUnicode mapping can recompose? Thai sara am (U+0E33)
- * and Lao am (U+0EB3) are drawn as nikhahit + sara aa; the run then carries
- * `/ActualText` so extraction returns the author's code point (1.9.0).
+ * Does the order of the code points the shaper reports for a run's glyphs
+ * (visual order) differ from the run's text (logical order)? True for a
+ * pre-base vowel sign drawn before its consonant, a reph moved after the
+ * base, a split vowel sign (reported as its NFD parts), or a character the
+ * shaper left undrawn. A glyph that reports nothing (an older shaper, or the
+ * second part of a decomposed sign) is skipped; when any glyph is silent,
+ * only a mismatch among the reported ones counts.
  */
-function needsActualText(text: string): boolean {
+function shapedOrderDiffers(text: string, shaped: readonly ShapedGlyph[]): boolean {
+    let i = 0;
+    const next = (): number => {
+        while (i < text.length) {
+            const cp = text.codePointAt(i) ?? 0;
+            i += cp > 0xFFFF ? 2 : 1;
+            if (!isIgnorableForOrder(cp)) return cp;
+        }
+        return -1;
+    };
+    let silent = false;
+    for (const g of shaped) {
+        const cps = g.cps;
+        if (!cps || cps.length === 0) { silent = true; continue; }
+        for (const cp of cps) {
+            if (isIgnorableForOrder(cp)) continue;
+            if (cp !== next()) return true;
+        }
+    }
+    return !silent && next() !== -1;
+}
+
+/**
+ * Should a shaped run carry `/ActualText` in untagged output? Thai sara am
+ * (U+0E33) and Lao am (U+0EB3) are drawn as nikhahit + sara aa, which no
+ * per-glyph ToUnicode mapping can recompose; and since 1.9.0 (C20) any
+ * left-to-right run whose glyphs are not in the order of its text — Indic
+ * pre-base signs, rephs, split vowel signs, Khmer and Myanmar pre-base
+ * vowels — so extraction returns the source string in logical order, as
+ * Chrome and Skia arrange. A right-to-left run is left alone (its visual
+ * reversal is what extractors expect), and `layout.actualText: false`
+ * switches the wrapping off.
+ */
+function needsActualText(run: TextRun, enc: EncodingContext): boolean {
+    if (enc.actualText === false) return false;
+    const text = run.text;
     for (let i = 0; i < text.length; i++) {
         const c = text.charCodeAt(i);
         if (c === 0x0E33 || c === 0x0EB3) return true;
     }
-    return false;
+    if (run.shaped === null || containsRTL(text)) return false;
+    // A joiner steers the shaping (a legacy chillu, an explicit half form)
+    // and leaves no glyph: only the span can give the spelling back.
+    for (let i = 0; i < text.length; i++) {
+        const c = text.charCodeAt(i);
+        if (c === 0x200C || c === 0x200D) return true;
+    }
+    return shapedOrderDiffers(text, run.shaped);
 }
 
 /**
@@ -152,7 +204,8 @@ export function txt(
     y: number,
     font: string,
     sz: number,
-    enc: EncodingContext
+    enc: EncodingContext,
+    actualTextSpans: boolean = true,
 ): string {
     if (!enc.isUnicode) {
         return `BT ${font} ${sz} Tf ${fmtNum(x)} ${fmtNum(y)} Td ${latinShow(str, enc)} ET`;
@@ -167,11 +220,12 @@ export function txt(
         if (enc.colorEmoji && run.fontData.colorGlyphs && run.hexStr) {
             penX = emitColorEmojiRun(parts, run, penX, y, sz, enc);
         } else if (run.shaped) {
-            // Thai and Lao sara am is drawn as nikhahit + sara aa: no per-glyph
-            // mapping can give the single code point back, so the run carries
-            // its text as /ActualText, legal in untagged output too (1.9.0).
+            // A run whose glyphs are not in the order of its text (sara am,
+            // a pre-base sign, a reph, a split vowel) carries its text as
+            // /ActualText, legal in untagged output too (1.9.0, C20). The
+            // tagged emitters wrap the whole string themselves and pass false.
             const op = txtShaped(run.shaped, penX, y, run.fontRef, sz, run.fontData);
-            parts.push(needsActualText(run.text) ? wrapActualText(op, run.text) : op);
+            parts.push(actualTextSpans && needsActualText(run, enc) ? wrapActualText(op, run.text) : op);
             penX += run.widthPt;
         } else if (run.tjStr) {
             // Kerned: one TJ array keeps the run a single text-showing
@@ -205,9 +259,10 @@ export function txtR(
     sz: number,
     enc: EncodingContext,
     bold: boolean = false,
+    actualTextSpans: boolean = true,
 ): string {
     const width = measureFor(str, sz, enc, bold);
-    return txt(str, rightX - width, y, font, sz, enc);
+    return txt(str, rightX - width, y, font, sz, enc, actualTextSpans);
 }
 
 /**
@@ -229,9 +284,10 @@ export function txtC(
     colW: number,
     enc: EncodingContext,
     bold: boolean = false,
+    actualTextSpans: boolean = true,
 ): string {
     const width = measureFor(str, sz, enc, bold);
-    return txt(str, leftX + (colW - width) / 2, y, font, sz, enc);
+    return txt(str, leftX + (colW - width) / 2, y, font, sz, enc, actualTextSpans);
 }
 
 /**
@@ -323,17 +379,18 @@ export function txtJustified(
     sz: number,
     enc: EncodingContext,
     targetWidth: number,
+    actualTextSpans: boolean = true,
 ): string {
     // Split on plain spaces only: a no-break space is part of its word, which
     // is precisely what makes "150 €" survive justification intact.
     const words = str.split(' ').filter(w => w !== '');
-    if (words.length < 2) return txt(str, x, y, font, sz, enc);
+    if (words.length < 2) return txt(str, x, y, font, sz, enc, actualTextSpans);
 
     // A line with right-to-left runs — or any line of a right-to-left
     // paragraph — is justified over its visual runs: placing the words one
     // after another in logical order would reverse the reading order (1.9.0).
     if (enc.isUnicode && (enc.paragraphLevel === 1 || containsRTL(str))) {
-        return txtJustifiedVisual(str, x, y, font, sz, enc, targetWidth);
+        return txtJustifiedVisual(str, x, y, font, sz, enc, targetWidth, actualTextSpans);
     }
 
     // Each word carries its trailing space so the space glyph is emitted; the
@@ -348,7 +405,7 @@ export function txtJustified(
     const extra = targetWidth - natural;
     const spaceW = measureFor(' ', sz, enc);
     if (extra <= 0 || extra / (words.length - 1) > spaceW * MAX_JUSTIFY_STRETCH) {
-        return txt(str, x, y, font, sz, enc);
+        return txt(str, x, y, font, sz, enc, actualTextSpans);
     }
 
     const gapExtra = extra / (words.length - 1);
@@ -391,7 +448,8 @@ export function txtJustified(
                 if (emoji) {
                     penX = emitColorEmojiRun(parts, run, penX, y, sz, enc);
                 } else if (run.shaped) {
-                    parts.push(txtShaped(run.shaped, penX, y, run.fontRef, sz, run.fontData));
+                    const op = txtShaped(run.shaped, penX, y, run.fontRef, sz, run.fontData);
+                    parts.push(actualTextSpans && needsActualText(run, enc) ? wrapActualText(op, run.text) : op);
                     penX += run.widthPt;
                 }
                 continue;
@@ -436,6 +494,7 @@ function txtJustifiedVisual(
     sz: number,
     enc: EncodingContext,
     targetWidth: number,
+    actualTextSpans: boolean = true,
 ): string {
     const runs = enc.textRuns(str, sz);
     if (runs.length === 0) return '';
@@ -454,7 +513,7 @@ function txtJustifiedVisual(
             continue;
         }
         const items = splitRunAtSpaces(run, enc);
-        if (items === null) return txt(str, x, y, font, sz, enc); // unsplittable: ragged
+        if (items === null) return txt(str, x, y, font, sz, enc, actualTextSpans); // unsplittable: ragged
         const n = items.filter(it => it === null).length;
         pieces.push({ run, gaps: n, items });
         gaps += n;
@@ -462,7 +521,7 @@ function txtJustifiedVisual(
     const extra = targetWidth - natural;
     const spaceW = measureFor(' ', sz, enc);
     if (gaps === 0 || extra <= 0 || extra / gaps > spaceW * MAX_JUSTIFY_STRETCH) {
-        return txt(str, x, y, font, sz, enc);
+        return txt(str, x, y, font, sz, enc, actualTextSpans);
     }
     const gapExtra = extra / gaps;
     const tjGap = fmtNum(-(gapExtra * 1000 / sz));
@@ -486,7 +545,8 @@ function txtJustifiedVisual(
         if (piece.items === null) {
             flush();
             if (run.shaped) {
-                parts.push(txtShaped(run.shaped, penX, y, run.fontRef, sz, run.fontData, gapExtra));
+                const op = txtShaped(run.shaped, penX, y, run.fontRef, sz, run.fontData, gapExtra);
+                parts.push(actualTextSpans && needsActualText(run, enc) ? wrapActualText(op, run.text) : op);
                 penX += run.widthPt + gapExtra * piece.gaps;
             } else {
                 penX = emitColorEmojiRun(parts, run, penX, y, sz, enc);
@@ -552,7 +612,8 @@ export function txtTagged(
     enc: EncodingContext,
     mcid: number,
 ): string {
-    return wrapSpan(txt(str, x, y, font, sz, enc), str, mcid);
+    // The span carries the whole string as /ActualText: no inner span needed.
+    return wrapSpan(txt(str, x, y, font, sz, enc, false), str, mcid);
 }
 
 /**
@@ -570,7 +631,7 @@ export function txtRTagged(
     mcid: number,
     bold: boolean = false,
 ): string {
-    return wrapSpan(txtR(str, rightX, y, font, sz, enc, bold), str, mcid);
+    return wrapSpan(txtR(str, rightX, y, font, sz, enc, bold, false), str, mcid);
 }
 
 /**
@@ -589,7 +650,7 @@ export function txtCTagged(
     mcid: number,
     bold: boolean = false,
 ): string {
-    return wrapSpan(txtC(str, leftX, y, font, sz, colW, enc, bold), str, mcid);
+    return wrapSpan(txtC(str, leftX, y, font, sz, colW, enc, bold, false), str, mcid);
 }
 
 /**

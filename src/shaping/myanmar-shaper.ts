@@ -51,6 +51,7 @@ export { MYANMAR_START, MYANMAR_END, containsMyanmar };
 const VIRAMA = MYANMAR_VIRAMA; // 0x1039
 /** Medial ra (U+103C) — renders to the LEFT of the base (pre-base). */
 const MEDIAL_RA = 0x103C;
+const E_VOWEL = 0x1031;
 
 /**
  * Myanmar character type classification.
@@ -175,8 +176,11 @@ export function buildMyanmarClusters(str: string): MyanmarCluster[] {
             }
         }
         // Consume asat directly after base/stack.
-        // Consume medials.
-        while (i < cps.length && myanmarCharType(cps[i]) === 8) {
+        // Consume medials — ya, wa, ha, and the medial ra (U+103C) wherever
+        // it sits among them: `က ြ ွ ေ` is one cluster, with the ra and the
+        // wa drawn around the same base (1.9.0; the ra used to end the
+        // medials and split `ွ` off into a cluster of its own).
+        while (i < cps.length && (myanmarCharType(cps[i]) === 8 || cps[i] === MEDIAL_RA)) {
             cluster.push(cps[i]);
             i++;
         }
@@ -270,9 +274,13 @@ export function shapeMyanmarText(str: string, fontData: FontData): ShapedGlyph[]
             if (myanmarCharType(codepoints[ci]) === 0) { baseGid = resolveGid(codepoints[ci]); break; }
         }
 
-        // Emit pre-base (left) glyphs first: medial ra and the e-vowel (U+1031).
-        for (let ci = 0; ci < codepoints.length; ci++) {
-            if (myanmarCharType(codepoints[ci]) === 4) emitGlyph(resolveGid(codepoints[ci]), [codepoints[ci]], false);
+        // Emit pre-base (left) glyphs first: the e-vowel (U+1031) leftmost,
+        // then the medial ra (U+103C) that wraps the base — HarfBuzz's
+        // VPre before PRE_C order (`ေ ြ က`), whatever order they were typed.
+        for (const pre of [E_VOWEL, MEDIAL_RA]) {
+            for (let ci = 0; ci < codepoints.length; ci++) {
+                if (codepoints[ci] === pre) emitGlyph(resolveGid(pre), [pre], false);
+            }
         }
 
         // Build base + virama-consonant + medials run for ligature lookup.

@@ -142,7 +142,9 @@ function parseSpotColor(input: PdfSpotColor | PdfInkMix): string {
 }
 
 /** Matches the canonical spot operand string: a colour-space name and 1+ tints. */
-const SPOT_OPERANDS_RE = /^\/(Spot_|DeviceN_)\S+(?: (?:\d+(?:\.\d+)?))+$/;
+// The name part is what `pdfNameEncode` can produce — letters, digits, `.`,
+// `_`, `-` and `#XX` escapes — so a delimiter can never ride into the stream.
+const SPOT_OPERANDS_RE = /^\/(Spot_|DeviceN_)[A-Za-z0-9._#-]+(?: (?:\d+(?:\.\d+)?))+$/;
 
 // ── Public API ───────────────────────────────────────────────────────
 

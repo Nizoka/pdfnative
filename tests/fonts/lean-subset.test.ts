@@ -9,6 +9,7 @@ import { describe, it, expect } from 'vitest';
 import * as notoSans from '../../fonts/noto-sans-data.js';
 import * as notoEmoji from '../../fonts/noto-emoji-data.js';
 import { subsetTTF } from '../../src/fonts/font-subsetter.js';
+import { subsetTag } from '../../src/fonts/font-embedder.js';
 import { getDecodedFontBytes } from '../../src/fonts/font-loader.js';
 import { buildDocumentPDFBytes } from '../../src/core/pdf-document.js';
 import { buildPDFBytes } from '../../src/core/pdf-builder.js';
@@ -160,5 +161,141 @@ describe('builders embed the lean subset', () => {
         const dir = directory(embeddedFont(buildPDFBytes(params, { creationDate: PINNED })));
         expect(dir.tags).not.toContain('gasp');
         expect(readCmap(dir.table('cmap')!).get('H'.codePointAt(0)!)).toBe(gidOf(sans, 'H'));
+    });
+});
+
+describe('subset font names carry the ISO 32000-1 §9.6.4 tag (C21)', () => {
+    /** `/BaseFont` and `/FontName` values of every font object, in object order. */
+    function namesOf(pdf: Uint8Array): { baseFonts: string[]; fontNames: string[] } {
+        const reader = openPdf(pdf);
+        const baseFonts: string[] = [], fontNames: string[] = [];
+        for (const num of [...reader.xref.entries.keys()].sort((a, b) => a - b)) {
+            let obj: unknown;
+            try { obj = reader.getObject(num); } catch { continue; }
+            if (!(obj instanceof Map)) continue;
+            const bf = obj.get('BaseFont') as { value?: string } | undefined;
+            const fn = obj.get('FontName') as { value?: string } | undefined;
+            if (bf?.value) baseFonts.push(bf.value);
+            if (fn?.value) fontNames.push(fn.value);
+        }
+        return { baseFonts, fontNames };
+    }
+    const docOf = (text: string): Uint8Array =>
+        buildDocumentPDFBytes({ title: 'Tag', blocks: [{ type: 'paragraph', text }], fontEntries: [latin] }, { creationDate: PINNED });
+
+    it('prefixes six uppercase letters and a plus sign to every subset name, on the Type0, the CIDFont and the descriptor', () => {
+        const { baseFonts, fontNames } = namesOf(docOf('Hello lean world'));
+        expect(baseFonts.length).toBeGreaterThanOrEqual(2);
+        for (const n of [...baseFonts, ...fontNames]) {
+            if (n.startsWith('Helvetica')) continue;
+            expect(n).toMatch(/^[A-Z]{6}\+NotoSans/);
+        }
+        expect(new Set(fontNames)).toEqual(new Set(baseFonts.filter(n => !n.startsWith('Helvetica'))));
+    });
+
+    it('is deterministic: the same glyph set gives the same tag, a different set a different one', () => {
+        const a = namesOf(docOf('Hello lean world')).fontNames[0];
+        const b = namesOf(docOf('Hello lean world')).fontNames[0];
+        const c = namesOf(docOf('Different glyphs here')).fontNames[0];
+        expect(a).toBe(b);
+        expect(c).not.toBe(a);
+        expect(subsetTag('NotoSans', new Set([1, 2, 3]))).toBe(subsetTag('NotoSans', new Set([3, 2, 1])));
+        expect(subsetTag('NotoSans', new Set([1, 2, 3]))).not.toBe(subsetTag('NotoSans', new Set([1, 2, 4])));
+        expect(subsetTag('NotoSans', new Set([1, 2, 3]))).toMatch(/^[A-Z]{6}$/);
+    });
+
+    it('under PDF/A the /F1 and /F2 aliases carry the primary font\'s tagged name', () => {
+        const { baseFonts } = namesOf(buildDocumentPDFBytes(
+            { title: 'Tag', blocks: [{ type: 'paragraph', text: 'Hello lean world' }], fontEntries: [latin] },
+            { tagged: true, creationDate: PINNED }));
+        const tagged = baseFonts.filter(n => /^[A-Z]{6}\+NotoSans/.test(n));
+        expect(tagged.length).toBe(baseFonts.length);
+        expect(new Set(tagged).size).toBe(1);
+    });
+
+    it('keeps the bare name under PDF/A-1, where a tagged subset would need the CIDSet stream ISO 19005-1 §6.3.5 asks for', () => {
+        const { baseFonts, fontNames } = namesOf(buildDocumentPDFBytes(
+            { title: 'Tag', blocks: [{ type: 'paragraph', text: 'Hello lean world' }], fontEntries: [latin] },
+            { tagged: 'pdfa1b', creationDate: PINNED }));
+        for (const n of [...baseFonts, ...fontNames]) expect(n).toMatch(/^NotoSans/);
+    });
+
+    it('tags the table builder\'s fonts and the unused-font stub alike', () => {
+        const params: PdfParams = {
+            title: 'T', infoItems: [], balanceText: '', countText: '1 row', footerText: 'f', headers: ['A'],
+            rows: [{ cells: ['Hello'], type: 'credit', pointed: false }], fontEntries: [latin, { fontData: emoji, fontRef: '/F4', lang: 'emoji' }],
+        };
+        const { fontNames } = namesOf(buildPDFBytes(params, { creationDate: PINNED }));
+        expect(fontNames).toHaveLength(2);
+        expect(fontNames[0]).toMatch(/^[A-Z]{6}\+NotoSans/);
+        expect(fontNames[1]).toMatch(/^[A-Z]{6}\+NotoEmoji/);
+    });
+});
+
+describe('a registered font with no used glyph (C18)', () => {
+    // Noto Emoji has no Latin letter: with `latin` first, every character of
+    // the text resolves to Noto Sans and the emoji entry is never reached.
+    const unused: FontEntry = { fontData: emoji, fontRef: '/F4', lang: 'emoji' };
+    const text = 'Hello lean world';
+
+    /** Every FontFile2 stream in object order, with the `/W` array length of its CIDFont. */
+    function embeddedFonts(pdf: Uint8Array): { program: Uint8Array; wEntries: number }[] {
+        const reader = openPdf(pdf);
+        const out: { program: Uint8Array; wEntries: number }[] = [];
+        let wEntries = -1;
+        for (const num of [...reader.xref.entries.keys()].sort((a, b) => a - b)) {
+            let obj: unknown;
+            try { obj = reader.getObject(num); } catch { continue; }
+            if (obj instanceof Map && obj.has('W')) {
+                const w = obj.get('W');
+                if (Array.isArray(w)) wEntries = w.length;
+            }
+            const o = obj as { type?: string; dict?: Map<string, unknown> };
+            if (o && o.type === 'stream' && o.dict?.has('Length1')) { out.push({ program: reader.decodeStream(obj as never), wEntries }); wEntries = -1; }
+        }
+        return out;
+    }
+
+    function numGlyphs(u8: Uint8Array): number {
+        const maxp = directory(u8).table('maxp')!;
+        return new DataView(maxp.buffer, maxp.byteOffset, maxp.byteLength).getUint16(4);
+    }
+
+    it('embeds a .notdef-only lean subset: glyph count kept, no cmap mapping, a few KB instead of the whole file', () => {
+        const pdf = buildDocumentPDFBytes({ title: 'Lean', blocks: [{ type: 'paragraph', text }], fontEntries: [latin, unused] }, { creationDate: PINNED });
+        const fonts = embeddedFonts(pdf);
+        expect(fonts).toHaveLength(2);
+        const stub = fonts[1].program;
+        const whole = getDecodedFontBytes(emoji);
+        expect(stub.length).toBeLessThan(64 * 1024);
+        expect(stub.length).toBeLessThan(whole.length / 10);
+        expect(numGlyphs(stub)).toBe(numGlyphs(whole));
+        const dir = directory(stub);
+        expect(readCmap(dir.table('cmap')!).size).toBe(0);
+        expect(dir.table('glyf')!.length).toBeLessThanOrEqual(1024);
+        expect(extractText(pdf)[0].text).toContain(text);
+    });
+
+    it('writes /W [] for the unused font and leaves the used font byte-identical to a build without it', () => {
+        const alone = buildDocumentPDFBytes({ title: 'Lean', blocks: [{ type: 'paragraph', text }], fontEntries: [latin] }, { creationDate: PINNED });
+        const paired = buildDocumentPDFBytes({ title: 'Lean', blocks: [{ type: 'paragraph', text }], fontEntries: [latin, unused] }, { creationDate: PINNED });
+        const a = embeddedFonts(alone), p = embeddedFonts(paired);
+        expect(Buffer.from(p[0].program).equals(Buffer.from(a[0].program))).toBe(true);
+        expect(p[0].wEntries).toBe(a[0].wEntries);
+        expect(p[0].wEntries).toBeGreaterThan(0);
+        expect(p[1].wEntries).toBe(0);
+        expect(paired.length).toBeLessThan(alone.length + 64 * 1024);
+    });
+
+    it('does the same in the table builder', () => {
+        const params: PdfParams = {
+            title: 'T', infoItems: [], balanceText: '', countText: '1 row', footerText: 'f', headers: ['A'],
+            rows: [{ cells: ['Hello'], type: 'credit', pointed: false }], fontEntries: [latin, unused],
+        };
+        const fonts = embeddedFonts(buildPDFBytes(params, { creationDate: PINNED }));
+        expect(fonts).toHaveLength(2);
+        expect(fonts[1].program.length).toBeLessThan(64 * 1024);
+        expect(fonts[1].wEntries).toBe(0);
+        expect(readCmap(directory(fonts[1].program).table('cmap')!).size).toBe(0);
     });
 });

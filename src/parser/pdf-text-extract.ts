@@ -466,6 +466,8 @@ interface MutableRun {
     y: number;
     fontSize: number;
     fontName: string;
+    /** Measured device-space advance of the run (the decoder's `/W` widths), when known. */
+    width?: number;
 }
 
 interface ExtractionSink {
@@ -545,7 +547,7 @@ function showString(raw: string, st: TextState, ctm: Mat, sink: ExtractionSink):
         throw new Error(`extractText output exceeded the ${sink.maxChars}-character maxTextLength limit — raise options.maxTextLength if this document is trusted`);
     }
     if (text.length > 0) {
-        sink.runs.push({ text, x: dx, y: dy, fontSize: deviceSize, fontName: st.fontName });
+        sink.runs.push({ text, x: dx, y: dy, fontSize: deviceSize, fontName: st.fontName, width: advance * Math.hypot(trm[0], trm[1]) });
     }
     st.tm = matMul([1, 0, 0, 1, advance, 0], st.tm);
 }
@@ -832,8 +834,14 @@ function assembleReadingOrder(runs: readonly MutableRun[]): string {
             if (prevEnd !== null && lineText.length > 0 && !lineText.endsWith(' ') && !run.text.startsWith(' ')) {
                 // Insert a space when there is a visible horizontal gap.
                 const gap = run.x - prevEnd.x;
-                const approxPrevWidth = prevEnd.text.length * prevEnd.fontSize * 0.5;
-                if (gap - approxPrevWidth > Math.max(run.fontSize, prevEnd.fontSize) * 0.25) {
+                // The run's measured advance when the decoder gave one (a wide
+                // Malayalam or Khmer letter is far more than half an em; the
+                // old estimate spaced such words letter by letter — 1.9.0),
+                // else half an em per character.
+                const prevWidth = prevEnd.width !== undefined && prevEnd.width > 0
+                    ? prevEnd.width
+                    : prevEnd.text.length * prevEnd.fontSize * 0.5;
+                if (gap - prevWidth > Math.max(run.fontSize, prevEnd.fontSize) * 0.25) {
                     lineText += ' ';
                 }
             }

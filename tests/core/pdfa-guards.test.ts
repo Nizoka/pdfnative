@@ -11,6 +11,8 @@ import { buildPDFBytes } from '../../src/core/pdf-builder.js';
 import * as notoSansData from '../../fonts/noto-sans-data.js';
 import * as notoTaiThamData from '../../fonts/noto-taitham-data.js';
 import * as notoOriyaData from '../../fonts/noto-oriya-data.js';
+import * as notoMalayalamData from '../../fonts/noto-malayalam-data.js';
+import * as notoDevanagariData from '../../fonts/noto-devanagari-data.js';
 import { extractText } from '../../src/parser/pdf-text-extract.js';
 import type { FontData, FontEntry, PdfDiagnostic, PdfParams } from '../../src/types/pdf-types.js';
 import type { DocumentParams } from '../../src/types/pdf-document-types.js';
@@ -248,9 +250,13 @@ describe('PDFA_GLYPH_WITHOUT_UNICODE (level U, #87)', () => {
         expect(d?.message).toContain('6.2.11.7.2');
     });
 
-    it('throws under strict', () => {
+    it('throws under strict — the root cause first (TEXT_GLYPH_NOT_COVERED names the character), then the level-U consequence', () => {
         expect(() => buildDocumentPDFBytes(uncovered, { tagged: 'pdfa2u', strict: true }))
-            .toThrow(/ToUnicode CMap cannot name/);
+            .toThrow(/U\+2603 "☃" has no glyph in \/F3 NotoSansTaiTham/);
+        const seen: PdfDiagnostic[] = [];
+        buildDocumentPDFBytes(uncovered, { tagged: 'pdfa2u', onDiagnostic: d => seen.push(d) });
+        expect(seen.map(d => d.code)).toEqual(['TEXT_GLYPH_NOT_COVERED', 'PDFA_GLYPH_WITHOUT_UNICODE']);
+        expect(seen[1].message).toMatch(/ToUnicode CMap cannot name/);
     });
 
     // 1.9.0 — the two parts of a split vowel sign each name their own code
@@ -268,6 +274,36 @@ describe('PDFA_GLYPH_WITHOUT_UNICODE (level U, #87)', () => {
         expect(() => buildDocumentPDFBytes(params, { tagged: 'pdfa2u', strict: true })).not.toThrow();
         const extracted = extractText(bytes)[0].text.normalize('NFC');
         for (const word of text.split(' ')) expect(extracted).toContain(word);
+    });
+
+    // 1.9.0 (C19): a legacy chillu (consonant + virama + ZWJ) is one glyph
+    // naming its three code points, so level U is satisfied and the text
+    // extracts as written.
+    it('stays silent for a legacy Malayalam chillu sequence and extracts it as written', () => {
+        const malayalam: FontEntry = { fontData: notoMalayalamData as unknown as FontData, fontRef: '/F3', lang: 'ml' };
+        // demo-language: ml (legacy and atomic chillu spellings — അവന്‍ അവൻ)
+        const text = 'അവന്‍ അവൻ';
+        const params: DocumentParams = { title: 'U', blocks: [{ type: 'paragraph', text }], fontEntries: [malayalam] };
+        const seen: PdfDiagnostic[] = [];
+        const bytes = buildDocumentPDFBytes(params, { tagged: 'pdfa2u', onDiagnostic: d => seen.push(d) });
+        expect(seen.map(d => d.code)).not.toContain('PDFA_GLYPH_WITHOUT_UNICODE');
+        expect(() => buildDocumentPDFBytes(params, { tagged: 'pdfa2u', strict: true })).not.toThrow();
+        expect(extractText(bytes)[0].text).toContain(text);
+    });
+
+    // 1.9.0: Noto Sans Devanagari draws ई as इ + a hook that is also its reph
+    // glyph; both pieces name U+0908 now, so level U holds and the word
+    // extracts as written through the run's /ActualText.
+    it('stays silent for Devanagari ई, drawn in two pieces, and extracts it as written', () => {
+        const hindi: FontEntry = { fontData: notoDevanagariData as unknown as FontData, fontRef: '/F3', lang: 'hi' };
+        // demo-language: hi (नई दिल्ली, इकाई)
+        const text = 'नई दिल्ली इकाई';
+        const params: DocumentParams = { title: 'U', blocks: [{ type: 'paragraph', text }], fontEntries: [hindi] };
+        const seen: PdfDiagnostic[] = [];
+        const bytes = buildDocumentPDFBytes(params, { tagged: 'pdfa2u', onDiagnostic: d => seen.push(d) });
+        expect(seen.map(d => d.code)).toEqual([]);
+        expect(extractText(bytes)[0].text).toContain(text);
+        expect(extractText(buildDocumentPDFBytes(params))[0].text).toContain('इकाई');
     });
 
     it('does not fire under pdfa2b, which has no Unicode requirement', () => {

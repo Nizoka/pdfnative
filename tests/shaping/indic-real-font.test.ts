@@ -23,7 +23,8 @@ import { shapeSinhalaText } from '../../src/shaping/sinhala-shaper.js';
 import { shapeGujaratiText } from '../../src/shaping/gujarati-shaper.js';
 import { shapeGurmukhiText } from '../../src/shaping/gurmukhi-shaper.js';
 import { shapeKannadaText } from '../../src/shaping/kannada-shaper.js';
-import { shapeMalayalamText } from '../../src/shaping/malayalam-shaper.js';
+import { shapeMalayalamText, MALAYALAM_CONFIG } from '../../src/shaping/malayalam-shaper.js';
+import { splitIndicSyllables } from '../../src/shaping/indic-engine.js';
 import { shapeOdiaText } from '../../src/shaping/odia-shaper.js';
 import { findMarkToBase } from '../../src/shaping/gpos-positioner.js';
 import * as devanagari from '../../fonts/noto-devanagari-data.js';
@@ -127,6 +128,34 @@ describe('Devanagari on Noto Sans Devanagari', () => {
         expect(shaped[2].gid).toBe(245);
     });
 
+    it('क्‍ — a ZWJ after the final virama requests the explicit half form (C19)', () => {
+        const shaped = shapeDevanagariText('क्‍', HI);
+        expectNoNotdef(shaped);
+        expect(shaped.map(g => g.gid)).toEqual([232]);                 // uni0915094D (half ka)
+        expect(shaped[0].cps).toEqual([0x0915, 0x094D]);
+        // Without the joiner the dead consonant keeps its visible virama.
+        expect(shapeDevanagariText('क्', HI).map(g => g.gid)).toEqual([56, 103]);
+    });
+
+    it('त्‍र ट्‍यि क़्‍ — the joiner rules inside a syllable follow HarfBuzz (C19)', () => {
+        // A ZWJ after the halant stops the base search: half ta, then ra is the base (not a rakar).
+        expect(shapeDevanagariText('त्‍र', HI).map(g => g.gid)).toEqual([242, 82]);
+        // A pre-base sign is not placed after a halant that a ZWJ follows: it goes to the front.
+        expect(shapeDevanagariText('ट्‍यि', HI).map(g => g.gid)).toEqual([543, 66, 103, 81]);
+        // A nukta between the consonant and the halant still allows the explicit half form.
+        expect(shapeDevanagariText('क़्‍', HI).map(g => g.gid)).toEqual([267]);
+        expect(shapeGujaratiText('ત્‍ર', GU).map(g => g.gid)).toEqual([148, 47]);
+    });
+
+    it('ई — a letter the font draws in two pieces names its code point on both, so level U and the span cover it', () => {
+        const shaped = shapeDevanagariText('नई', HI);
+        expectNoNotdef(shaped);
+        expect(shaped.map(g => g.gid)).toEqual([75, 7, 506]);         // na, i, the hook that is also the reph glyph
+        expect(shaped[1].cps).toEqual([0x0908]);
+        expect(shaped[2].cps).toEqual([0x0908]);
+        expect(shapeDevanagariText('ऐ', HI).map(g => g.cps)).toEqual([[0x0910], [0x0910]]);
+    });
+
     it('प्रदर्शन — the reph sits after श as a zero-advance mark (the report\'s "प्रदशन")', () => {
         const word = 'प्रदर्शन';
         const shaped = shapeDevanagariText(word, HI);
@@ -222,6 +251,15 @@ describe('Telugu on Noto Sans Telugu', () => {
         expect(shaped[1].isZeroAdvance).toBe(true);
         expect(shaped[4].cps).toEqual([0x0C4D, 0x0C36]);           // shapostscripttelu
         expect(shaped.some(g => g.cps?.length === 2 && g.cps[0] === 0x0C30 && g.cps[1] === 0x0C4D)).toBe(false); // no reph
+    });
+
+    it('క్కి క్రి క్కృ — a sign up to U+0C42 sits before the subjoined consonant and ligates with the base, as in కి (C22)', () => {
+        expect(shapeTeluguText('కి', TE).map(g => g.gid)).toEqual([183]);                 // ka + i ligature
+        expect(shapeTeluguText('క్కి', TE).map(g => g.gid)).toEqual([183, 917]);          // ka+i, kapostscripttelu
+        expect(shapeTeluguText('క్రి', TE).map(g => g.gid)).toEqual([183, 613]);
+        expect(shapeTeluguText('క్కె', TE).map(g => g.gid)).toEqual([263, 917]);
+        expect(shapeTeluguText('క్కృ', TE).map(g => g.gid)).toEqual([23, 917, 584]);      // ృ stays after the subscript
+        for (const word of ['క్కి', 'క్రి', 'క్కృ']) expectCpsCoverInput(shapeTeluguText(word, TE), word);
     });
 
     it('క్ష and పత్రం — conjunct and subjoined ra keep every code point', () => {
@@ -344,7 +382,20 @@ describe('Kannada on Noto Sans Kannada (1.9.0)', () => {
             expectNoNotdef(shaped);
             expectCpsCoverInput(shaped, word);
         }
-        expect(shapeKannadaText('ಸ್ತ್ರೀ', KN).map(g => g.gid)).toEqual([56, 355, 61, 77]); // saknda tarasubscriptknda ivowelsignknda lengthmarkknda
+        // HarfBuzz POS_BEFORE_SUB (1.9.0, C22): the ಿ part of ೀ sits right after
+        // the base, so `psts` ligates ಸ + ಿ before the subscript; the length
+        // mark stays after the subjoined consonants.
+        expect(shapeKannadaText('ಸ್ತ್ರೀ', KN).map(g => g.gid)).toEqual([282, 355, 77]); // sa+i ligature, tarasubscriptknda, lengthmarkknda
+    });
+
+    it('ಕ್ಕಿ ಪ್ರೀತಿ ಕ್ಕೆ — a sign before the subjoined consonant forms the font\'s consonant + sign ligature, as in ಕಿ (C22)', () => {
+        expect(shapeKannadaText('ಕಿ', KN).map(g => g.gid)).toEqual([252]);                  // kivowelknda
+        expect(shapeKannadaText('ಕ್ಕಿ', KN).map(g => g.gid)).toEqual([252, 104]);           // kivowelknda kasubscriptknda
+        expect(shapeKannadaText('ಪ್ರೀತಿ', KN).map(g => g.gid)).toEqual([270, 130, 77, 265]); // pa+i rasubscript lengthmark ta+i
+        expect(shapeKannadaText('ಕ್ಕೆ', KN).map(g => g.gid)).toEqual([286, 104]);
+        // ೃ is a right sign inside U+0CC3–U+0CD6: it stays after the subscript.
+        expect(shapeKannadaText('ಕ್ಕೃ', KN).map(g => g.gid)).toEqual([23, 104, 419]);
+        for (const word of ['ಕ್ಕಿ', 'ಪ್ರೀತಿ', 'ಕ್ಕೃ']) expectCpsCoverInput(shapeKannadaText(word, KN), word);
     });
 });
 
@@ -374,6 +425,31 @@ describe('Malayalam on Noto Sans Malayalam (1.9.0)', () => {
         const shaped = shapeMalayalamText('അവൻ', ML);
         expectCpsCoverInput(shaped, 'അവൻ');
         expect(shaped.map(g => g.gid)).toEqual([9, 55, 117]);        // amlym vamlym nachillumlym
+    });
+
+    // 1.9.0 (C19): the legacy spelling of a chillu — consonant + virama + ZWJ —
+    // keeps its ZWJ inside the syllable (HarfBuzz `halant_group`), so the
+    // font's `akhn` rule draws the same glyph as the atomic letter. The glyph
+    // names the three source code points: extraction returns what was written.
+    it('ന്‍ ല്‍ ര്‍ ള്‍ ണ്‍ — consonant + virama + ZWJ draws the chillu glyph of ൻ ൽ ർ ൾ ൺ and names the three code points', () => {
+        const legacy: [string, string][] = [['ന്‍', 'ൻ'], ['ല്‍', 'ൽ'], ['ര്‍', 'ർ'], ['ള്‍', 'ൾ'], ['ണ്‍', 'ൺ']];
+        for (const [sequence, atomic] of legacy) {
+            const shaped = shapeMalayalamText(sequence, ML);
+            expect(shaped.map(g => g.gid)).toEqual(shapeMalayalamText(atomic, ML).map(g => g.gid));
+            expect(shaped).toHaveLength(1);
+            expect(shaped[0].cps).toEqual([sequence.codePointAt(0), 0x0D4D, 0x200D]);
+        }
+        // Noto Sans Malayalam has no rule for the rare ൿ: the sequence stays a
+        // dead consonant with its chandrakkala, no .notdef, no dropped letter.
+        const ka = shapeMalayalamText('ക്‍', ML);
+        expectNoNotdef(ka);
+        expect(ka.flatMap(g => [...(g.cps ?? [])])).toEqual([0x0D15, 0x0D4D]);
+    });
+
+    it('അവന്‍ and അവൻ draw the same glyph sequence; the ZWJ stays in its syllable', () => {
+        expect(shapeMalayalamText('അവന്‍', ML).map(g => g.gid)).toEqual(shapeMalayalamText('അവൻ', ML).map(g => g.gid));
+        const syllables = splitIndicSyllables(cps('അവന്‍'), MALAYALAM_CONFIG);
+        expect(syllables.map(s => [s.start, s.end])).toEqual([[0, 1], [1, 2], [2, 5]]);
     });
 
     it('കോഴി and കൈ — ോ splits into േ before and ാ after the base; ൈ sits before ക', () => {

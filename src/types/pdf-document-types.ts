@@ -370,6 +370,15 @@ export interface ChartSeries {
     /** Optional colour override (hex, tuple, or PDF RGB). */
     readonly color?: PdfColor;
     /**
+     * One colour per value, for the bar charts (`bar`, `barH`, `stackedBar`,
+     * `stackedBarH`): the bar of each category takes its own colour — an ink
+     * coverage chart paints the cyan plate cyan and the spot plate in its
+     * spot colour. Must have exactly one entry per value. The legend swatch
+     * keeps the series colour; other chart types ignore it.
+     * @since 1.9.0
+     */
+    readonly colors?: readonly PdfColor[];
+    /**
      * X positions for `scatter` charts (and `line`/`area` on a non-category
      * x-axis): one entry per value. Numbers are used as-is (epoch
      * milliseconds when `xAxis.type` is `'time'`); strings are parsed as

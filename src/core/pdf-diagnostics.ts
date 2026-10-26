@@ -190,6 +190,53 @@ export function reportIneffectiveFeatures(
 }
 
 /**
+ * Diagnostic payload for characters no registered font covers (v1.9.0):
+ * `notdef` when a CID font drew glyph 0 for them, `winansi` when the base-14
+ * path wrote `?`. Up to eight code points are named, with the character.
+ */
+export function textGlyphNotCoveredDiagnostic(
+    fontLabel: string,
+    codepoints: readonly number[],
+    via: 'notdef' | 'winansi',
+): PdfDiagnostic {
+    // The character itself is shown only when it is printable: a control
+    // character (C0, DEL, C1) would put raw escape bytes into a log line.
+    const printable = (cp: number): boolean => cp >= 0x20 && !(cp >= 0x7F && cp <= 0x9F) && !(cp >= 0xD800 && cp <= 0xDFFF);
+    const name = (cp: number): string => `U+${cp.toString(16).toUpperCase().padStart(4, '0')}${printable(cp) ? ` "${String.fromCodePoint(cp)}"` : ''}`;
+    const shown = codepoints.slice(0, 8).map(name).join(', ') + (codepoints.length > 8 ? `, … (${codepoints.length} in all)` : '');
+    const one = codepoints.length === 1;
+    const message = via === 'notdef'
+        ? `text: ${shown} ${one ? 'has' : 'have'} no glyph in ${fontLabel} and ${one ? 'is' : 'are'} drawn as the .notdef box `
+            + `(ISO 32000-1 §9.7.6.3). Register a font that covers ${one ? 'it' : 'them'} — registerFont('math', …) with a `
+            + `fontEntry covers arrows and operators — or replace the character${one ? '' : 's'}.`
+        : `text: ${shown} ${one ? 'is' : 'are'} outside WinAnsiEncoding and written as "?" by the base-14 Helvetica `
+            + `(ISO 32000-1 Annex D). Register an embedded font through fontEntries — registerFont('latin', …) for Latin, `
+            + `'math' for symbols — or replace the character${one ? '' : 's'}.`;
+    return { code: 'TEXT_GLYPH_NOT_COVERED', severity: 'warning', message };
+}
+
+/**
+ * After a document's content is laid out, report every character that no
+ * registered font covered (v1.9.0): one diagnostic per font, the base-14
+ * WinAnsi path included. Shared by both builders.
+ */
+export function reportUncoveredGlyphs(
+    fontEntries: readonly FontEntry[],
+    enc: EncodingContext,
+    emit: (diagnostic: PdfDiagnostic) => void,
+): void {
+    const uncovered = enc.getUncoveredCodepoints?.();
+    if (!uncovered) return;
+    for (const [fontRef, cps] of uncovered) {
+        if (cps.size === 0) continue;
+        const sorted = [...cps].sort((a, b) => a - b);
+        const fe = fontEntries.find(f => f.fontRef === fontRef);
+        if (fe) emit(textGlyphNotCoveredDiagnostic(`${fontRef} ${fe.fontData.fontName}`, sorted, 'notdef'));
+        else emit(textGlyphNotCoveredDiagnostic('Helvetica', sorted, 'winansi'));
+    }
+}
+
+/**
  * Diagnostic payload for a level-U PDF/A claim over a font with used glyphs
  * the ToUnicode CMap cannot name (v1.9.0, #87).
  */

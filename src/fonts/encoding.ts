@@ -12,9 +12,11 @@ import { stripBidiControls } from '../shaping/bidi.js';
 
 /**
  * Encode a JavaScript string to WinAnsiEncoding (ISO-8859-1 superset).
- * Characters outside this encoding are replaced with '?'.
+ * Characters outside this encoding are replaced with '?'; `onMiss` receives
+ * the code point of each such character (the `TEXT_GLYPH_NOT_COVERED`
+ * diagnostic, 1.9.0). The output never depends on it.
  */
-export function toWinAnsi(str: string): string {
+export function toWinAnsi(str: string, onMiss?: (codePoint: number) => void): string {
     if (!str) return '';
     let r = '';
     for (let i = 0; i < str.length; i++) {
@@ -55,7 +57,11 @@ export function toWinAnsi(str: string): string {
         else if (c === 0x202F) r += ' ';
         else if (c === 0x09 || c === 0x0A || c === 0x0D) r += ' ';
         else if (c < 0x20) { /* skip control chars */ }
-        else r += '?';
+        else {
+            r += '?';
+            // A surrogate pair is two '?' but one character: report it once.
+            if (onMiss && (c < 0xDC00 || c > 0xDFFF)) onMiss(str.codePointAt(i) ?? c);
+        }
     }
     return r;
 }
@@ -68,8 +74,8 @@ export function toWinAnsi(str: string): string {
  * visible width per UAX #9 and would otherwise become '?' under
  * WinAnsi.
  */
-export function pdfString(str: string): string {
-    const s = toWinAnsi(stripBidiControls(str));
+export function pdfString(str: string, onMiss?: (codePoint: number) => void): string {
+    const s = toWinAnsi(stripBidiControls(str), onMiss);
     return '(' + s.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)') + ')';
 }
 

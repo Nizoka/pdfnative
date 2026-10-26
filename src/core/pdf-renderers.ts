@@ -545,7 +545,8 @@ export function renderParagraph(
             } else if (align === 'center') {
                 ops.push(txtCTagged(line, mgL + indent, y - sz, enc.f1, sz, availW, penc, mcid));
             } else if (justifyThis) {
-                ops.push(wrapSpan(txtJustified(line, lineX, y - sz, enc.f1, sz, penc, lineW), line, mcid));
+                // The structure span carries the line's text: no inner run span.
+                ops.push(wrapSpan(txtJustified(line, lineX, y - sz, enc.f1, sz, penc, lineW, false), line, mcid));
             } else {
                 ops.push(txtTagged(line, lineX, y - sz, enc.f1, sz, penc, mcid));
             }

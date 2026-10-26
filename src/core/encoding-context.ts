@@ -9,7 +9,7 @@
  * independent of shaping/.
  */
 
-import type { FontEntry, FontData, TextRun, EncodingContext, Base14Metrics, TextDirection } from '../types/pdf-types.js';
+import type { FontEntry, FontData, TextRun, EncodingContext, Base14Metrics, TextDirection, ShapedGlyph } from '../types/pdf-types.js';
 import { pdfString, helveticaWidth, stripSoftHyphens, toWinAnsi, narrowNoBreakSpaceCorrection } from '../fonts/encoding.js';
 import { exactBase14Width } from '../fonts/base14-metrics.js';
 import { preferredCodepoint } from '../fonts/unicode-preference.js';
@@ -67,6 +67,43 @@ function spaceCodepoint(fd: FontData, rawCp: number): number {
  *
  * @since 1.8.0
  */
+/**
+ * Unicode Default_Ignorable_Code_Point, the characters a font may lack
+ * without anything being wrong (joiners, variation selectors, bidi controls,
+ * the soft hyphen, tag characters): never reported as uncovered.
+ */
+function isDefaultIgnorable(cp: number): boolean {
+    return cp === 0x00AD || cp === 0x034F || cp === 0x061C || (cp >= 0x115F && cp <= 0x1160)
+        || (cp >= 0x17B4 && cp <= 0x17B5) || (cp >= 0x180B && cp <= 0x180F) || (cp >= 0x200B && cp <= 0x200F)
+        || (cp >= 0x202A && cp <= 0x202E) || (cp >= 0x2060 && cp <= 0x206F) || cp === 0x3164
+        || (cp >= 0xFE00 && cp <= 0xFE0F) || cp === 0xFEFF || cp === 0xFFA0 || (cp >= 0xFFF0 && cp <= 0xFFF8)
+        || (cp >= 0x1BCA0 && cp <= 0x1BCA3) || (cp >= 0x1D173 && cp <= 0x1D17A) || (cp >= 0xE0000 && cp <= 0xE0FFF);
+}
+
+/**
+ * The code points of a shaped run that were drawn as glyph 0: named by the
+ * shaper (`cps`) when it reports them, else the run's characters the font's
+ * cmap does not reach (default-ignorable characters and controls excepted).
+ * For the TEXT_GLYPH_NOT_COVERED diagnostic (1.9.0); called only when a
+ * glyph 0 was seen.
+ */
+function missingInShapedRun(text: string, fd: FontData, glyphs: readonly ShapedGlyph[]): number[] {
+    const out: number[] = [];
+    let unnamed = false;
+    for (const g of glyphs) {
+        if (g.gid !== 0) continue;
+        if (g.cps && g.cps.length > 0) out.push(g.cps[0]); else unnamed = true;
+    }
+    if (unnamed) {
+        for (const ch of text) {
+            const raw = ch.codePointAt(0) ?? 0;
+            const cp = spaceCodepoint(fd, raw);
+            if (raw >= 0x20 && raw !== 0x7F && !isDefaultIgnorable(raw) && !(fd.cmap[cp] > 0)) out.push(raw);
+        }
+    }
+    return out;
+}
+
 function shapedRun(
     text: string,
     shaper: ScriptShaper,
@@ -75,16 +112,20 @@ function shapedRun(
     sz: number,
     trackGid: (ref: string, gid: number) => void,
     onGlyph?: (ref: string, gid: number, cps: readonly number[]) => void,
+    onMissing?: (ref: string, cp: number) => void,
 ): TextRun {
     const shaped = shaper.shape(text, fd);
     let designW = 0;
+    let sawNotdef = false;
     for (const g of shaped) {
         trackGid(fontRef, g.gid);
+        if (g.gid === 0) sawNotdef = true;
         if (onGlyph && g.cps && g.cps.length > 0) onGlyph(fontRef, g.gid, g.cps);
         if (!g.isZeroAdvance) {
             designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
         }
     }
+    if (sawNotdef && onMissing) for (const cp of missingInShapedRun(text, fd, shaped)) onMissing(fontRef, cp);
     return {
         text, fontRef, fontData: fd, shaped, hexStr: null,
         widthPt: designW * sz / fd.metrics.unitsPerEm,
@@ -271,6 +312,7 @@ export function createEncodingContext(
     normalize: 'NFC' | 'NFD' | 'NFKC' | 'NFKD' | false = false,
     metrics: Base14Metrics = 'approximate',
     lang?: string,
+    actualText: boolean = true,
 ): EncodingContext {
     // Optional Unicode normalization applied at every text entry point. Off by
     // default so output stays byte-identical; opt in via `layout.normalize`.
@@ -287,16 +329,21 @@ export function createEncodingContext(
         : helveticaWidth;
 
     if (!fontEntries || fontEntries.length === 0) {
+        // Characters WinAnsi cannot encode are written as '?': remembered
+        // under /F1 for the TEXT_GLYPH_NOT_COVERED diagnostic (1.9.0).
+        const uncoveredLatin = new Map<string, Set<number>>([['/F1', new Set<number>()]]);
+        const missLatin = (cp: number): void => { uncoveredLatin.get('/F1')?.add(cp); };
         return {
             isUnicode: false,
             fontEntries: [],
             metrics,
             lang,
-            ps: normalize ? (s: string): string => pdfString(_norm(s)) : pdfString,
+            ps: (s: string): string => pdfString(normalize ? _norm(s) : s, missLatin),
             tw: normalize ? (s: string, sz: number): number => latinWidth(_norm(s), sz) : latinWidth,
             textRuns: () => [],
             f1: '/F1',
-            f2: '/F2'
+            f2: '/F2',
+            getUncoveredCodepoints: () => uncoveredLatin,
         };
     }
 
@@ -310,10 +357,22 @@ export function createEncodingContext(
     // cmap, per font — what names the glyph in ToUnicode before any
     // inference (1.9.0, #84). First evidence wins.
     const _encoded = new Map<string, Map<number, number>>();
+    // Code points a font had no glyph for — drawn as .notdef (glyph 0) — per
+    // font ref, read by the TEXT_GLYPH_NOT_COVERED diagnostic (1.9.0).
+    const _uncovered = new Map<string, Set<number>>();
+    function _trackMissing(fontRef: string, cp: number): void {
+        // A default-ignorable character or a control is never "uncovered":
+        // it is meant to be invisible whether or not the font has a glyph.
+        if (cp < 0x20 || cp === 0x7F || isDefaultIgnorable(cp)) return;
+        let s = _uncovered.get(fontRef);
+        if (!s) { s = new Set(); _uncovered.set(fontRef, s); }
+        s.add(cp);
+    }
     function _trackGid(fontRef: string, gid: number, cp?: number): void {
         const s = _usedGids.get(fontRef);
         if (s) s.add(gid);
         if (cp !== undefined) {
+            if (gid === 0) _trackMissing(fontRef, cp);
             let m = _encoded.get(fontRef);
             if (!m) { m = new Map(); _encoded.set(fontRef, m); }
             if (!m.has(gid)) m.set(gid, cp);
@@ -366,12 +425,14 @@ export function createEncodingContext(
         fontEntries,
         metrics,
         lang,
+        actualText,
         fontData: primary.fontData,
         f1: primary.fontRef,
         f2: primary.fontRef,
         getUsedGids() { return _usedGids; },
         getToUnicodeOverrides() { return _toUnicodeOverrides; },
         getToUnicodeEncoded() { return _encoded; },
+        getUncoveredCodepoints() { return _uncovered; },
         colorEmoji: _colorEmoji,
 
         textRuns(str: string, sz: number): TextRun[] {
@@ -466,6 +527,7 @@ export function createEncodingContext(
                                 const logical = reverseString(seg.text);
                                 const shaped = shapeArabicText(logical, fd);
                                 const visual = shaped.slice().reverse();
+                                for (const cp of missingInShapedRun(seg.text, fd, visual)) _trackMissing(fontRef, cp);
                                 let designW = 0;
                                 for (const g of visual) {
                                     _trackGid(fontRef, g.gid);
@@ -488,7 +550,7 @@ export function createEncodingContext(
                         // LTR run: standard path
                         const shaper = findShaper(fRun.text);
                         if (shaper) {
-                            result.push(shapedRun(fRun.text, shaper, fontRef, fd, sz, _trackGid, _onShapedGlyph));
+                            result.push(shapedRun(fRun.text, shaper, fontRef, fd, sz, _trackGid, _onShapedGlyph, _trackMissing));
                         } else {
                             result.push(...buildTextRunsWithFallback(fRun.text, fontRef, fd, sz, _trackGid, pdfA));
                         }
@@ -509,7 +571,7 @@ export function createEncodingContext(
             const fontRef = run.entry.fontRef;
 
             const shaper = findShaper(run.text);
-            if (shaper) return [shapedRun(run.text, shaper, fontRef, fd, sz, _trackGid, _onShapedGlyph)];
+            if (shaper) return [shapedRun(run.text, shaper, fontRef, fd, sz, _trackGid, _onShapedGlyph, _trackMissing)];
 
             return buildTextRunsWithFallback(run.text, fontRef, fd, sz, _trackGid, pdfA);
         });
@@ -537,6 +599,7 @@ export function createEncodingContext(
                         if (g.cps && g.cps.length > 0) _onShapedGlyph(primary.fontRef, g.gid, g.cps);
                         hex += g.gid.toString(16).padStart(4, '0');
                     }
+                    for (const cp of missingInShapedRun(runText, primary.fontData, shaped)) _trackMissing(primary.fontRef, cp);
                 } else {
                     for (let i = 0; i < runText.length; i++) {
                         const rawCp = runText.codePointAt(i) ?? 0;
@@ -569,6 +632,7 @@ export function createEncodingContext(
         // Shaped text path: the registry's first match. Every glyph reports
         // its code points so the ToUnicode CMap covers it.
         const shaped = shaper.shape(str, primary.fontData);
+        for (const cp of missingInShapedRun(str, primary.fontData, shaped)) _trackMissing(primary.fontRef, cp);
         let hex = '';
         for (const g of shaped) {
             _trackGid(primary.fontRef, g.gid);

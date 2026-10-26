@@ -440,6 +440,19 @@ export interface EncodingContext {
      */
     readonly getToUnicodeEncoded?: () => Map<string, Map<number, number>>;
     /**
+     * The code points that reached a font with no glyph for them, per font
+     * ref: drawn as `.notdef` (glyph 0) in a CID run, or written as `?` by
+     * the base-14 WinAnsi path (under the key `/F1`). Read after layout by
+     * the builders for the `TEXT_GLYPH_NOT_COVERED` diagnostic. (v1.9.0)
+     */
+    readonly getUncoveredCodepoints?: () => Map<string, Set<number>>;
+    /**
+     * `false` when `layout.actualText: false` asked for bare shaped runs: the
+     * text emitters then never wrap a reordered run in an untagged
+     * `/Span /ActualText`. Absent or `true` otherwise. (v1.9.0)
+     */
+    readonly actualText?: boolean;
+    /**
      * Derive a context for one paragraph: its bidirectional levels are resolved
      * once over the whole logical text (UAX #9 P1–I2) and every line drawn
      * through the derived context is reordered from them (L1–L4), so a
@@ -763,7 +776,15 @@ export type PdfDiagnosticCode =
      * substituted (Noto Sans's default figures are already lining and
      * tabular, so `lnum` and `tnum` have nothing to do). @since 1.8.0
      */
-    | 'TYPOGRAPHY_FEATURE_INEFFECTIVE';
+    | 'TYPOGRAPHY_FEATURE_INEFFECTIVE'
+    /**
+     * A character no registered font covers: drawn as the `.notdef` box
+     * (glyph 0) of the CID font it was routed to, or written as `?` by the
+     * base-14 WinAnsi path. The bytes are what they always were — the
+     * diagnostic names the code points and the font so the author registers
+     * a covering font or changes the text. @since 1.9.0
+     */
+    | 'TEXT_GLYPH_NOT_COVERED';
 
 /** A single conformance diagnostic surfaced by the builders. */
 export interface PdfDiagnostic {
@@ -1218,6 +1239,18 @@ export interface PdfLayoutOptions {
      * @since 1.3.0
      */
     readonly normalize?: 'NFC' | 'NFD' | 'NFKC' | 'NFKD' | false;
+    /**
+     * Untagged `/Span /ActualText` around a shaped run whose glyph order
+     * differs from the text it was shaped from — a pre-base vowel sign drawn
+     * before its consonant, a reph, a split vowel sign, Thai and Lao sara am —
+     * so `extractText()` and every reader return the source string in logical
+     * order (what Chrome and Skia emit). Right-to-left runs are left alone.
+     * Default `true`; `false` restores the bare glyph runs. Tagged output is
+     * unaffected: its structure spans already carry the text.
+     *
+     * @since 1.9.0
+     */
+    readonly actualText?: boolean;
     /**
      * Base direction of the document's paragraphs (UAX #9).
      *
