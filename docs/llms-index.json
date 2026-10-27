@@ -7,7 +7,7 @@
       "description": "Documentation index (llmstxt.org convention).",
       "bytes": 26487,
       "approxTokens": 6622,
-      "sha256": "0bddabfd5405e0dbf78946b9f50754ffb82f4fcb52d1aafbd36ed3b6755e9916"
+      "sha256": "b2458338908dff27cc5b208d9c44ab79232b8cb0a13c0041ea8adfe5fb6ee9c9"
     },
     {
       "url": "https://pdfnative.dev/agent-brief.md",
@@ -19,9 +19,9 @@
     {
       "url": "https://pdfnative.dev/llms-full.txt",
       "description": "Full corpus: index + README + every guide, one request.",
-      "bytes": 759459,
-      "approxTokens": 189865,
-      "sha256": "001834377e1d83a1759866035e4562ad1f1691bb3acd905a6adad1e71450fd0a"
+      "bytes": 760292,
+      "approxTokens": 190073,
+      "sha256": "ffbc9e57cdf48499dd444e6716b2826ac59f916f32593bf0b2d3ac656b619e19"
     },
     {
       "url": "https://pdfnative.dev/llms-recipes.txt",
@@ -63,7 +63,7 @@
       "description": "Complete feature and API reference (also embedded in llms-full.txt).",
       "bytes": 130074,
       "approxTokens": 32519,
-      "sha256": "316af979a5f83abe66156f5277a7b1dfb518c808073aa93532fa38321f3fa97e"
+      "sha256": "870dbacc55da16115bac0ff55f955095c21d7c185a58008db3b5089f5dde50f2"
     }
   ],
   "guides": [
@@ -554,9 +554,9 @@
         "samples",
         "see-also"
       ],
-      "bytes": 9307,
-      "approxTokens": 2327,
-      "sha256": "e898e6a4524e7243718d74c06cff27e4c5e24b052b1d86fd17866c68c204682c"
+      "bytes": 9771,
+      "approxTokens": 2443,
+      "sha256": "650e13889a9fcf4c4d7ad9c4446cb313a2fc74b65c4628790c2e6c017a4d8364"
     },
     {
       "title": "Self-verifying generation",
@@ -658,9 +658,9 @@
         "samples",
         "see-also"
       ],
-      "bytes": 9267,
-      "approxTokens": 2317,
-      "sha256": "1f8d4d62fe698ac219d6f63a896d2affc2d7cb6902c31ef36417662247520f60"
+      "bytes": 9636,
+      "approxTokens": 2409,
+      "sha256": "c947251437e1cb36de0b3cb9edb4777e179d924c234474c6da4fd137a83e6014"
     },
     {
       "title": "Troubleshooting",

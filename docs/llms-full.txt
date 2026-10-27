@@ -69,7 +69,7 @@ _Verified on 2026-10-24 against the source tree by `npm run verify:docs`; the ca
 
 - [src/](https://github.com/Nizoka/pdfnative/tree/main/src): Library source (core, crypto, fonts, parser, shaping, types, worker).
 - [scripts/generators/](https://github.com/Nizoka/pdfnative/tree/main/scripts/generators): 50 sample generators producing 311 reference PDFs.
-- [tests/](https://github.com/Nizoka/pdfnative/tree/main/tests): 4289+ tests across 177 files. Coverage thresholds 88 / 80 / 85 / 90 % (statements / branches / functions / lines) enforced by CI; 91.5 % statements at v1.8.0.
+- [tests/](https://github.com/Nizoka/pdfnative/tree/main/tests): 4306+ tests across 177 files. Coverage thresholds 88 / 80 / 85 / 90 % (statements / branches / functions / lines) enforced by CI; 91.5 % statements at v1.8.0.
 
 ## Playgrounds (zero-install, the engine runs in the browser from a CDN)
 
@@ -186,7 +186,7 @@ Detailed docs: [CLI guide](docs/guides/cli.md) · [MCP guide](docs/guides/mcp.md
 - **FlateDecode compression** — zlib stream compression (50–90% size reduction), zero-dependency, platform-native
 - **Web Worker support** — off-main-thread generation for large datasets
 - **Tree-shakeable** — ESM + CJS dual build with TypeScript declarations
-- **Heavily tested** — 4289+ tests across 177 files, fuzz suite, dual-mode visual-regression suite, performance benchmarks; 91.5 % statement coverage measured at the v1.8.0 release, with CI enforcing ≥88% statements / 80% branches / 85% functions / 90% lines (vitest.config.ts)
+- **Heavily tested** — 4306+ tests across 177 files, fuzz suite, dual-mode visual-regression suite, performance benchmarks; 91.5 % statement coverage measured at the v1.8.0 release, with CI enforcing ≥88% statements / 80% branches / 85% functions / 90% lines (vitest.config.ts)
 - **Zero breaking changes, proven** (v1.9.0) — the previous release's test suite is replayed against the current sources on every pull request (`compat-previous`), its API and error registries held by `tests/tools/api-compat.test.ts`; required checks on Linux (Node 22 and 24), Windows and macOS; the workflows linted (zizmor, actionlint), the built package smoke-tested on Deno, Bun and Chromium, the parser surface fuzzed by ClusterFuzzLite — see [SECURITY.md](SECURITY.md#compatibility-promise)
 - **NPM provenance** — SLSA Build L2: a guard → build → publish → attest release pipeline publishes through npm Trusted Publishing (OIDC) and attests the bytes the registry serves, with CycloneDX and SPDX SBOMs and a Sigstore bundle on the GitHub release (v1.9.0)
 - **On-device generation** — runs in Node, browsers, Workers, Deno, Bun. No SaaS round-trip; documents never leave the calling process unless your application explicitly sends them
@@ -1475,7 +1475,7 @@ src/
 fonts/                    # Pre-built font data modules (32 scripts)
 tools/                    # CLI: build-font-data.cjs (TTF → JS module)
 scripts/                  # Modular sample PDF generation (50 generators, 311 PDFs)
-tests/                    # 4289+ tests (177 files: unit + integration + fuzz + parser + docs)
+tests/                    # 4306+ tests (177 files: unit + integration + fuzz + parser + docs)
 bench/                    # Performance benchmarks (vitest bench)
 ```
 
@@ -1487,7 +1487,7 @@ cd pdfnative
 npm install
 
 npm run build            # tsup → dist/ (ESM + CJS + .d.ts)
-npm run test             # vitest run (4289+ tests)
+npm run test             # vitest run (4306+ tests)
 npm run test:coverage    # vitest with v8 coverage (91.5 % statements at the v1.8.0 release; CI gates: 88/80/85/90)
 npm run test:generate       # Generate 311 sample PDFs → test-output/ (dates are written in UTC, so the bytes are host-independent — see §Reproducible builds)
 npm run lint                # ESLint 9 + typescript-eslint strict
@@ -1505,7 +1505,7 @@ npm run verify:diagrams     # Documentation diagrams render without overflow, ov
 
 | Metric | Value |
 |--------|-------|
-| Tests | 4289+ (177 files) |
+| Tests | 4306+ (177 files) |
 | Statement coverage | 91.5 % (measured at the v1.8.0 release; CI enforces ≥88%, vitest.config.ts) |
 | Branch coverage | 82.71% (measured at the v1.8.0 release; CI enforces ≥80%) |
 | Function coverage | 96.87% (measured at the v1.8.0 release; CI enforces ≥85%; lines gate: ≥90%) |
@@ -9090,10 +9090,11 @@ Headings, list items and table cells reorder their text with the same resolver; 
 
 ## Text extraction of right-to-left output
 
-`extractText()` returns text in **geometric** order — runs sorted by their position on the page, left to right. For a right-to-left line that is the visual order, so a logical sentence comes back reversed, as it does from any PDF reader's copy-and-paste. Two things make the text usable all the same:
+`extractText()` returns text in **geometric** order — runs sorted by their position on the page, left to right. A PDF stores a right-to-left line in visual order (the glyphs as drawn, left to right), so what keeps the words readable is three things:
 
-- The `/ToUnicode` CMap maps every glyph the Arabic shaper produced — positional forms, the lam-alef ligatures — back to its source letters (v1.9.0, every shaper), so the letters are right even where the order is visual.
-- A tagged document (`tagged: true` or any PDF/A level) carries the paragraph's logical text as `/ActualText`, and `extractText()` returns that text in logical order.
+- The `/ToUnicode` CMap maps every glyph the Arabic shaper produced — positional forms, the lam-alef ligatures — back to its source letters (v1.9.0, every shaper), so the letters are right whatever the order.
+- Every right-to-left run carries its **logical** text as an untagged `/Span /ActualText` (v1.9.0, what Skia and Chrome write for reversed clusters), so an Arabic or Hebrew line comes back as typed from `extractText()`, Acrobat Reader and Chrome — `السلام عليكم`, never `ةيبرع ةلماعم`. A line that mixes directions returns its runs in geometric order, each run logical; `layout.actualText: false` drops the spans and restores the bare visual runs.
+- A tagged document (`tagged: true` or any PDF/A level) carries each line's or cell's whole logical text as its structure span's `/ActualText`, and `extractText()` returns that text in logical order, mixed lines included.
 
 See the [text-extraction guide](text-extraction.html) for the rules.
 
@@ -10463,8 +10464,12 @@ By design (documented, not bugs):
   carries its text as `/Span /ActualText` even in untagged output (opt out
   with `layout.actualText: false`), which is what Chrome and Skia write,
   so extraction of an untagged Hindi, Tamil or Khmer document returns the
-  words as typed rather than in drawing order. Right-to-left runs are left
-  to the reader's bidi reversal. Every such span wraps a single text
+  words as typed rather than in drawing order. Every right-to-left run
+  carries its logical text the same way (what Skia writes for every
+  reversed cluster), so an untagged Arabic or Hebrew line comes back as
+  typed from `extractText()`, Acrobat Reader and Chrome alike; a line
+  mixing directions returns its runs in geometric order, each one
+  logical. Every such span wraps a single text
   object: since v1.9.0 a line or cell is one `BT … ET` and a shaped run one
   `TJ` array, because Acrobat applies `/ActualText` once per text object
   — a cell drawn as one text object per glyph pasted its text once per
@@ -10472,10 +10477,11 @@ By design (documented, not bugs):
   which apply the span once, never showed it. Under `tagged: 'pdfa2u'`
   the `PDFA_GLYPH_WITHOUT_UNICODE` diagnostic names any glyph that still
   has no mapping (a character the font does not cover) — see the
-  [PDF/A guide](pdfa.html). What remains geometric is the **order**: runs
-  are sorted by position, so a right-to-left line comes back in visual
-  order unless the document is tagged — see the
-  [right-to-left guide](rtl.html).
+  [PDF/A guide](pdfa.html). What remains geometric is the **order of the
+  runs**: they are sorted by position, so a line that mixes a Latin
+  island with Arabic comes back island and runs in visual order, each
+  run logical, and a tagged document returns the whole line as its
+  structure span wrote it — see the [right-to-left guide](rtl.html).
 
 ## Samples
 

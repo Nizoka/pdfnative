@@ -14,11 +14,11 @@ paths:
 - Truncation: calculate cumulative width, break at column max
 
 ## CIDFont Type2 / Identity-H
-- Encoding: Identity-H CMap — glyph IDs map 1:1 to character codes
-- String format: `<hex GID pairs>` — each glyph is 4 hex digits
-- `/W` array: `[gid [width]]` format for per-glyph widths
+- Encoding: Identity-H CMap — a character code is a CID, and since v1.9.0 (C28) a font's CIDs are the **document's**, allotted in order of first use by `EncodingContext._trackGid()` (CID 0 = `.notdef`; `getCidMaps()` returns `cidToGid` per font ref); the embedded subset is renumbered so glyph i is CID i and `/CIDToGIDMap /Identity` stays. `TextRun.hexStr` / `tjStr` hold CIDs, `TextRun.cids` the codes of a shaped run's glyphs (`ShapedGlyph.gid` keeps the font's id for widths and anchors); the feature and kerning wrappers (`fonts/font-features.ts`, `fonts/font-kerning.ts`) and the colour-emoji emitter map codes back to glyph ids through the context's resolver — never look a code up in the font module directly
+- String format: `<hex CID pairs>` — each glyph is 4 hex digits
+- `/W` array: `buildCidWidthArray(widths, cids, usedGids)` — one contiguous `c [w w …]` group from CID 1, broken only by a glyph without a width entry (`/DW` covers it, as the layout measured it); CID 0 listed only when `.notdef` was drawn
 - `/DW` default width: use font's `defaultWidth` for unlisted glyphs
-- ToUnicode CMap: required for text extraction — maps GIDs back to Unicode
+- ToUnicode CMap: required for text extraction — `buildToUnicodeCMap(cmap, usedGids, overrides, encoded, cids)` keys every entry by CID
 
 ## TTF Subsetting Rules
 - Always preserve GID 0 (`.notdef`) — required by PDF/A and most viewers
@@ -28,7 +28,7 @@ paths:
 - `loca` format (short/long) must match `head.indexToLocFormat`
 - Compound glyphs: recursively include component GIDs with iteration limit to prevent infinite loops
 - Buffer bounds checking: all DataView reads validated against buffer length to prevent out-of-range errors
-- The lean PDF embed (v1.9.0): the two CIDFontType2 sites (`pdf-document.ts`, `pdf-builder.ts`) call `subsetTTF(ttf, gids, { lean: { cmap } })` — the viewer selects glyphs through `/CIDToGIDMap /Identity` and never reads the font's `cmap`, so the embed carries a `cmap` rebuilt over the kept glyphs (format 4, plus format 12 beyond the BMP), a format-3 `post` and no `gasp`; outlines, metrics, `name` and hinting are byte-identical to the plain subset. Never for a simple TrueType font (`pdf-form-font.ts`, WinAnsi: the viewer reads its `cmap`), never for the emoji font, never for the derived Latin source fonts. `tests/fonts/lean-subset.test.ts` is the contract. A registered font no character reaches (an empty used-glyph set) embeds the `.notdef`-only lean subset with `/W []` — never the whole program — while keeping its five objects, since the page resources name it (C18, same test file). Every subset's `/BaseFont` and `/FontName` carry the six-letter tag of ISO 32000-1 §9.6.4 from `subsetTag(fontName, usedGids)` in `font-embedder.ts` — deterministic (FNV-1a over the name and the sorted gids), the same tag on the Type0, the CIDFont and the descriptor, and on the `/F1`/`/F2` aliases under PDF/A-2 and PDF/X; never under PDF/A-1, where ISO 19005-1 §6.3.5 would then demand a `/CIDSet` stream (C21)
+- The lean PDF embed (v1.9.0): the two CIDFontType2 sites (`pdf-document.ts`, `pdf-builder.ts`) call `subsetTTF(ttf, gids, { lean: { cmap, cids } })` — the viewer selects glyphs through `/CIDToGIDMap /Identity` and never reads the font's `cmap`, so the embed carries a `cmap` rebuilt over the kept glyphs (format 4, plus format 12 beyond the BMP), a format-3 `post` and no `gasp`; with `cids` (C28) the glyphs are renumbered in CID order — `cids` first, then the components the composite closure adds in ascending source order, every composite's references rewritten (`renumberComponents`) — and `glyf`, `loca`, `hmtx` (the source's trailing-advance rule unfolded), `hhea.numberOfHMetrics` and `maxp.numGlyphs` cover the kept glyphs only, each outline byte-identical under its new id; without `cids` the ids are retained and outlines, metrics, `name` and hinting are byte-identical to the plain subset. Never for a simple TrueType font (`pdf-form-font.ts`, WinAnsi: the viewer reads its `cmap`), never for the emoji font, never for the derived Latin source fonts. `tests/fonts/lean-subset.test.ts` is the contract. A registered font no character reaches (an empty used-glyph set) embeds the `.notdef`-only lean subset with `/W []` — never the whole program — while keeping its five objects, since the page resources name it (C18, same test file). Every subset's `/BaseFont` and `/FontName` carry the six-letter tag of ISO 32000-1 §9.6.4 from `subsetTag(fontName, usedGids)` in `font-embedder.ts` — deterministic (FNV-1a over the name and the sorted gids), the same tag on the Type0, the CIDFont and the descriptor, and on the `/F1`/`/F2` aliases under PDF/A-2 and PDF/X; never under PDF/A-1, where ISO 19005-1 §6.3.5 would then demand a `/CIDSet` stream (C21)
 
 ## Font Data Modules
 - Lazy-loaded via `registerFont()` / `loadFontData()` pattern
@@ -45,5 +45,5 @@ paths:
 ## Common Mistakes
 - Missing `.notdef` in subset → PDF viewers may crash
 - Wrong `numTables` after subsetting → "invalid font" errors
-- Mismatched `/W` array GIDs and actual subset GIDs
+- Mismatched `/W` array CIDs and the subset's glyph order (a code written from a glyph id instead of `_trackGid()`'s CID draws the wrong glyph)
 - Forgetting to update `maxp.numGlyphs` after subsetting

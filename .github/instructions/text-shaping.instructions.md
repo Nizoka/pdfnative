@@ -93,6 +93,8 @@ applyTo: "src/shaping/**"
 - RTL Arabic runs: `splitArabicNonArabic()` segments into Arabic (shaped) and non-Arabic (Helvetica fallback) sub-runs
 - RTL Arabic shaping: `reverseString()` back to logical order → `shapeArabicText()` → `.slice().reverse()` for visual output
 - RTL Hebrew runs: text already reversed by BiDi → encode character-by-character (no positional shaping)
+- Every `TextRun` cut from an odd-level bidi run carries `bidi: { run, logical }` — the run's index on the line and its logical text (`reverseAndMirror()` of the visual text, an involution) — so `pdf-text.ts` wraps the runs of one bidi run in a single untagged `/Span /ActualText` (v1.9.0, C27); the visual `text` of the run stays what it was
+- Glyph codes are the document's CIDs (v1.9.0, C28): `_trackGid()` returns the CID a glyph takes on first use, `hexStr` is built from it, a shaped run carries `cids` parallel to `shaped`; `ShapedGlyph.gid` stays the font's id — see font-engineering instructions §CIDFont
 - LTR runs within mixed text: standard encoding path (no BiDi processing)
 - Helvetica continuation bias: `buildTextRunsWithFallback()` keeps WinAnsi-encodable characters (spaces, punctuation) in Helvetica mode when already in Helvetica, preventing CIDFont space-switching between Latin words
 - Helvetica width metrics: `helveticaWidth()` (the bucketed estimate of the pure base-14 path under `metrics: 'approximate'`) handles Unicode codepoints directly — em-dash (U+2014→1000), en-dash (U+2013→556), ellipsis (U+2026→1000), curly quotes, Euro sign; a Helvetica fallback run inside Unicode mode never uses it (AFM advances since 1.9.0, C17)

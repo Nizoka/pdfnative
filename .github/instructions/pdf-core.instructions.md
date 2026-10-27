@@ -74,6 +74,7 @@ applyTo: "src/core/**"
 - `/ActualText` carries the original Unicode string for shaped/repositioned glyphs
 - UTF-16BE encoding with `FEFF` BOM for /ActualText values
 - A span holds at most one text object (C25): the tagged structure span wraps the line's `BT … ET`, the untagged C20 span sits inside it around the run's `TJ` — a reader that applies the text once per text object (Acrobat) then pastes it once; `tests/core/actual-text-untagged.test.ts` holds every span to that
+- Every untagged right-to-left run carries its logical text as a `/Span /ActualText` inside the line's text object (v1.9.0, C27): `runsOf()` sets `TextRun.bidi` (`{ run, logical }`, `logical = reverseAndMirror(visual)`) on every run cut from an odd-level bidi run, and `txt()` / `justifiedLine` open the span at the first run of an index and close it after the last (a colour-emoji run closes it early and it is not reopened); a run inside such a span never gets a C20 span of its own; `layout.actualText: false` switches both off; `ps()` (watermark, form labels) carries no span — what Skia writes for reversed clusters, and what makes an untagged Arabic line paste as typed in Acrobat Reader
 - MCID allocation: sequential per page via `createMCIDAllocator()`
 
 ## PDF/A Compliance (ISO 19005-1 / ISO 19005-2)
@@ -126,6 +127,7 @@ applyTo: "src/core/**"
 - When RTL detected: `resolveBidiRuns()` (or the paragraph's levels) produces visual-order runs with embedding levels; `layout.direction` / `ParagraphBlock.direction` set the base direction and the default alignment
 - RTL Arabic runs: un-reverse to logical order → `shapeArabicText()` → reverse shaped glyphs for visual order
 - RTL Hebrew runs: already reversed by BiDi — encode directly (no positional shaping needed)
+- Every run of an odd-level bidi run carries `TextRun.bidi` (its index and logical text) and the emitters wrap them in one untagged `/ActualText` span (C27, see Marked Content Operators)
 - LTR runs: standard encoding path (no BiDi processing)
 - Arabic shaping (`shapeArabicText()`) returns glyphs in logical order — must reverse for RTL visual rendering
 - Hebrew text detected by `containsHebrew()` — uses RTL ordering without shaping

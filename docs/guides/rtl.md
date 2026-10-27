@@ -66,10 +66,11 @@ Headings, list items and table cells reorder their text with the same resolver; 
 
 ## Text extraction of right-to-left output
 
-`extractText()` returns text in **geometric** order — runs sorted by their position on the page, left to right. For a right-to-left line that is the visual order, so a logical sentence comes back reversed, as it does from any PDF reader's copy-and-paste. Two things make the text usable all the same:
+`extractText()` returns text in **geometric** order — runs sorted by their position on the page, left to right. A PDF stores a right-to-left line in visual order (the glyphs as drawn, left to right), so what keeps the words readable is three things:
 
-- The `/ToUnicode` CMap maps every glyph the Arabic shaper produced — positional forms, the lam-alef ligatures — back to its source letters (v1.9.0, every shaper), so the letters are right even where the order is visual.
-- A tagged document (`tagged: true` or any PDF/A level) carries the paragraph's logical text as `/ActualText`, and `extractText()` returns that text in logical order.
+- The `/ToUnicode` CMap maps every glyph the Arabic shaper produced — positional forms, the lam-alef ligatures — back to its source letters (v1.9.0, every shaper), so the letters are right whatever the order.
+- Every right-to-left run carries its **logical** text as an untagged `/Span /ActualText` (v1.9.0, what Skia and Chrome write for reversed clusters), so an Arabic or Hebrew line comes back as typed from `extractText()`, Acrobat Reader and Chrome — `السلام عليكم`, never `ةيبرع ةلماعم`. A line that mixes directions returns its runs in geometric order, each run logical; `layout.actualText: false` drops the spans and restores the bare visual runs.
+- A tagged document (`tagged: true` or any PDF/A level) carries each line's or cell's whole logical text as its structure span's `/ActualText`, and `extractText()` returns that text in logical order, mixed lines included.
 
 See the [text-extraction guide](text-extraction.html) for the rules.
 

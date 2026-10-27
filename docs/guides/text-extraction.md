@@ -149,8 +149,12 @@ By design (documented, not bugs):
   carries its text as `/Span /ActualText` even in untagged output (opt out
   with `layout.actualText: false`), which is what Chrome and Skia write,
   so extraction of an untagged Hindi, Tamil or Khmer document returns the
-  words as typed rather than in drawing order. Right-to-left runs are left
-  to the reader's bidi reversal. Every such span wraps a single text
+  words as typed rather than in drawing order. Every right-to-left run
+  carries its logical text the same way (what Skia writes for every
+  reversed cluster), so an untagged Arabic or Hebrew line comes back as
+  typed from `extractText()`, Acrobat Reader and Chrome alike; a line
+  mixing directions returns its runs in geometric order, each one
+  logical. Every such span wraps a single text
   object: since v1.9.0 a line or cell is one `BT … ET` and a shaped run one
   `TJ` array, because Acrobat applies `/ActualText` once per text object
   — a cell drawn as one text object per glyph pasted its text once per
@@ -158,10 +162,11 @@ By design (documented, not bugs):
   which apply the span once, never showed it. Under `tagged: 'pdfa2u'`
   the `PDFA_GLYPH_WITHOUT_UNICODE` diagnostic names any glyph that still
   has no mapping (a character the font does not cover) — see the
-  [PDF/A guide](pdfa.html). What remains geometric is the **order**: runs
-  are sorted by position, so a right-to-left line comes back in visual
-  order unless the document is tagged — see the
-  [right-to-left guide](rtl.html).
+  [PDF/A guide](pdfa.html). What remains geometric is the **order of the
+  runs**: they are sorted by position, so a line that mixes a Latin
+  island with Arabic comes back island and runs in visual order, each
+  run logical, and a tagged document returns the whole line as its
+  structure span wrote it — see the [right-to-left guide](rtl.html).
 
 ## Samples
 
