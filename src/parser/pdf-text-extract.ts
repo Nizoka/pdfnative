@@ -759,12 +759,21 @@ function interpretContent(
                                 throw new Error(`extractText output exceeded the ${sink.maxChars}-character maxTextLength limit — raise options.maxTextLength if this document is trusted`);
                             }
                             if (entry.actualText.length > 0) {
+                                // The span's text stands at the first shown run and
+                                // spans the width the glyphs took, so the word-gap
+                                // rule after it measures real advances rather than
+                                // half an em per character of a text it never drew.
+                                const last = shown[shown.length - 1];
+                                const width = first !== undefined && last !== undefined && last.width !== undefined
+                                    ? last.x + last.width - first.x
+                                    : undefined;
                                 sink.runs.push({
                                     text: entry.actualText,
                                     x: first?.x ?? dx,
                                     y: first?.y ?? dy,
                                     fontSize: first?.fontSize ?? st.size * Math.hypot(trm[2], trm[3]),
                                     fontName: first?.fontName ?? st.fontName,
+                                    ...(width !== undefined && width > 0 ? { width } : {}),
                                 });
                             }
                         }

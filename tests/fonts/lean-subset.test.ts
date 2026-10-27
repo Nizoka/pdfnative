@@ -149,7 +149,10 @@ describe('builders embed the lean subset', () => {
         const dir = directory(embeddedFont(pdf));
         expect(dir.tags).not.toContain('gasp');
         expect(dir.table('post')!.length).toBe(32);
-        expect(readCmap(dir.table('cmap')!).get('H'.codePointAt(0)!)).toBe(gidOf(sans, 'H'));
+        // The cmap maps to the compact id of H (C28): a small number, never the source glyph id.
+        const h = readCmap(dir.table('cmap')!).get('H'.codePointAt(0)!)!;
+        expect(h).toBeGreaterThan(0);
+        expect(h).toBeLessThan(gidOf(sans, 'H'));
         expect(extractText(pdf)[0].text).toContain('Hello lean world');
     });
 
@@ -160,7 +163,9 @@ describe('builders embed the lean subset', () => {
         };
         const dir = directory(embeddedFont(buildPDFBytes(params, { creationDate: PINNED })));
         expect(dir.tags).not.toContain('gasp');
-        expect(readCmap(dir.table('cmap')!).get('H'.codePointAt(0)!)).toBe(gidOf(sans, 'H'));
+        const h = readCmap(dir.table('cmap')!).get('H'.codePointAt(0)!)!;
+        expect(h).toBeGreaterThan(0);
+        expect(h).toBeLessThan(gidOf(sans, 'H'));
     });
 });
 
@@ -261,15 +266,15 @@ describe('a registered font with no used glyph (C18)', () => {
         return new DataView(maxp.buffer, maxp.byteOffset, maxp.byteLength).getUint16(4);
     }
 
-    it('embeds a .notdef-only lean subset: glyph count kept, no cmap mapping, a few KB instead of the whole file', () => {
+    it('embeds a .notdef-only lean subset: one glyph, no cmap mapping, a few KB instead of the whole file', () => {
         const pdf = buildDocumentPDFBytes({ title: 'Lean', blocks: [{ type: 'paragraph', text }], fontEntries: [latin, unused] }, { creationDate: PINNED });
         const fonts = embeddedFonts(pdf);
         expect(fonts).toHaveLength(2);
         const stub = fonts[1].program;
         const whole = getDecodedFontBytes(emoji);
-        expect(stub.length).toBeLessThan(64 * 1024);
+        expect(stub.length).toBeLessThan(8 * 1024);
         expect(stub.length).toBeLessThan(whole.length / 10);
-        expect(numGlyphs(stub)).toBe(numGlyphs(whole));
+        expect(numGlyphs(stub)).toBe(1); // the compact order (C28): CID 0 alone
         const dir = directory(stub);
         expect(readCmap(dir.table('cmap')!).size).toBe(0);
         expect(dir.table('glyf')!.length).toBeLessThanOrEqual(1024);
@@ -297,5 +302,171 @@ describe('a registered font with no used glyph (C18)', () => {
         expect(fonts[1].program.length).toBeLessThan(64 * 1024);
         expect(fonts[1].wEntries).toBe(0);
         expect(readCmap(directory(fonts[1].program).table('cmap')!).size).toBe(0);
+    });
+});
+
+// ── Compact glyph order (1.9.0, C28) ─────────────────────────────────
+
+/** The bytes of glyph `i` of a subset (long `loca`, as the subsetter writes it). */
+function glyphBytes(dir: Dir, i: number): Uint8Array {
+    const loca = dir.table('loca')!, glyf = dir.table('glyf')!;
+    const v = new DataView(loca.buffer, loca.byteOffset, loca.byteLength);
+    return glyf.subarray(v.getUint32(i * 4), v.getUint32(i * 4 + 4));
+}
+
+const u16 = (t: Uint8Array, at: number): number => new DataView(t.buffer, t.byteOffset, t.byteLength).getUint16(at);
+
+describe('compact glyph order (C28)', () => {
+    const source = getDecodedFontBytes(sans);
+    // The CIDs of "Hello" in order of first use: .notdef, H, e, l, o.
+    const cids = [0, ...Array.from('Helo', ch => gidOf(sans, ch))];
+    const used = new Set(cids);
+    const plain = directory(toU8(subsetTTF(source, used)));
+    const compact = directory(toU8(subsetTTF(source, used, { lean: { cmap: sans.cmap, cids } })));
+
+    it('numbers the glyphs in CID order: numGlyphs, hmtx and hhea cover the kept glyphs only', () => {
+        expect(u16(compact.table('maxp')!, 4)).toBe(cids.length);
+        expect(u16(compact.table('hhea')!, 34)).toBe(cids.length);
+        expect(compact.table('hmtx')!.length).toBe(cids.length * 4);
+        expect(compact.table('loca')!.length).toBe((cids.length + 1) * 4);
+        for (let i = 1; i < cids.length; i++) expect(u16(compact.table('hmtx')!, i * 4), `advance of CID ${i}`).toBe(sans.widths[cids[i]]);
+        // Left side bearings come from the source hmtx entry of the same glyph.
+        const srcHmtx = plain.table('hmtx')!;
+        for (let i = 0; i < cids.length; i++) expect(u16(compact.table('hmtx')!, i * 4 + 2)).toBe(u16(srcHmtx, cids[i] * 4 + 2));
+    });
+
+    it('copies every outline unchanged under its new id', () => {
+        for (let i = 0; i < cids.length; i++) {
+            expect(Array.from(glyphBytes(compact, i)), `glyph ${i}`).toEqual(Array.from(glyphBytes(plain, cids[i])));
+        }
+        expect(compact.table('glyf')!.length).toBe(plain.table('glyf')!.length);
+    });
+
+    it('maps the cmap to the new ids and nothing else; names, hinting and OS/2 are untouched', () => {
+        const mapped = readCmap(compact.table('cmap')!);
+        expect(mapped.get('H'.codePointAt(0)!)).toBe(1);
+        expect(mapped.get('e'.codePointAt(0)!)).toBe(2);
+        expect(mapped.get('l'.codePointAt(0)!)).toBe(3);
+        expect(mapped.get('o'.codePointAt(0)!)).toBe(4);
+        for (const id of mapped.values()) expect(id).toBeLessThan(cids.length);
+        for (const tag of ['OS/2', 'name', 'prep']) expect(Array.from(compact.table(tag)!), tag).toEqual(Array.from(plain.table(tag)!));
+        expect(compact.table('post')!.length).toBe(32);
+    });
+
+    it('is far smaller than the retained-id subset: no loca or hmtx entry for the glyphs it does not carry', () => {
+        const lean = subsetTTF(source, used, { lean: { cmap: sans.cmap } }).length;
+        const small = subsetTTF(source, used, { lean: { cmap: sans.cmap, cids } }).length;
+        expect(small).toBeLessThan(lean / 3);
+        expect(small).toBeLessThan(8 * 1024);
+    });
+
+    it('appends the components of a composite glyph and rewrites its references', () => {
+        const eAcute = gidOf(sans, 'é');
+        const order = [0, eAcute];
+        const dir = directory(toU8(subsetTTF(source, new Set(order), { lean: { cmap: sans.cmap, cids: order } })));
+        const outline = glyphBytes(dir, 1);
+        expect(new DataView(outline.buffer, outline.byteOffset, outline.byteLength).getInt16(0)).toBeLessThan(0); // composite
+        const count = u16(dir.table('maxp')!, 4);
+        expect(count).toBeGreaterThan(2);
+        // Walk the component records: every reference names a glyph of the
+        // subset after the CIDs, never the empty .notdef, and carries the
+        // outline of the source component.
+        const srcDir = directory(toU8(subsetTTF(source, new Set(order))));
+        const original = glyphBytes(srcDir, eAcute);
+        const refs: [number, number][] = [];
+        let pos = 10, flags = 0;
+        do {
+            flags = u16(outline, pos);
+            refs.push([u16(outline, pos + 2), u16(original, pos + 2)]);
+            pos += 4 + ((flags & 1) ? 4 : 2) + ((flags & 8) ? 2 : (flags & 0x40) ? 4 : (flags & 0x80) ? 8 : 0);
+        } while (flags & 0x20);
+        expect(refs.length).toBeGreaterThanOrEqual(2);
+        for (const [newId, oldId] of refs) {
+            expect(newId).toBeGreaterThan(1);
+            expect(newId).toBeLessThan(count);
+            expect(Array.from(glyphBytes(dir, newId))).toEqual(Array.from(glyphBytes(srcDir, oldId)));
+        }
+        // Ascending source order after the CIDs: the new ids sort like the old ones.
+        const sorted = [...refs].sort((a, b) => a[1] - b[1]);
+        for (let i = 1; i < sorted.length; i++) expect(sorted[i][0]).toBeGreaterThan(sorted[i - 1][0]);
+    });
+
+    it('a code outside the font or repeated shows the empty .notdef outline', () => {
+        const order = [0, gidOf(sans, 'H'), 999_999, gidOf(sans, 'H')];
+        const dir = directory(toU8(subsetTTF(source, new Set([0, gidOf(sans, 'H')]), { lean: { cmap: sans.cmap, cids: order } })));
+        expect(u16(dir.table('maxp')!, 4)).toBe(4);
+        const notdef = Array.from(glyphBytes(dir, 0));
+        expect(Array.from(glyphBytes(dir, 2))).toEqual(notdef);
+        expect(Array.from(glyphBytes(dir, 3))).toEqual(notdef);
+        expect(Array.from(glyphBytes(dir, 1))).toEqual(Array.from(glyphBytes(plain, gidOf(sans, 'H'))));
+        expect(readCmap(dir.table('cmap')!).get('H'.codePointAt(0)!)).toBe(1);
+    });
+
+    it('leaves the lean call without cids byte-identical to before', () => {
+        const a = subsetTTF(source, used, { lean: { cmap: sans.cmap } });
+        expect(subsetTTF(source, used, { lean: { cmap: sans.cmap, cids: undefined } })).toBe(a);
+        expect(u16(directory(toU8(a)).table('maxp')!, 4)).toBe(u16(directory(source).table('maxp')!, 4));
+    });
+});
+
+describe('builders show glyphs by compact CIDs (C28)', () => {
+    function fontObjects(pdf: Uint8Array): { w: string; toUnicode: string; program: Uint8Array }[] {
+        const reader = openPdf(pdf);
+        const out: { w: string; toUnicode: string; program: Uint8Array }[] = [];
+        let w = '';
+        for (const num of [...reader.xref.entries.keys()].sort((a, b) => a - b)) {
+            let obj: unknown;
+            try { obj = reader.getObject(num); } catch { continue; }
+            if (obj instanceof Map && obj.has('W')) w = JSON.stringify(obj.get('W'));
+            const o = obj as { type?: string; dict?: Map<string, unknown> };
+            if (o && o.type === 'stream' && o.dict?.has('Length1')) {
+                const program = reader.decodeStream(obj as never);
+                const cmapObj = reader.getObject(num + 1) as { type?: string };
+                const toUnicode = cmapObj?.type === 'stream' ? new TextDecoder('latin1').decode(reader.decodeStream(cmapObj as never)) : '';
+                out.push({ w, toUnicode, program });
+            }
+        }
+        return out;
+    }
+    function pageContent(pdf: Uint8Array): string {
+        const s = new TextDecoder('latin1').decode(pdf);
+        const i = s.indexOf('BT');
+        return s.slice(s.lastIndexOf('stream', i) + 7, s.indexOf('endstream', i));
+    }
+
+    it('the content stream codes are CIDs in order of first use, /W starts at 1 and ToUnicode is keyed by CID', () => {
+        const pdf = buildDocumentPDFBytes({ title: 'C', blocks: [{ type: 'paragraph', text: 'Hello' }], fontEntries: [latin] }, { creationDate: PINNED });
+        // The paragraph is measured before the title is drawn: H e l l o take
+        // CIDs 1 2 3 3 4, the title's C 5, the page number's 1 and / 6 and 7.
+        expect(pageContent(pdf)).toMatch(/<00010002000300030004> Tj/);
+        const [font] = fontObjects(pdf);
+        expect(font.w.startsWith('[1,[')).toBe(true);
+        expect(font.toUnicode).toContain('<0001> <0048>');
+        expect(font.toUnicode).toContain('<0004> <006F>');
+        expect(u16(directory(font.program).table('maxp')!, 4)).toBe(8);
+        expect(extractText(pdf)[0].text).toContain('Hello');
+    });
+
+    it('the table builder does the same, and a glyph drawn twice keeps one CID', () => {
+        const params: PdfParams = {
+            title: 'T', infoItems: [], balanceText: '', countText: '', footerText: '', headers: ['A'],
+            rows: [{ cells: ['oo'], type: 'credit', pointed: false }, { cells: ['o'], type: 'debit', pointed: false }], fontEntries: [latin],
+        };
+        const pdf = buildPDFBytes(params, { creationDate: PINNED });
+        const c = pageContent(pdf);
+        expect(/<(000[1-9A-F])\1> Tj/.test(c)).toBe(true); // "oo": the same CID twice
+        const [font] = fontObjects(pdf);
+        // T, A, o, the page number's 1 and /, and .notdef.
+        expect(u16(directory(font.program).table('maxp')!, 4)).toBe(new Set('TAo1/').size + 1);
+    });
+
+    it('an unused font embeds the one-glyph stub', () => {
+        const params: PdfParams = {
+            title: 'T', infoItems: [], balanceText: '', countText: '', footerText: '', headers: ['A'],
+            rows: [{ cells: ['Hello'], type: 'credit', pointed: false }], fontEntries: [latin, { fontData: emoji, fontRef: '/F4', lang: 'emoji' }],
+        };
+        const fonts = fontObjects(buildPDFBytes(params, { creationDate: PINNED }));
+        expect(u16(directory(fonts[1].program).table('maxp')!, 4)).toBe(1);
+        expect(fonts[1].program.length).toBeLessThan(4 * 1024);
     });
 });

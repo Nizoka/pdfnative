@@ -93,20 +93,29 @@ export function unmappedUsedGids(
  *   cmap: it is what the text actually produced. (v1.8.0)
  * @param encoded - Glyph ID → the code point the document encoded for it
  *   through the cmap; the strongest evidence, consulted first (v1.9.0, #84).
+ * @param cids - The document's CID space (`cids[cid]` = glyph id, C28): the
+ *   entries are then keyed by CID, the code the content streams show.
+ *   Without it the codes are the glyph ids.
  */
 export function buildToUnicodeCMap(
     cmap: Record<number, number>,
     usedGids: Set<number>,
     overrides?: ReadonlyMap<number, number | readonly number[]>,
     encoded?: ReadonlyMap<number, number>,
+    cids?: readonly number[],
 ): string {
     const glyphToUnicode = resolveGlyphNames(cmap, overrides, encoded);
 
     // Build bfchar entries (max 100 per block per PDF spec)
-    const entries: [number, number | readonly number[]][] = Object.entries(glyphToUnicode)
-        .map(([gid, cp]) => [Number(gid), cp] as [number, number | readonly number[]])
-        .filter(([gid]) => !usedGids || usedGids.has(gid))
-        .sort((a, b) => a[0] - b[0]);
+    const entries: [number, number | readonly number[]][] = cids !== undefined
+        ? cids.flatMap((gid, cid) => {
+            const cp = glyphToUnicode[gid];
+            return cp !== undefined && (!usedGids || usedGids.has(gid)) ? [[cid, cp] as [number, number | readonly number[]]] : [];
+        })
+        : Object.entries(glyphToUnicode)
+            .map(([gid, cp]) => [Number(gid), cp] as [number, number | readonly number[]])
+            .filter(([gid]) => !usedGids || usedGids.has(gid))
+            .sort((a, b) => a[0] - b[0]);
 
     const utf16 = (cp: number): string => {
         if (cp > 0xFFFF) {
@@ -170,6 +179,36 @@ export function subsetTag(fontName: string, usedGids: ReadonlySet<number>): stri
     let x = h;
     for (let i = 0; i < 6; i++) { tag += String.fromCharCode(65 + (x % 26)); x = Math.floor(x / 26); }
     return tag;
+}
+
+/**
+ * The `/W` array of a font whose codes are the document's CIDs (C28):
+ * `cids[cid]` is the glyph behind each code, and the widths of consecutive
+ * CIDs form one `c [w w …]` group — broken only by a glyph without a width
+ * entry, which `/DW` covers exactly as the layout engine measured it. CID 0
+ * is listed only when the document drew `.notdef`. `null` when nothing is
+ * listed (the `/W []` of an unused font).
+ *
+ * @since 1.9.0
+ */
+export function buildCidWidthArray(widths: Record<number, number>, cids: readonly number[], usedGids: ReadonlySet<number>): string | null {
+    const parts: string[] = [];
+    let start = -1;
+    let run: number[] = [];
+    const flush = (): void => {
+        if (run.length > 0) parts.push(`${start} [${run.join(' ')}]`);
+        run = [];
+        start = -1;
+    };
+    for (let cid = 0; cid < cids.length; cid++) {
+        const gid = cids[cid];
+        const w = widths[gid];
+        if (w === undefined || (cid === 0 && !usedGids.has(0))) { flush(); continue; }
+        if (start < 0) start = cid;
+        run.push(w);
+    }
+    flush();
+    return parts.length > 0 ? parts.join(' ') : null;
 }
 
 export function buildSubsetWidthArray(widths: Record<number, number>, usedGids: Set<number>): string | null {

@@ -18,7 +18,7 @@ import { applyKerningToRuns } from '../fonts/font-kerning.js';
 import { shapeArabicText } from '../shaping/arabic-shaper.js';
 import { findShaper, type ScriptShaper } from '../shaping/shaper-registry.js';
 import { splitTextByFont } from '../shaping/multi-font.js';
-import { resolveBidiRuns, resolveBidiLevels, bidiRunsForLine, containsRTL, reverseString, stripBidiControls } from '../shaping/bidi.js';
+import { resolveBidiRuns, resolveBidiLevels, bidiRunsForLine, containsRTL, reverseString, reverseAndMirror, stripBidiControls } from '../shaping/bidi.js';
 import type { BidiRun } from '../shaping/bidi.js';
 import { hasSequenceTriggers, matchEmojiSequences } from '../shaping/emoji-sequences.js';
 import { isArabicCodepoint, containsArabic } from '../shaping/script-registry.js';
@@ -110,15 +110,17 @@ function shapedRun(
     fontRef: string,
     fd: FontData,
     sz: number,
-    trackGid: (ref: string, gid: number) => void,
+    trackGid: (ref: string, gid: number) => number,
     onGlyph?: (ref: string, gid: number, cps: readonly number[]) => void,
     onMissing?: (ref: string, cp: number) => void,
 ): TextRun {
     const shaped = shaper.shape(text, fd);
+    const cids = new Array<number>(shaped.length);
     let designW = 0;
     let sawNotdef = false;
-    for (const g of shaped) {
-        trackGid(fontRef, g.gid);
+    for (let i = 0; i < shaped.length; i++) {
+        const g = shaped[i];
+        cids[i] = trackGid(fontRef, g.gid);
         if (g.gid === 0) sawNotdef = true;
         if (onGlyph && g.cps && g.cps.length > 0) onGlyph(fontRef, g.gid, g.cps);
         if (!g.isZeroAdvance) {
@@ -127,7 +129,7 @@ function shapedRun(
     }
     if (sawNotdef && onMissing) for (const cp of missingInShapedRun(text, fd, shaped)) onMissing(fontRef, cp);
     return {
-        text, fontRef, fontData: fd, shaped, hexStr: null,
+        text, fontRef, fontData: fd, shaped, cids, hexStr: null,
         widthPt: designW * sz / fd.metrics.unitsPerEm,
     };
 }
@@ -182,7 +184,7 @@ function buildTextRunsWithFallback(
     fontRef: string,
     fd: FontData,
     sz: number,
-    trackGid: (ref: string, gid: number, cp?: number) => void,
+    trackGid: (ref: string, gid: number, cp?: number) => number,
     pdfA: boolean = false,
 ): TextRun[] {
     // Emoji-sequence pre-pass (v1.7.0): fonts carrying a `sequences` table
@@ -194,11 +196,11 @@ function buildTextRunsWithFallback(
         const result: TextRun[] = [];
         for (const piece of matchEmojiSequences(text, fd)) {
             if (piece.gid !== null) {
-                trackGid(fontRef, piece.gid);
+                const cid = trackGid(fontRef, piece.gid);
                 const gw = fd.widths[piece.gid] !== undefined ? fd.widths[piece.gid] : fd.defaultWidth;
                 result.push({
                     text: piece.text, fontRef, fontData: fd, shaped: null,
-                    hexStr: `<${piece.gid.toString(16).toUpperCase().padStart(4, '0')}>`,
+                    hexStr: `<${cid.toString(16).toUpperCase().padStart(4, '0')}>`,
                     widthPt: gw * sz / upm,
                 });
             } else {
@@ -215,7 +217,7 @@ function buildTextRunsCore(
     fontRef: string,
     fd: FontData,
     sz: number,
-    trackGid: (ref: string, gid: number, cp?: number) => void,
+    trackGid: (ref: string, gid: number, cp?: number) => number,
     pdfA: boolean = false,
 ): TextRun[] {
     const upm = fd.metrics.unitsPerEm;
@@ -280,8 +282,7 @@ function buildTextRunsCore(
             if (mode === 'hel') flushHel();
             mode = 'cid';
             cidChars += char;
-            trackGid(fontRef, gid, cp);
-            cidHex += gid.toString(16).padStart(4, '0');
+            cidHex += trackGid(fontRef, gid, cp).toString(16).padStart(4, '0');
             const gw = fd.widths[gid];
             cidDesignW += gw !== undefined ? gw : fd.defaultWidth;
         }
@@ -352,6 +353,14 @@ export function createEncodingContext(
     // Track used glyph IDs per font for subsetting
     const _usedGids = new Map<string, Set<number>>();
     for (const fe of fontEntries) _usedGids.set(fe.fontRef, new Set());
+    // The document's CID space per font (1.9.0, C28): a glyph takes the next
+    // CID the first time it is used, CID 0 being `.notdef`, so the content
+    // streams carry compact codes and the embedded subset is renumbered to
+    // GID i = CID i under `/CIDToGIDMap /Identity`. `cidToGid[cid]` is the
+    // font's glyph id; `gidToCid` the inverse.
+    const _cidToGid = new Map<string, number[]>();
+    const _gidToCid = new Map<string, Map<number, number>>();
+    for (const fe of fontEntries) { _cidToGid.set(fe.fontRef, [0]); _gidToCid.set(fe.fontRef, new Map([[0, 0]])); }
 
     // The code point the text encoded for each glyph reached through the
     // cmap, per font — what names the glyph in ToUnicode before any
@@ -368,7 +377,8 @@ export function createEncodingContext(
         if (!s) { s = new Set(); _uncovered.set(fontRef, s); }
         s.add(cp);
     }
-    function _trackGid(fontRef: string, gid: number, cp?: number): void {
+    /** Record a used glyph and return its CID — the code the content stream shows it by. */
+    function _trackGid(fontRef: string, gid: number, cp?: number): number {
         const s = _usedGids.get(fontRef);
         if (s) s.add(gid);
         if (cp !== undefined) {
@@ -377,6 +387,22 @@ export function createEncodingContext(
             if (!m) { m = new Map(); _encoded.set(fontRef, m); }
             if (!m.has(gid)) m.set(gid, cp);
         }
+        const inv = _gidToCid.get(fontRef);
+        if (inv === undefined) return gid; // a font ref outside the document (`/F1`): the code is the glyph
+        const known = inv.get(gid);
+        if (known !== undefined) return known;
+        const order = _cidToGid.get(fontRef);
+        if (order === undefined) return gid;
+        const cid = order.length;
+        // Identity-H codes are two bytes; no TrueType font has more glyphs.
+        if (cid > 0xFFFF) throw new Error(`pdfnative: font ${fontRef} uses more than 65 536 glyphs in one document`);
+        order.push(gid);
+        inv.set(gid, cid);
+        return cid;
+    }
+    /** The font's glyph id behind a CID, for the wrappers that read codes back. */
+    function _gidOf(fontRef: string, cid: number): number {
+        return _cidToGid.get(fontRef)?.[cid] ?? cid;
     }
 
     // Glyphs produced by an OpenType substitution have no cmap entry, so
@@ -404,13 +430,14 @@ export function createEncodingContext(
         }
         return inv.get(gid);
     }
-    function _onSubstitute(fontRef: string, fromGid: number, toGid: number, fd: FontData): void {
-        _trackGid(fontRef, toGid);
+    function _onSubstitute(fontRef: string, fromGid: number, toGid: number, fd: FontData): number {
+        const cid = _trackGid(fontRef, toGid);
         const cp = _codepointOf(fd, fromGid);
-        if (cp === undefined) return;
+        if (cp === undefined) return cid;
         let m = _toUnicodeOverrides.get(fontRef);
         if (!m) { m = new Map(); _toUnicodeOverrides.set(fontRef, m); }
         if (!m.has(toGid)) m.set(toGid, cp);
+        return cid;
     }
 
     // Colour-emoji collector: activated only when a registered font carries a
@@ -430,6 +457,7 @@ export function createEncodingContext(
         f1: primary.fontRef,
         f2: primary.fontRef,
         getUsedGids() { return _usedGids; },
+        getCidMaps() { return _cidToGid; },
         getToUnicodeOverrides() { return _toUnicodeOverrides; },
         getToUnicodeEncoded() { return _encoded; },
         getUncoveredCodepoints() { return _uncovered; },
@@ -506,10 +534,19 @@ export function createEncodingContext(
         const bidiRuns = resolve(str);
         if (bidiRuns !== null) {
             const result: TextRun[] = [];
-            for (const bRun of bidiRuns) {
+            for (let bi = 0; bi < bidiRuns.length; bi++) {
+                const bRun = bidiRuns[bi];
                 const runText = stripSoftHyphens(bRun.text);
                 if (!runText) continue;
                 const isRTL = bRun.level % 2 === 1;
+                // Every run cut from a right-to-left bidi run names it and its
+                // logical text, so the emitter can wrap them in one untagged
+                // /ActualText span (C27). The visual text is an involution away.
+                const bidi = isRTL ? { run: bi, logical: reverseAndMirror(runText) } : undefined;
+                const push = (runs: TextRun[]): void => {
+                    if (bidi === undefined) { for (const r of runs) result.push(r); return; }
+                    for (const r of runs) result.push({ ...r, bidi });
+                };
                 const fontRuns = splitTextByFont(runText, fontEntries);
                 for (const fRun of fontRuns) {
                     const fd = fRun.entry.fontData;
@@ -529,23 +566,25 @@ export function createEncodingContext(
                                 const visual = shaped.slice().reverse();
                                 for (const cp of missingInShapedRun(seg.text, fd, visual)) _trackMissing(fontRef, cp);
                                 let designW = 0;
-                                for (const g of visual) {
-                                    _trackGid(fontRef, g.gid);
+                                const cids = new Array<number>(visual.length);
+                                for (let gi = 0; gi < visual.length; gi++) {
+                                    const g = visual[gi];
+                                    cids[gi] = _trackGid(fontRef, g.gid);
                                     if (g.cps && g.cps.length > 0) _onShapedGlyph(fontRef, g.gid, g.cps);
                                     if (!g.isZeroAdvance) {
                                         designW += fd.widths[g.gid] !== undefined ? fd.widths[g.gid] : fd.defaultWidth;
                                     }
                                 }
-                                result.push({ text: seg.text, fontRef, fontData: fd, shaped: visual, hexStr: null, widthPt: designW * sz / upm });
+                                result.push({ text: seg.text, fontRef, fontData: fd, shaped: visual, cids, hexStr: null, widthPt: designW * sz / upm, bidi });
                             } else {
                                 // Non-Arabic segment: use Helvetica fallback
-                                result.push(...buildTextRunsWithFallback(seg.text, fontRef, fd, sz, _trackGid, pdfA));
+                                push(buildTextRunsWithFallback(seg.text, fontRef, fd, sz, _trackGid, pdfA));
                             }
                         }
                     } else if (isRTL) {
                         // RTL non-Arabic (Hebrew etc.): text already reversed by BiDi.
                         // Use fallback helper to handle Latin chars not covered by CIDFont.
-                        result.push(...buildTextRunsWithFallback(fRun.text, fontRef, fd, sz, _trackGid, pdfA));
+                        push(buildTextRunsWithFallback(fRun.text, fontRef, fd, sz, _trackGid, pdfA));
                     } else {
                         // LTR run: standard path
                         const shaper = findShaper(fRun.text);
@@ -595,9 +634,9 @@ export function createEncodingContext(
                     const shaped = shapeArabicText(logical, primary.fontData);
                     for (let i = shaped.length - 1; i >= 0; i--) {
                         const g = shaped[i];
-                        _trackGid(primary.fontRef, g.gid);
+                        const cid = _trackGid(primary.fontRef, g.gid);
                         if (g.cps && g.cps.length > 0) _onShapedGlyph(primary.fontRef, g.gid, g.cps);
-                        hex += g.gid.toString(16).padStart(4, '0');
+                        hex += cid.toString(16).padStart(4, '0');
                     }
                     for (const cp of missingInShapedRun(runText, primary.fontData, shaped)) _trackMissing(primary.fontRef, cp);
                 } else {
@@ -606,8 +645,7 @@ export function createEncodingContext(
                         if (rawCp > 0xFFFF) i++;
                         const cp = spaceCodepoint(primary.fontData, rawCp);
                         const gid = cmap[cp] || 0;
-                        _trackGid(primary.fontRef, gid, cp);
-                        hex += gid.toString(16).padStart(4, '0');
+                        hex += _trackGid(primary.fontRef, gid, cp).toString(16).padStart(4, '0');
                     }
                 }
             }
@@ -624,8 +662,7 @@ export function createEncodingContext(
                 if (rawCp > 0xFFFF) i++;
                 const cp = spaceCodepoint(primary.fontData, rawCp);
                 const gid = cmap[cp] || 0;
-                _trackGid(primary.fontRef, gid, cp);
-                hex += gid.toString(16).padStart(4, '0');
+                hex += _trackGid(primary.fontRef, gid, cp).toString(16).padStart(4, '0');
             }
             return `<${hex.toUpperCase()}>`;
         }
@@ -635,14 +672,21 @@ export function createEncodingContext(
         for (const cp of missingInShapedRun(str, primary.fontData, shaped)) _trackMissing(primary.fontRef, cp);
         let hex = '';
         for (const g of shaped) {
-            _trackGid(primary.fontRef, g.gid);
+            const cid = _trackGid(primary.fontRef, g.gid);
             if (g.cps && g.cps.length > 0) _onShapedGlyph(primary.fontRef, g.gid, g.cps);
-            hex += g.gid.toString(16).padStart(4, '0');
+            hex += cid.toString(16).padStart(4, '0');
         }
         return `<${hex.toUpperCase()}>`;
     }
 
-    return withFeatureSupport(ctx, _onSubstitute);
+    return withFeatureSupport(ctx, _onSubstitute, _gidOf);
+}
+
+/** The glyph id behind a code of a context's font, for the wrappers that read codes back (C28). */
+function gidResolver(enc: EncodingContext): ((fontRef: string, cid: number) => number) | undefined {
+    const maps = enc.getCidMaps?.();
+    if (maps === undefined) return undefined;
+    return (fontRef: string, cid: number): number => maps.get(fontRef)?.[cid] ?? cid;
 }
 
 /**
@@ -675,9 +719,10 @@ export function applyDocumentKerning(enc: EncodingContext, on: boolean | undefin
     if (!enc.fontEntries.some(fe => fe.fontData.kern)) return enc;
 
     const baseParagraph = enc.withParagraph;
+    const gidOf = gidResolver(enc);
     const kerned: EncodingContext = {
         ...enc,
-        textRuns: (str: string, sz: number) => applyKerningToRuns(enc.textRuns(str, sz), sz),
+        textRuns: (str: string, sz: number) => applyKerningToRuns(enc.textRuns(str, sz), sz, gidOf),
         tw(str: string, sz: number): number {
             if (!str) return 0;
             let total = 0;
@@ -712,7 +757,8 @@ export function applyDocumentKerning(enc: EncodingContext, on: boolean | undefin
  */
 function withFeatureSupport(
     base: EncodingContext,
-    onSubstitute: (fontRef: string, fromGid: number, toGid: number, fd: FontData) => void,
+    onSubstitute: (fontRef: string, fromGid: number, toGid: number, fd: FontData) => number,
+    gidOf: (fontRef: string, cid: number) => number,
 ): EncodingContext {
     const baseParagraph = base.withParagraph;
     function derive(tags: readonly string[]): EncodingContext {
@@ -725,16 +771,17 @@ function withFeatureSupport(
         // Substitutions per tag, so a tag that asks for what the font already
         // does by default can be reported instead of silently doing nothing.
         const usage = new Map<string, number>(tags.map(t => [t, 0]));
-        const track = (fontRef: string, fromGid: number, toGid: number, fd: FontData): void => {
-            onSubstitute(fontRef, fromGid, toGid, fd);
+        const track = (fontRef: string, fromGid: number, toGid: number, fd: FontData): number => {
+            const cid = onSubstitute(fontRef, fromGid, toGid, fd);
             for (const tag of tags) {
                 if (fd.features?.[tag]?.[fromGid] === toGid) usage.set(tag, (usage.get(tag) ?? 0) + 1);
             }
+            return cid;
         };
 
         const derived: EncodingContext = {
             ...base,
-            textRuns: (str: string, sz: number) => applyFeaturesToRuns(base.textRuns(str, sz), tags, sz, track),
+            textRuns: (str: string, sz: number) => applyFeaturesToRuns(base.textRuns(str, sz), tags, sz, track, gidOf),
             tw(str: string, sz: number): number {
                 if (!str) return 0;
                 let total = 0;
@@ -753,7 +800,7 @@ function withFeatureSupport(
                     if (para === base) return derived;
                     const featured: EncodingContext = {
                         ...para,
-                        textRuns: (str: string, sz: number) => applyFeaturesToRuns(para.textRuns(str, sz), tags, sz, track),
+                        textRuns: (str: string, sz: number) => applyFeaturesToRuns(para.textRuns(str, sz), tags, sz, track, gidOf),
                         tw(str: string, sz: number): number {
                             if (!str) return 0;
                             let total = 0;

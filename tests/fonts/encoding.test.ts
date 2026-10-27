@@ -389,13 +389,16 @@ describe('createEncodingContext', () => {
             // 0x202F → 0x20 → GID 3 (space)
             const runs = enc.textRuns('\u202F', 10);
             expect(runs.length).toBe(1);
-            expect(runs[0].hexStr).toContain('0003'); // space GID
+            // The code is the first CID allotted (C28); it stands for the space GID 3.
+            expect(runs[0].hexStr).toBe('<0001>');
+            expect(enc.getCidMaps!().get('/F3')![1]).toBe(3);
         });
 
         it('should handle narrow NBSP normalization in ps()', () => {
             const enc = createEncodingContext(fontEntries);
             const result = enc.ps('\u202F');
-            expect(result).toContain('0003'); // space GID
+            expect(result).toBe('<0001>');
+            expect(enc.getCidMaps!().get('/F3')![1]).toBe(3); // space GID
         });
 
         it('should use GID 0 for unmapped characters', () => {
@@ -455,7 +458,8 @@ describe('createEncodingContext', () => {
             const enc = createEncodingContext(thaiFontEntries);
             const result = enc.ps('\u0E01');
             expect(result).toMatch(/^<[0-9A-F]+>$/);
-            expect(result).toContain('000A'); // GID 10
+            expect(result).toBe('<0001>'); // the first CID allotted (C28) …
+            expect(enc.getCidMaps!().get('/F4')![1]).toBe(10); // … stands for GID 10
         });
 
         it('ps should track glyph IDs for Thai text', () => {
@@ -548,14 +552,17 @@ describe('createEncodingContext', () => {
             // First glyph in hex should be mem-final (GID 33 = 0021), not shin
             // BiDi reversal: שלום → םולש (visual order: mem-final first)
             const hex = runs[0].hexStr!;
-            expect(hex.startsWith('<0021')).toBe(true); // mem-final GID 33 = 0x0021
+            // CIDs are allotted in encoding (visual) order (C28): the first code is mem-final's.
+            expect(hex.startsWith('<0001')).toBe(true);
+            expect(enc.getCidMaps!().get('/F6')![1]).toBe(33); // mem-final GID 33
         });
 
         it('ps should produce reversed hex for Hebrew text', () => {
             const enc = createEncodingContext(hebrewEntries);
             const result = enc.ps('\u05E9\u05DC\u05D5\u05DD');
-            // Should start with mem-final (GID 33 = 0x0021)
-            expect(result.startsWith('<0021')).toBe(true);
+            // Should start with mem-final (GID 33), the first CID allotted (C28)
+            expect(result.startsWith('<0001')).toBe(true);
+            expect(enc.getCidMaps!().get('/F6')![1]).toBe(33);
         });
 
         it('textRuns should compute correct width for Hebrew', () => {

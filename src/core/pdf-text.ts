@@ -120,6 +120,7 @@ function appendShapedRun(
     sz: number,
     fontData: FontData,
     spaceExtra: number,
+    cids?: readonly number[],
 ): number {
     const { metrics, widths: glyphWidths, defaultWidth } = fontData;
     const scale = sz / metrics.unitsPerEm;
@@ -148,9 +149,11 @@ function appendShapedRun(
         open = false;
     };
 
-    for (const g of shaped) {
+    for (let i = 0; i < shaped.length; i++) {
+        const g = shaped[i];
         const w = glyphWidths[g.gid] !== undefined ? glyphWidths[g.gid] : defaultWidth;
-        const gid = g.gid.toString(16).padStart(4, '0').toUpperCase();
+        // The code shown is the document's CID (C28); the glyph id when none was allotted.
+        const gid = (cids !== undefined ? cids[i] : g.gid).toString(16).padStart(4, '0').toUpperCase();
         const gx = penLayout + g.dx * scale;
         if (g.dy !== 0) {
             flushArray();
@@ -184,7 +187,8 @@ function appendShapedRun(
 /**
  * Render pre-shaped glyphs with GPOS offsets as one text object: a `TJ`
  * array per baseline segment, a `Td` + `Tj` per vertically offset mark
- * ({@link appendShapedRun}). Empty input renders nothing.
+ * ({@link appendShapedRun}). Empty input renders nothing. `cids` are the
+ * codes to show the glyphs by (`TextRun.cids`, C28); the glyph ids without.
  */
 export function txtShaped(
     shaped: ShapedGlyph[],
@@ -194,10 +198,11 @@ export function txtShaped(
     sz: number,
     fontData: FontData,
     spaceExtra: number = 0,
+    cids?: readonly number[],
 ): string {
     if (shaped.length === 0) return '';
     const t = openTextObject();
-    appendShapedRun(t, shaped, x, y, font, sz, fontData, spaceExtra);
+    appendShapedRun(t, shaped, x, y, font, sz, fontData, spaceExtra, cids);
     return closeTextObject(t);
 }
 
@@ -235,9 +240,12 @@ function emitColorEmojiRun(
     const scale = sz / upm;
     const s = fmtScale(scale);
     const hex = (run.hexStr ?? '').replace(/[<>]/g, '');
+    // The codes are the document's CIDs (C28): the glyph behind each is what names the colour form.
+    const cidToGid = enc.getCidMaps?.().get(run.fontRef);
     for (let i = 0; i + 4 <= hex.length; i += 4) {
         const tag = hex.substr(i, 4);
-        const gid = parseInt(tag, 16);
+        const code = parseInt(tag, 16);
+        const gid = cidToGid?.[code] ?? code;
         const adv = (fd.widths[gid] !== undefined ? fd.widths[gid] : fd.defaultWidth) * scale;
         const name = enc.colorEmoji?.useGlyph(fd, gid) ?? null;
         if (name) {
@@ -332,9 +340,10 @@ function shapedOrderDiffers(text: string, shaped: readonly ShapedGlyph[]): boole
  * left-to-right run whose glyphs are not in the order of its text — Indic
  * pre-base signs, rephs, split vowel signs, Khmer and Myanmar pre-base
  * vowels — so extraction returns the source string in logical order, as
- * Chrome and Skia arrange. A right-to-left run is left alone (its visual
- * reversal is what extractors expect), and `layout.actualText: false`
- * switches the wrapping off.
+ * Chrome and Skia arrange. A right-to-left run is not decided here: the
+ * emitters wrap every run of one bidi run in a span carrying its logical
+ * text (C27, `TextRun.bidi`), and `layout.actualText: false` switches both
+ * off.
  */
 function needsActualText(run: TextRun, enc: EncodingContext): boolean {
     if (enc.actualText === false) return false;
@@ -379,21 +388,38 @@ export function txt(
     const parts: string[] = [];
     let t: TextObject | null = null;
     let penX = x;
-    for (const run of runs) {
+    // The right-to-left bidi run whose untagged /ActualText span is open
+    // (C27), and the last one closed — a span closed early by a colour-emoji
+    // run is not reopened, or the reader would paste its text twice.
+    const rtlSpans = actualTextSpans && enc.actualText !== false;
+    let openRtl = -1;
+    let closedRtl = -1;
+    for (let i = 0; i < runs.length; i++) {
+        const run = runs[i];
         if (enc.colorEmoji && run.fontData.colorGlyphs && run.hexStr) {
-            if (t !== null) { parts.push(closeTextObject(t)); t = null; }
+            if (t !== null) {
+                if (openRtl >= 0) { appendMarkedContent(t, 'EMC'); closedRtl = openRtl; openRtl = -1; }
+                parts.push(closeTextObject(t));
+                t = null;
+            }
             penX = emitColorEmojiRun(parts, run, penX, y, sz, enc);
             continue;
         }
         if (t === null) t = openTextObject();
+        const rtl = run.bidi;
+        if (rtlSpans && rtl !== undefined && openRtl !== rtl.run && closedRtl !== rtl.run) {
+            appendMarkedContent(t, actualTextBdc(rtl.logical));
+            openRtl = rtl.run;
+        }
         if (run.shaped) {
             // A run whose glyphs are not in the order of its text (sara am,
             // a pre-base sign, a reph, a split vowel) carries its text as
             // /ActualText, legal in untagged output too (1.9.0, C20). The
-            // tagged emitters wrap the whole string themselves and pass false.
-            const span = actualTextSpans && needsActualText(run, enc);
+            // tagged emitters wrap the whole string themselves and pass false;
+            // a run inside a right-to-left span is covered by it (C27).
+            const span = actualTextSpans && openRtl < 0 && needsActualText(run, enc);
             if (span) appendMarkedContent(t, actualTextBdc(run.text));
-            appendShapedRun(t, run.shaped, penX, y, run.fontRef, sz, run.fontData, 0);
+            appendShapedRun(t, run.shaped, penX, y, run.fontRef, sz, run.fontData, 0, run.cids);
             if (span) appendMarkedContent(t, 'EMC');
             penX += run.widthPt;
         } else if (run.tjStr) {
@@ -406,6 +432,10 @@ export function txt(
             moveTo(t, run.fontRef, sz, penX, y);
             appendOp(t, `${run.hexStr} Tj`);
             penX += run.widthPt;
+        }
+        if (openRtl >= 0) {
+            const next = i + 1 < runs.length ? runs[i + 1].bidi : undefined;
+            if (next === undefined || next.run !== openRtl) { appendMarkedContent(t, 'EMC'); closedRtl = openRtl; openRtl = -1; }
         }
     }
     if (t !== null) parts.push(closeTextObject(t));
@@ -638,6 +668,11 @@ function justifiedLine(
     let segStart = 0;
     let segAdvance = 0;
     let segItems: string[] = [];
+    // The right-to-left bidi run whose untagged /ActualText span is open
+    // (C27) and the last one closed, as in `txt()`.
+    const rtlSpans = actualTextSpans && enc.actualText !== false;
+    let openRtl = -1;
+    let closedRtl = -1;
 
     const flush = (): void => {
         if (segFont === null) return;
@@ -650,8 +685,25 @@ function justifiedLine(
         segItems = [];
     };
 
+    /** Close the open right-to-left span, after the array it covers. */
+    const closeRtl = (): void => {
+        if (openRtl < 0) return;
+        flush();
+        if (t !== null) appendMarkedContent(t, 'EMC');
+        closedRtl = openRtl;
+        openRtl = -1;
+    };
+
     const add = (run: TextRun, opts: JustifiedRunOptions = {}): void => {
         const emoji = enc.colorEmoji !== undefined && run.fontData.colorGlyphs !== undefined && run.hexStr !== null;
+        const rtl = run.bidi;
+        if (openRtl >= 0 && (rtl === undefined || rtl.run !== openRtl || emoji)) closeRtl();
+        if (rtlSpans && !emoji && rtl !== undefined && openRtl !== rtl.run && closedRtl !== rtl.run) {
+            flush();
+            if (t === null) t = openTextObject();
+            appendMarkedContent(t, actualTextBdc(rtl.logical));
+            openRtl = rtl.run;
+        }
         if (run.shaped || emoji || run.hexStr === null) {
             flush();
             if (emoji) {
@@ -659,10 +711,10 @@ function justifiedLine(
                 penX = emitColorEmojiRun(parts, run, penX, y, sz, enc);
             } else if (run.shaped) {
                 if (t === null) t = openTextObject();
-                const span = actualTextSpans && needsActualText(run, enc);
+                const span = actualTextSpans && openRtl < 0 && needsActualText(run, enc);
                 if (span) appendMarkedContent(t, actualTextBdc(run.text));
                 const spaceExtra = opts.spaceExtra ?? 0;
-                appendShapedRun(t, run.shaped, penX, y, run.fontRef, sz, run.fontData, spaceExtra);
+                appendShapedRun(t, run.shaped, penX, y, run.fontRef, sz, run.fontData, spaceExtra, run.cids);
                 if (span) appendMarkedContent(t, 'EMC');
                 penX += run.widthPt + spaceExtra * spaceGaps(run);
             }
@@ -681,6 +733,7 @@ function justifiedLine(
     };
 
     const end = (): void => {
+        closeRtl();
         flush();
         if (t !== null) parts.push(closeTextObject(t));
     };

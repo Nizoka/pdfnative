@@ -72,6 +72,31 @@
       "pattern": "tests/core/pdf-text.test.ts",
       "reason": "Three tests pin one `BT … ET` text object per shaped glyph (txtShaped) and one per run of a multi-font line; a line is one text object now, a shaped run one TJ array, so a /ActualText span never wraps more than one text object and Acrobat pastes a cell's text once instead of once per glyph. Every other assertion of the file holds in the current suite.",
       "ledger": "C25"
+    },
+    {
+      "pattern": "tests/integration/persian-rendering.test.ts",
+      "reason": "Three tests look for presentation-form glyph ids in the content stream and one expects a bracketed Latin island to extract as one piece of a visual-order line; glyph codes are the document's CIDs now (C28) and every right-to-left run carries its logical text as /ActualText, each bracket with its own run (C27). The current suite holds the same joining and extraction facts through the encoding context and the spans.",
+      "ledger": "C27"
+    },
+    {
+      "pattern": "tests/fonts/encoding.test.ts",
+      "reason": "Five tests read source glyph ids out of textRuns() and ps() hex strings (the space as <0003>, Thai ก as <000A>, Hebrew mem-final as <0021>); the hex strings carry CIDs allotted in order of first use since C28, and the current suite asserts the same facts through getCidMaps().",
+      "ledger": "C28"
+    },
+    {
+      "pattern": "tests/fonts/font-features.test.ts",
+      "reason": "Thirteen tests look glyph codes up in the font module's widths and outlines and call applyFeaturesToRuns() on CID-coded runs without the code → glyph resolver the wrappers take since C28; the current suite checks the same embedding, width and outline facts against the compact subset.",
+      "ledger": "C28"
+    },
+    {
+      "pattern": "tests/fonts/font-kerning.test.ts",
+      "reason": "One test calls applyKerningToRuns() on CID-coded runs without the code → glyph resolver (C28); kerning through the context (layout.typography.kerning) is held by the rest of the file and the current suite.",
+      "ledger": "C28"
+    },
+    {
+      "pattern": "tests/core/typography-align.test.ts",
+      "reason": "One test sums a justified line's advances by looking its hex codes up in the font module's widths; the codes are CIDs since C28 and the current suite resolves them through getCidMaps().",
+      "ledger": "C28"
     }
   ]
 }

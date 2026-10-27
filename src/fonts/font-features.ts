@@ -114,13 +114,18 @@ function toHex(gids: readonly number[]): string {
  * @param sz   Font size in points, for the recomputed advances.
  * @param onSubstitute Called once per substituted glyph occurrence with the
  *   run's font ref, the glyph that was replaced and the glyph that replaced
- *   it. Absent in pure measurement contexts.
+ *   it; returns the code the document shows the new glyph by (its CID, C28),
+ *   or nothing when codes are glyph ids. Absent in pure measurement contexts.
+ * @param gidOf The glyph id behind a code of a run's font: since 1.9.0 the
+ *   codes of `hexStr` are the document's CIDs, not glyph ids (C28). Absent
+ *   when they coincide.
  */
 export function applyFeaturesToRuns(
     runs: readonly TextRun[],
     tags: readonly string[],
     sz: number,
-    onSubstitute?: (fontRef: string, fromGid: number, toGid: number, fd: FontData) => void,
+    onSubstitute?: (fontRef: string, fromGid: number, toGid: number, fd: FontData) => number | undefined,
+    gidOf?: (fontRef: string, cid: number) => number,
 ): TextRun[] {
     if (tags.length === 0) return runs as TextRun[];
 
@@ -136,17 +141,19 @@ export function applyFeaturesToRuns(
         const map = cache.map;
         if (map === null) { out.push(run); continue; }
 
-        const gids = parseGids(run.hexStr);
-        if (gids === null) { out.push(run); continue; }
+        const codes = parseGids(run.hexStr);
+        if (codes === null) { out.push(run); continue; }
 
         let changed = false;
         const fd = run.fontData;
-        const substituted = gids.map(g => {
+        const substituted: number[] = [];
+        const newCodes = codes.map(code => {
+            const g = gidOf ? gidOf(run.fontRef, code) : code;
             const s = map[g];
-            if (s === undefined || s === g) return g;
+            if (s === undefined || s === g) { substituted.push(g); return code; }
             changed = true;
-            onSubstitute?.(run.fontRef, g, s, fd);
-            return s;
+            substituted.push(s);
+            return onSubstitute?.(run.fontRef, g, s, fd) ?? s;
         });
         if (!changed) { out.push(run); continue; }
 
@@ -154,7 +161,7 @@ export function applyFeaturesToRuns(
         let design = 0;
         for (const g of substituted) design += fd.widths[g] ?? fd.defaultWidth;
 
-        out.push({ ...run, hexStr: toHex(substituted), widthPt: design * sz / upm });
+        out.push({ ...run, hexStr: toHex(newCodes), widthPt: design * sz / upm });
     }
     return out;
 }

@@ -3,7 +3,9 @@
  * whose glyph order differs from its text — an Indic pre-base vowel sign, a
  * reph, a split vowel sign, a Khmer pre-base vowel — carries its source text,
  * so `extractText()` returns the logical string. Runs in order (Latin, Thai
- * without sara am) and right-to-left runs are byte-identical to 1.8.0;
+ * without sara am) are byte-identical to 1.8.0; since C27 every right-to-left
+ * bidi run carries its logical text the same way (Skia writes it for every
+ * reversed cluster), so an untagged Arabic or Hebrew line extracts as typed;
  * `layout.actualText: false` switches the spans off; the tagged emitters
  * never nest a second span inside the structure span they already write.
  */
@@ -22,6 +24,7 @@ import * as oriya from '../../fonts/noto-oriya-data.js';
 import * as khmer from '../../fonts/noto-khmer-data.js';
 import * as thai from '../../fonts/noto-thai-data.js';
 import * as arabic from '../../fonts/noto-arabic-data.js';
+import * as hebrew from '../../fonts/noto-hebrew-data.js';
 import * as taitham from '../../fonts/noto-taitham-data.js';
 import { showOpsPerActualTextSpan } from '../helpers/text-objects.js';
 import type { FontData, FontEntry, PdfDiagnostic, PdfLayoutOptions, PdfParams } from '../../src/types/pdf-types.js';
@@ -69,13 +72,11 @@ describe('untagged /ActualText on reordered shaped runs (C20)', () => {
         expect(spans[0]).toContain('0939093F0928094D'); // ह ि न ् … in logical order
     });
 
-    it('leaves Latin, Thai without sara am and right-to-left runs byte-identical to the opt-out build', () => {
+    it('leaves Latin and Thai without sara am byte-identical to the opt-out build', () => {
         const cases: [string, FontEntry][] = [
             ['Hello lean world', entry(sans, 'latin')],
             // demo-language: th (no sara am — the marks keep their order)
             ['สวัสดี ครับ', entry(thai, 'th')],
-            // demo-language: ar (a right-to-left run with a lam-alef ligature)
-            ['السلام عليكم', entry(arabic, 'ar')],
         ];
         for (const [text, font] of cases) {
             const on = build(text, font);
@@ -131,6 +132,109 @@ describe('untagged /ActualText on reordered shaped runs (C20)', () => {
             const pdf = build('हिन्दी कोयल', entry(devanagari, 'hi'), { tagged, onDiagnostic: d => seen.push(d) });
             expect(seen).toEqual([]);
             expect(extractText(pdf)[0].text).toContain('हिन्दी');
+        }
+    });
+});
+
+// ── Right-to-left runs (1.9.0, C27) ──────────────────────────────────
+
+/** The `/ActualText` hex payloads of the untagged spans of a content stream, in order. */
+const untaggedSpans = (c: string): string[] =>
+    [...c.matchAll(/\/Span << \/ActualText <FEFF([0-9A-F]+)> >> BDC/g)].map(m => m[1]);
+
+const utf16 = (s: string): string => Array.from(s, ch => ch.charCodeAt(0).toString(16).toUpperCase().padStart(4, '0')).join('');
+
+describe('untagged /ActualText on right-to-left runs (C27)', () => {
+    // demo-language: ar he (one line each, a lam-alef ligature in the Arabic one)
+    const ARABIC = 'السلام عليكم';
+    const HEBREW = 'שלום עולם';
+
+    it.each([[ARABIC, entry(arabic, 'ar')], [HEBREW, entry(hebrew, 'he')]] as const)(
+        '%s — one span carrying the logical text, around the run inside the line\'s text object',
+        (text, font) => {
+            const pdf = build(text, font);
+            const c = content(pdf);
+            expect(untaggedSpans(c)).toEqual([utf16(text)]);
+            expectOneTextObjectPerSpan(c);
+            expect(showOpsPerActualTextSpan(c)).toEqual([1]);
+            expect(extractText(pdf)[0].text).toContain(text);
+        });
+
+    it('a mixed line: one span per right-to-left bidi run with its logical text, the Latin and the digits bare', () => {
+        const fonts: FontEntry[] = [{ fontData: sans as unknown as FontData, fontRef: '/F3', lang: 'latin' }, { fontData: hebrew as unknown as FontData, fontRef: '/F4', lang: 'he' }];
+        // demo-language: he (the brackets resolve to the Hebrew level, the number to its own LTR run)
+        const text = 'abc שלום (123) עולם xyz';
+        const pdf = buildDocumentPDFBytes({ title: 'M', blocks: [{ type: 'paragraph', text }], fontEntries: fonts }, { creationDate: PINNED });
+        const c = content(pdf);
+        // Visual order of the runs: ") עולם" then "123" then "שלום (" — each span's text logical.
+        expect(untaggedSpans(c)).toEqual([utf16(') עולם'), utf16('שלום (')]);
+        expectOneTextObjectPerSpan(c);
+        expect(c.match(/\bBT\b/g)!.length).toBeLessThanOrEqual(3);
+        const extracted = extractText(pdf)[0].text;
+        expect(extracted).toContain('שלום (');
+        expect(extracted).toContain(') עולם');
+        expect(extracted).toContain('123');
+        expect(extracted.indexOf('abc')).toBeLessThan(extracted.indexOf('xyz'));
+    });
+
+    it('a justified right-to-left paragraph: one span per line, the TJ array inside it', () => {
+        // demo-language: ar (the four words of the sample-multi row, repeated)
+        const words = 'معاملة عربية اختبار مراجع';
+        const text = Array(8).fill(words).join(' ');
+        const pdf = buildDocumentPDFBytes(
+            { title: 'J', blocks: [{ type: 'paragraph', text, align: 'justify' }], fontEntries: [entry(arabic, 'ar')] },
+            { creationDate: PINNED });
+        const c = content(pdf);
+        const spans = untaggedSpans(c);
+        expect(spans.length).toBeGreaterThanOrEqual(2);
+        for (const s of spans) expect(s.startsWith(utf16('معاملة')) || s.startsWith(utf16('عربية')) || s.startsWith(utf16('اختبار')) || s.startsWith(utf16('مراجع'))).toBe(true);
+        expectOneTextObjectPerSpan(c);
+        for (const n of showOpsPerActualTextSpan(c)) expect(n).toBe(1);
+        expect(extractText(pdf)[0].text.split(words)).toHaveLength(9);
+    });
+
+    it('layout.actualText: false restores the bare runs and the visual-order extraction', () => {
+        const pdf = build(HEBREW, entry(hebrew, 'he'), { actualText: false });
+        expect(content(pdf)).not.toContain('/ActualText');
+        expect(extractText(pdf)[0].text).toContain('םלוע םולש');
+    });
+
+    it('a tagged line keeps its one structure span, nothing nested', () => {
+        const pdf = build(ARABIC, entry(arabic, 'ar'), { tagged: true });
+        const c = content(pdf);
+        expect(c).not.toContain(UNTAGGED_SPAN);
+        expect(c.match(/\/Span << \/MCID \d+ \/ActualText <FEFF062706440633/g)).toHaveLength(1);
+        expect(extractText(pdf)[0].text).toContain(ARABIC);
+    });
+
+    it('the sample-multi rows extract column by column in logical order, tagged or not (the reviewer\'s report)', () => {
+        const fonts: FontEntry[] = [
+            { fontData: sans as unknown as FontData, fontRef: '/F3', lang: 'latin' },
+            { fontData: thai as unknown as FontData, fontRef: '/F4', lang: 'th' },
+            { fontData: arabic as unknown as FontData, fontRef: '/F5', lang: 'ar' },
+            { fontData: hebrew as unknown as FontData, fontRef: '/F6', lang: 'he' },
+        ];
+        // demo-language: th ar he (rows 01/02, 01/10 and 01/11 of financial/sample-multi, as the data file lists them)
+        const params: PdfParams = {
+            title: 'Multi-Language Statement', infoItems: [], balanceText: '', countText: '', footerText: '',
+            headers: ['Date', 'Description', 'Category', 'Amount', 'Status'],
+            rows: [
+                { cells: ['01/02', 'รายการไทย', 'ทดสอบ', '-500.00', ''], type: 'debit', pointed: false },
+                { cells: ['01/10', 'معاملة عربية', 'اختبار', '+600.00', 'مراجع'], type: 'credit', pointed: false },
+                { cells: ['01/11', 'עסקה בעברית', 'בדיקה', '-250.00', 'מאושר'], type: 'debit', pointed: false },
+            ],
+            fontEntries: fonts,
+        };
+        for (const tagged of [true, false]) {
+            const pdf = buildPDFBytes(params, { tagged, creationDate: PINNED });
+            const lines = extractText(pdf)[0].text.split('\n');
+            expect(lines, `tagged ${tagged}`).toContain('01/02 รายการไทย ทดสอบ -500.00');
+            expect(lines, `tagged ${tagged}`).toContain('01/10 معاملة عربية اختبار +600.00 مراجع');
+            expect(lines, `tagged ${tagged}`).toContain('01/11 עסקה בעברית בדיקה -250.00 מאושר');
+            const c = content(pdf);
+            expectOneTextObjectPerSpan(c);
+            // The Thai cell is one text-showing operator of nine glyphs: nothing for a reader to break the word on.
+            expect(c).toMatch(/\/F4 [\d.]+ Tf [\d.]+ [\d.]+ Td <[0-9A-F]{36}> Tj/);
         }
     });
 });

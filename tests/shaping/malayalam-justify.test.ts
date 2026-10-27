@@ -24,11 +24,26 @@ const INTRO = 'ഇത് pdfnative ലൈബ്രറി ഉപയോഗിച�
 /** One line of the paragraph: its glyphs left to right, as the viewer places them, and the TJ numbers of its text object. */
 interface Line { readonly y: number; readonly gids: number[]; readonly xs: number[]; readonly numbers: number[] }
 
-function pageContent(pdf: Uint8Array): string {
+/** The page's content and the `/W` advances of its font, keyed by CID (the codes are CIDs since C28). */
+function pageContent(pdf: Uint8Array): { content: string; widthOf: (font: string, cid: number) => number } {
     const reader = openPdf(pdf);
     const contents = reader.resolveValue(dictGet(reader.getPage(0), 'Contents')!);
     if (!isStream(contents)) throw new Error('page content is not a stream');
-    return new TextDecoder('latin1').decode(reader.decodeStream(contents));
+    const widths = new Map<number, number>();
+    let dw = malayalam.defaultWidth;
+    for (const num of [...reader.xref.entries.keys()].sort((a, b) => a - b)) {
+        let obj: unknown;
+        try { obj = reader.getObject(num); } catch { continue; }
+        if (!(obj instanceof Map) || !obj.has('W')) continue;
+        const w = obj.get('W') as unknown[];
+        if (typeof obj.get('DW') === 'number') dw = obj.get('DW') as number;
+        for (let i = 0; i + 1 < w.length; i += 2) (w[i + 1] as number[]).forEach((v, k) => widths.set((w[i] as number) + k, v));
+        break;
+    }
+    return {
+        content: new TextDecoder('latin1').decode(reader.decodeStream(contents)),
+        widthOf: (_font: string, cid: number): number => widths.get(cid) ?? dw,
+    };
 }
 
 /**
@@ -36,7 +51,7 @@ function pageContent(pdf: Uint8Array): string {
  * text object: its first `Td` is the baseline, its `TJ` arrays carry the
  * mark adjustments of the shaped runs and, when justified, the word gaps.
  */
-function lines(content: string): Line[] {
+function lines({ content, widthOf }: ReturnType<typeof pageContent>): Line[] {
     const numbersByY = new Map<number, number[]>();
     for (const m of content.matchAll(/\bBT\b([^]*?)\bET\b/g)) {
         const td = /(-?[\d.]+) (-?[\d.]+) Td/.exec(m[1]);
@@ -48,7 +63,6 @@ function lines(content: string): Line[] {
         }
         numbersByY.set(y, [...(numbersByY.get(y) ?? []), ...numbers]);
     }
-    const widthOf = (_font: string, gid: number): number => malayalam.widths[gid] ?? malayalam.defaultWidth;
     const byY = new Map<number, { gids: number[]; xs: number[] }>();
     for (const g of interpretGlyphs(content, widthOf)) {
         const line = byY.get(g.y) ?? { gids: [], xs: [] };

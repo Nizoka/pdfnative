@@ -109,7 +109,6 @@ describe('no-break space metrics', () => {
 describe('no-break spaces reach the font', () => {
     const latin = notoSans as unknown as FontData;
     const entries: FontEntry[] = [{ fontData: latin, fontRef: '/F3', lang: 'latin' }];
-    const gidOf = (cp: number): string => latin.cmap[cp].toString(16).toUpperCase().padStart(4, '0');
     const advOf = (cp: number): number => latin.widths[latin.cmap[cp]] ?? latin.defaultWidth;
 
     it('Noto Sans carries both no-break spaces, the narrow one narrower', () => {
@@ -121,9 +120,12 @@ describe('no-break spaces reach the font', () => {
     it('encodes U+202F and U+00A0 as their own glyphs in a CID font', () => {
         const uni = createEncodingContext(entries, false, false);
         const hex = uni.textRuns(`a${NNBSP}b${NBSP}c`, 11).map(r => r.hexStr).join('');
-        expect(hex).toContain(gidOf(0x202F));
-        expect(hex).toContain(gidOf(0xA0));
-        expect(uni.ps(`a${NNBSP}b`)).toContain(gidOf(0x202F));
+        // The codes are CIDs (C28): the context says which glyph each stands for.
+        const codeOf = (cp: number): string => uni.getCidMaps!().get('/F3')!.indexOf(latin.cmap[cp]).toString(16).toUpperCase().padStart(4, '0');
+        expect(hex).toContain(codeOf(0x202F));
+        expect(hex).toContain(codeOf(0xA0));
+        expect(codeOf(0x202F)).not.toBe(codeOf(0x20));
+        expect(uni.ps(`a${NNBSP}b`)).toContain(codeOf(0x202F));
     });
 
     it('measures the narrow no-break space at its real advance', () => {
@@ -139,9 +141,11 @@ describe('no-break spaces reach the font', () => {
         const bare: FontData = { ...latin, cmap };
         const uni = createEncodingContext([{ fontData: bare, fontRef: '/F3', lang: 'latin' }], true, false);
         const hex = uni.textRuns(`a${NNBSP}b${NBSP}c`, 11).map(r => r.hexStr).join('');
-        expect(hex).not.toContain(gidOf(0x202F));
-        expect(hex).not.toContain(gidOf(0xA0));
-        expect(hex.match(new RegExp(gidOf(0x20), 'g'))?.length).toBe(2);
+        const cids = uni.getCidMaps!().get('/F3')!; // the codes are CIDs (C28)
+        expect(cids).not.toContain(latin.cmap[0x202F]);
+        expect(cids).not.toContain(latin.cmap[0xA0]);
+        const space = cids.indexOf(latin.cmap[0x20]).toString(16).toUpperCase().padStart(4, '0');
+        expect(hex.match(new RegExp(space, 'g'))?.length).toBe(2);
     });
 
     const spaced: DocumentParams = {

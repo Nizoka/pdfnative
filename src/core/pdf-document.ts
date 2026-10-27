@@ -28,7 +28,7 @@ import { scanDeviceColour } from './pdf-content-colour.js';
 import { spotColourResources, type SpotFunctionStream } from './pdf-spot.js';
 import { validatePrintOptions, resolvePrintBoxes, buildPrinterMarksOps, pdfxBoxes, REGISTRATION_COLOR_SPACE_ENTRY } from './pdf-print.js';
 import { createEncodingContext, applyDocumentFeatures, applyDocumentKerning } from './encoding-context.js';
-import { buildToUnicodeCMap, buildSubsetWidthArray, unmappedUsedGids, subsetTag } from '../fonts/font-embedder.js';
+import { buildToUnicodeCMap, buildSubsetWidthArray, buildCidWidthArray, unmappedUsedGids, subsetTag } from '../fonts/font-embedder.js';
 import { buildWinAnsiToUnicodeCMap } from '../fonts/encoding.js';
 import { getDecodedFontBytes } from '../fonts/font-loader.js';
 import { subsetTTF, uint8ToBinaryString } from '../fonts/font-subsetter.js';
@@ -771,14 +771,18 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
 
             const fontBytes = getDecodedFontBytes(fd);
             const usedGids = enc.getUsedGids ? enc.getUsedGids().get(fe.fontRef) : null;
-            // Identity CIDToGIDMap: the viewer never reads the font's cmap, so
-            // the embed carries one over the used glyphs only (v1.9.0). A
-            // registered font no character reached keeps its five objects (the
+            // The document's CID space of the font (C28): the content streams
+            // show glyph `cids[cid]` by `cid`, the subset is renumbered in that
+            // order (GID i = CID i under /CIDToGIDMap /Identity), /W and
+            // ToUnicode are keyed by CID. The viewer never reads the font's
+            // cmap, so the embed carries one over the used glyphs only (v1.9.0).
+            // A registered font no character reached keeps its five objects (the
             // page resources name it, and ISO 19005-2 §6.2.11.4.1 wants a
             // program behind every referenced font) but embeds the .notdef-only
             // subset, not the whole file (C18).
+            const cids = enc.getCidMaps?.().get(fe.fontRef);
             const ttfBinary = usedGids
-                ? subsetTTF(fontBytes, usedGids, { lean: { cmap: fd.cmap } })
+                ? subsetTTF(fontBytes, usedGids, { lean: { cmap: fd.cmap, cids } })
                 : uint8ToBinaryString(fontBytes);
 
             const fm = fd.metrics;
@@ -786,7 +790,7 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
             const overrides = enc.getToUnicodeOverrides?.().get(fe.fontRef);
             const encoded = enc.getToUnicodeEncoded?.().get(fe.fontRef);
             const toUnicodeCMap = usedGids && usedGids.size > 0
-                ? buildToUnicodeCMap(fd.cmap, usedGids, overrides, encoded)
+                ? buildToUnicodeCMap(fd.cmap, usedGids, overrides, encoded, cids)
                 : buildToUnicodeCMap(fd.cmap, new Set());
             // A level-U claim needs every used code named (ISO 19005-2 §6.2.11.7.2, #87).
             if (pdfaConfig.pdfaConformance === 'U' && usedGids && usedGids.size > 0) {
@@ -794,7 +798,9 @@ export function assembleDocumentParts(params: DocumentParams, layoutOptions?: Pa
                 if (unmapped.length > 0) emitDiagnostic(pdfaGlyphWithoutUnicodeDiagnostic(bfName, unmapped));
             }
 
-            const subsetW = buildSubsetWidthArray(fd.widths, usedGids ?? new Set());
+            const subsetW = usedGids && cids
+                ? buildCidWidthArray(fd.widths, cids, usedGids)
+                : buildSubsetWidthArray(fd.widths, usedGids ?? new Set());
             // An unused font carries `/W []`: /DW covers its only glyph (C18).
             const wArray = subsetW ?? (usedGids && usedGids.size === 0 ? '' : fd.pdfWidthArray);
 

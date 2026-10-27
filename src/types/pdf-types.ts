@@ -365,6 +365,26 @@ export interface TextRun {
      * @since 1.8.0
      */
     readonly tjStr?: string;
+    /**
+     * Set on every run cut from a right-to-left (odd-level) bidi run: the
+     * index of that run on its line and its text in **logical** order. The
+     * run's own `text` is visual (reversed and mirrored); the emitters wrap
+     * the runs of one index in a single untagged `/Span /ActualText` carrying
+     * `logical`, as Skia does for reversed clusters (C27).
+     *
+     * @since 1.9.0
+     */
+    readonly bidi?: { readonly run: number; readonly logical: string };
+    /**
+     * The code of each glyph of {@link shaped}, in the same order: the
+     * document's CID for it. Since 1.9.0 (C28) a font's CIDs are allotted in
+     * order of first use and the embedded subset is renumbered to match
+     * (GID i = CID i), so `hexStr` and `tjStr` hold CIDs too, while the
+     * shaped glyphs keep the font's glyph ids for widths and anchors.
+     *
+     * @since 1.9.0
+     */
+    readonly cids?: readonly number[];
 }
 
 /**
@@ -423,6 +443,15 @@ export interface EncodingContext {
     readonly f2: string;
     readonly fontData?: FontData;
     readonly getUsedGids?: () => Map<string, Set<number>>;
+    /**
+     * The document's CID space per font ref: `cidToGid[cid]` is the font's
+     * glyph id behind each code the content streams show, CID 0 being
+     * `.notdef`, CIDs allotted in order of first use. The builders renumber
+     * the embedded subset in this order (GID i = CID i, `/CIDToGIDMap
+     * /Identity`) and key `/W` and ToUnicode by CID. Present only on
+     * Unicode contexts. (v1.9.0, C28)
+     */
+    readonly getCidMaps?: () => Map<string, readonly number[]>;
     /**
      * Glyphs reachable only through a substitution — an OpenType feature such
      * as `smcp` or `onum` — mapped back to the codepoint of the glyph they

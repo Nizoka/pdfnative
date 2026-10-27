@@ -106,10 +106,11 @@ describe('txtJustified', () => {
         expect(gaps.length).toBe(4);
         // Pen advance: glyph widths from the font plus the four adjustments.
         const fd = notoSans as unknown as FontData;
+        const cidToGid = uni.getCidMaps!().get('/F3')!; // the codes are CIDs (C28)
         const glyphW = (hex: string): number => {
             let w = 0;
             for (let i = 1; i + 4 <= hex.length; i += 4) {
-                const gid = parseInt(hex.slice(i, i + 4), 16);
+                const gid = cidToGid[parseInt(hex.slice(i, i + 4), 16)];
                 w += (fd.widths[gid] ?? fd.defaultWidth) * SZ / fd.metrics.unitsPerEm;
             }
             return w;

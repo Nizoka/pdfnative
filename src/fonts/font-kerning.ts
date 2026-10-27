@@ -73,24 +73,29 @@ const hex4 = (g: number): string => g.toString(16).toUpperCase().padStart(4, '0'
  * Build the `TJ` operand for a glyph sequence, or `null` when no pair in it
  * kerns — in which case the caller keeps the cheaper `Tj` form.
  *
- * @param gids Glyph ids, in visual order.
+ * @param codes The glyphs' codes in visual order — the glyph ids, or since
+ *   1.9.0 the document's CIDs (C28), which `gidOf` maps back to glyph ids
+ *   for the pair lookup; the codes are written as they are.
  * @param fd   Font supplying the pair table.
+ * @param gidOf The glyph id behind a code; absent when they coincide.
  * @returns `{ tj, adjustDesign }` where `adjustDesign` is the total advance
  *   change in design units (negative tightens).
  */
 export function buildKernedTJ(
-    gids: readonly number[],
+    codes: readonly number[],
     fd: FontData,
+    gidOf?: (code: number) => number,
 ): { tj: string; adjustDesign: number } | null {
     const table = fd.kern;
-    if (!table || gids.length < 2) return null;
+    if (!table || codes.length < 2) return null;
 
     let total = 0;
     const parts: string[] = [];
     let run = '';
+    const gids = gidOf ? codes.map(gidOf) : codes;
 
-    for (let i = 0; i < gids.length; i++) {
-        run += hex4(gids[i]);
+    for (let i = 0; i < codes.length; i++) {
+        run += hex4(codes[i]);
         const next = i + 1 < gids.length ? gids[i + 1] : -1;
         const adjust = next >= 0 ? kernPair(table, gids[i], next) : 0;
         if (adjust !== 0) {
@@ -119,15 +124,17 @@ export function buildKernedTJ(
  *
  * @param runs Runs from `EncodingContext.textRuns()`.
  * @param sz   Font size in points, for the corrected advance.
+ * @param gidOf The glyph id behind a code of a run's font (the codes are
+ *   the document's CIDs since 1.9.0, C28); absent when they coincide.
  */
-export function applyKerningToRuns(runs: readonly TextRun[], sz: number): TextRun[] {
+export function applyKerningToRuns(runs: readonly TextRun[], sz: number, gidOf?: (fontRef: string, cid: number) => number): TextRun[] {
     const out: TextRun[] = [];
     for (const run of runs) {
         if (run.shaped || !run.hexStr || !run.fontData.kern) { out.push(run); continue; }
-        const gids = parseGids(run.hexStr);
-        if (gids === null) { out.push(run); continue; }
+        const codes = parseGids(run.hexStr);
+        if (codes === null) { out.push(run); continue; }
 
-        const kerned = buildKernedTJ(gids, run.fontData);
+        const kerned = buildKernedTJ(codes, run.fontData, gidOf ? (code: number) => gidOf(run.fontRef, code) : undefined);
         if (kerned === null) { out.push(run); continue; }
 
         const upm = run.fontData.metrics.unitsPerEm || 1000;

@@ -56,8 +56,38 @@ export interface SubsetTTFOptions {
      * beyond the BMP), `post` becomes a format-3 header, and `gasp` is dropped.
      * Outlines, metrics, names and hinting are untouched. Never for a simple
      * TrueType font, whose `cmap` the viewer reads.
+     *
+     * With `cids` (1.9.0, C28) the glyphs are renumbered in that order — the
+     * document's CID space, `cids[cid]` being the source glyph id and
+     * `cids[0]` the `.notdef` — so glyph i of the embed is CID i under
+     * `/CIDToGIDMap /Identity`: `glyf`, `loca`, `hmtx`, `hhea.numberOfHMetrics`
+     * and `maxp.numGlyphs` cover the kept glyphs only (the components of a
+     * composite follow, in ascending source order, and its references are
+     * rewritten), and the `cmap` maps to the new ids. A CJK face then costs
+     * its outlines rather than eight bytes per glyph of the source font.
      */
-    readonly lean?: { readonly cmap: Readonly<Record<number, number>> };
+    readonly lean?: { readonly cmap: Readonly<Record<number, number>>; readonly cids?: readonly number[] };
+}
+
+/**
+ * Rewrite the component glyph ids of a composite glyph's outline (a copy)
+ * through the compact order: the same record walk as the closure, the
+ * `glyphIndex` field of every component replaced (ISO/IEC 14496-22 §5.3.4).
+ */
+function renumberComponents(chunk: Uint8Array, remap: ReadonlyMap<number, number>): void {
+    const view = new DataView(chunk.buffer, chunk.byteOffset, chunk.byteLength);
+    let pos = 10;
+    let flags: number;
+    do {
+        if (pos + 4 > chunk.length) break;
+        flags = view.getUint16(pos);
+        view.setUint16(pos + 2, remap.get(view.getUint16(pos + 2)) ?? 0);
+        pos += 4;
+        if (flags & 0x0001) pos += 4; else pos += 2;
+        if (flags & 0x0008) pos += 2;
+        else if (flags & 0x0040) pos += 4;
+        else if (flags & 0x0080) pos += 8;
+    } while (flags & 0x0020);
 }
 
 /** A `post` table of format 3: the 32-byte header, no glyph names (ISO/IEC 14496-22 §5.2.8). */
@@ -71,14 +101,18 @@ function postFormat3(source: Uint8Array): Uint8Array {
 /**
  * A `cmap` over the kept glyphs: a (3,1) format-4 subtable for the BMP and,
  * when a kept code point lies beyond it, a (3,10) format-12 subtable for the
- * whole range. Glyph ids are the source font's (the subset retains them).
+ * whole range. Glyph ids are the source font's, or the renumbered ones
+ * through `remap` (C28).
  */
-function leanCmap(cmap: Readonly<Record<number, number>>, kept: ReadonlySet<number>): Uint8Array {
+function leanCmap(cmap: Readonly<Record<number, number>>, kept: ReadonlySet<number>, remap: ReadonlyMap<number, number> | null): Uint8Array {
     const pairs: [number, number][] = [];
     for (const key of Object.keys(cmap)) {
         const cp = Number(key);
         const gid = cmap[cp];
-        if (Number.isInteger(cp) && cp >= 0 && cp <= 0x10FFFF && gid > 0 && kept.has(gid)) pairs.push([cp, gid]);
+        if (Number.isInteger(cp) && cp >= 0 && cp <= 0x10FFFF && gid > 0 && kept.has(gid)) {
+            const id = remap === null ? gid : remap.get(gid);
+            if (id !== undefined && id > 0) pairs.push([cp, id]);
+        }
     }
     pairs.sort((a, b) => a[0] - b[0]);
     const bmp = pairs.filter(p => p[0] <= 0xFFFF);
@@ -221,6 +255,9 @@ export function subsetTTF(ttfInput: Uint8Array | string, usedGids: Set<number>, 
         // Always include GID 0 (.notdef — required by PDF spec)
         const allGids = new Set(usedGids);
         allGids.add(0);
+        // The compact order (C28): every glyph the document shows by a CID.
+        const compactOrder = options?.lean?.cids;
+        if (compactOrder !== undefined) for (const g of compactOrder) if (g >= 0 && g < numGlyphs) allGids.add(g);
 
         // Resolve compound glyph component references recursively.
         // Iteration limit prevents excessive processing on deeply nested or malicious fonts.
@@ -265,24 +302,50 @@ export function subsetTTF(ttfInput: Uint8Array | string, usedGids: Set<number>, 
             } while (flags & 0x0020);
         }
 
+        // The glyph order of the output: the source order with the unused
+        // outlines emptied (ids retained), or the compact order (C28) —
+        // `cids` first, then the components the closure added, ascending.
+        let order: number[] | null = null;
+        let remap: Map<number, number> | null = null;
+        if (compactOrder !== undefined) {
+            order = [0];
+            remap = new Map([[0, 0]]);
+            for (let i = 1; i < compactOrder.length; i++) {
+                const g = compactOrder[i];
+                // A code outside the font shows the empty .notdef outline.
+                const kept = g > 0 && g < numGlyphs && !remap.has(g) ? g : 0;
+                order.push(kept);
+                if (kept !== 0) remap.set(kept, i);
+            }
+            for (const g of [...allGids].sort((a, b) => a - b)) {
+                if (!remap.has(g)) { remap.set(g, order.length); order.push(g); }
+            }
+        }
+        const outCount = order === null ? numGlyphs : order.length;
+
         // Build new glyf table (only used glyph outlines)
         const glyfChunks: Uint8Array[] = [];
-        const newOffsets = new Uint32Array(numGlyphs + 1);
+        const newOffsets = new Uint32Array(outCount + 1);
         let curOff = 0;
-        for (let gid = 0; gid < numGlyphs; gid++) {
-            newOffsets[gid] = curOff;
-            if (allGids.has(gid)) {
+        for (let i = 0; i < outCount; i++) {
+            newOffsets[i] = curOff;
+            const gid = order === null ? i : order[i];
+            if (order !== null || allGids.has(gid)) {
                 const off = origOffsets[gid];
                 const next = origOffsets[gid + 1];
                 const glyphLen = next - off;
-                if (glyphLen > 0) {
-                    glyfChunks.push(u8.slice(glyf.offset + off, glyf.offset + next));
+                if (glyphLen > 0 && glyf.offset + next <= len) {
+                    const chunk = u8.slice(glyf.offset + off, glyf.offset + next);
+                    if (remap !== null && glyphLen >= 10 && new DataView(chunk.buffer, chunk.byteOffset, chunk.byteLength).getInt16(0) < 0) {
+                        renumberComponents(chunk, remap);
+                    }
+                    glyfChunks.push(chunk);
                     curOff += glyphLen;
                     if (glyphLen & 1) { glyfChunks.push(new Uint8Array(1)); curOff += 1; }
                 }
             }
         }
-        newOffsets[numGlyphs] = curOff;
+        newOffsets[outCount] = curOff;
 
         // Assemble new glyf
         const newGlyf = new Uint8Array(curOff);
@@ -290,9 +353,9 @@ export function subsetTTF(ttfInput: Uint8Array | string, usedGids: Set<number>, 
         for (const chunk of glyfChunks) { newGlyf.set(chunk, pos); pos += chunk.length; }
 
         // Build new loca (always long format)
-        const newLocaBuf = new ArrayBuffer((numGlyphs + 1) * 4);
+        const newLocaBuf = new ArrayBuffer((outCount + 1) * 4);
         const newLocaView = new DataView(newLocaBuf);
-        for (let i = 0; i <= numGlyphs; i++) newLocaView.setUint32(i * 4, newOffsets[i]);
+        for (let i = 0; i <= outCount; i++) newLocaView.setUint32(i * 4, newOffsets[i]);
         const newLoca = new Uint8Array(newLocaBuf);
 
         // Tables required for PDF CIDFontType2, plus the hinting tables (`prep`, `fpgm`,
@@ -317,8 +380,37 @@ export function subsetTTF(ttfInput: Uint8Array | string, usedGids: Set<number>, 
         newTableData['glyf'] = newGlyf;
         newTableData['loca'] = newLoca;
         if (options?.lean) {
-            if (newTableData['cmap']) newTableData['cmap'] = leanCmap(options.lean.cmap, allGids);
+            if (newTableData['cmap']) newTableData['cmap'] = leanCmap(options.lean.cmap, allGids, remap);
             if (newTableData['post']) newTableData['post'] = postFormat3(newTableData['post']);
+        }
+        // The compact order carries its own metrics: one `hmtx` entry per
+        // kept glyph (the source's trailing-advance rule unfolded), the
+        // counts of `hhea` and `maxp` to match.
+        if (order !== null) {
+            const hhea = newTableData['hhea'], hmtx = newTableData['hmtx'], maxpTable = newTableData['maxp'];
+            if (hhea && hmtx && maxpTable && hhea.length >= 36 && maxpTable.length >= 6) {
+                const nHM = new DataView(hhea.buffer, hhea.byteOffset, hhea.byteLength).getUint16(34);
+                const src = new DataView(hmtx.buffer, hmtx.byteOffset, hmtx.byteLength);
+                const out = new Uint8Array(outCount * 4);
+                const ov = new DataView(out.buffer);
+                for (let i = 0; i < outCount; i++) {
+                    const g = order[i];
+                    const a = Math.min(g, nHM - 1);
+                    const adv = a >= 0 && a * 4 + 2 <= hmtx.length ? src.getUint16(a * 4) : 0;
+                    let lsb = 0;
+                    if (g < nHM) { if (g * 4 + 4 <= hmtx.length) lsb = src.getInt16(g * 4 + 2); }
+                    else { const p = nHM * 4 + (g - nHM) * 2; if (p + 2 <= hmtx.length) lsb = src.getInt16(p); }
+                    ov.setUint16(i * 4, adv);
+                    ov.setInt16(i * 4 + 2, lsb);
+                }
+                newTableData['hmtx'] = out;
+                const hheaCopy = new Uint8Array(hhea);
+                new DataView(hheaCopy.buffer).setUint16(34, outCount);
+                newTableData['hhea'] = hheaCopy;
+                const maxpCopy = new Uint8Array(maxpTable);
+                new DataView(maxpCopy.buffer).setUint16(4, outCount);
+                newTableData['maxp'] = maxpCopy;
+            }
         }
 
         // Update head: indexToLocFormat = 1 (long); checkSumAdjustment is

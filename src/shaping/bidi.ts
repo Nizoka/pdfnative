@@ -1007,9 +1007,12 @@ export function reverseString(str: string): string {
 
 /**
  * Reverse a run and apply L4 glyph mirroring to every code point —
- * the visual form of an odd-level run.
+ * the visual form of an odd-level run. An involution (the mirroring table
+ * is symmetric): applied to a {@link BidiRun}'s visual text it gives the
+ * logical text back, which is what an untagged `/ActualText` carries
+ * (1.9.0, C27).
  */
-function reverseAndMirror(str: string): string {
+export function reverseAndMirror(str: string): string {
     const parts: string[] = [];
     for (let i = 0; i < str.length;) {
         const cp = str.codePointAt(i) ?? 0;
