@@ -236,7 +236,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
-    "@vitest/coverage-v8": "^4.1.11",
+    "@vitest/coverage-v8": "^4.1.12",
     "eslint": "^9.0.0",
     "marked": "12.0.2",
     "pdfnative-react": "^1.3.0",
@@ -245,7 +245,7 @@
     "tsx": "^4.22.4",
     "typescript": "^5.4.0",
     "typescript-eslint": "^8.57.2",
-    "vitest": "^4.1.11"
+    "vitest": "^4.1.12"
   },
   "overrides": {
     "esbuild": "0.28.1",
