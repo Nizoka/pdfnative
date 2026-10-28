@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/Nizoka/pdfnative/actions/workflows/ci.yml/badge.svg)](https://github.com/Nizoka/pdfnative/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/Nizoka/pdfnative/actions/workflows/codeql.yml/badge.svg)](https://github.com/Nizoka/pdfnative/actions/workflows/codeql.yml)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/Nizoka/pdfnative/badge)](https://scorecard.dev/viewer/?uri=github.com/Nizoka/pdfnative)
 [![npm version](https://img.shields.io/npm/v/pdfnative)](https://www.npmjs.com/package/pdfnative)
 [![npm downloads](https://img.shields.io/npm/dm/pdfnative)](https://www.npmjs.com/package/pdfnative)
 [![bundle size](https://img.shields.io/bundlephobia/minzip/pdfnative)](https://bundlephobia.com/package/pdfnative)
@@ -52,7 +53,7 @@ Detailed docs: [CLI guide](docs/guides/cli.md) · [MCP guide](docs/guides/mcp.md
 - **USE-lite shaping** — `classifyUseCategory` / `classifyClusters` classify joiners for the Indic engine and the Khmer, Myanmar and Tibetan shapers (v1.3.0)
 - **Colour emoji (COLRv1)** — opt-in Noto Color Emoji subset (**expanded to 1167 glyphs in v1.6.0**, ~4.5 MB with the v1.7.0 sequence ligatures, incl. the complete Transport & Map block); solid + linear + radial gradient layers rendered as native PDF Form XObjects; monochrome fallback when not registered (v1.3.0). Variation selectors, ZWJ/ZWNJ, and skin-tone modifiers no longer leave tofu, and glyph `/BBox` is computed from contour bounds so emoji are never clipped (v1.3.0). **Advanced compositing** (v1.4.0): COLRv1 sweep (conic) gradients render as native flat-shaded wedges, and `PaintComposite` separable blend modes (Multiply, Screen, Overlay, Darken, Lighten, …) map to PDF `/BM` ExtGState; structural Porter-Duff modes fall back to monochrome. **Flag & ZWJ sequences** (v1.7.0): 51 flags + 22 ZWJ sequences (families, professions, rainbow/pirate flags, …) resolve through the source font's GSUB into single colour ligature glyphs with a longest-match pre-pass — both VS-16 spellings match, uncovered sequences degrade to the historical per-codepoint rendering, and the CLI bundles any custom set (`--sequences`, `--sequence-list`, skin tones included). **Skin tones, transforms and masks** (v1.8.0): 30 gestures and people bundled in all five tones (1189 glyphs + 223 sequences, ~4.9 MB); every COLRv1 transform and variable paint is read, and `SRC_IN`/`DEST_IN` masks render as clipping paths, so flags keep their shaded wave. [Guide →](docs/guides/colour-emoji.md)
 - **Multi-font fallback** — automatic cross-script font switching with continuation bias
-- **TTF subsetting** — only used glyphs embedded; since v1.9.0 the embedded subset is lean (a `cmap` over the kept glyphs, a format-3 `post`, no `gasp`): a Noto Sans paragraph embeds 42 KB instead of 109 KB
+- **TTF subsetting** — only used glyphs embedded; since v1.9.0 the embedded subset is lean (a `cmap` over the kept glyphs, a format-3 `post`, no `gasp`): and compact (the kept glyphs renumbered into the document's CID space): a Noto Sans paragraph embeds 6.3 KB instead of 108.9 KB, Noto Sans JP 9.6 KB instead of 275.0 KB
 - **Tagged PDF / PDF/A** — structure tree, /ActualText, XMP metadata, sRGB OutputIntent (PDF/A-1b, 2b, 2u, 3b with embedded file attachments). **Conformance guards** (v1.7.0): configurations that would break the declared PDF/A level (no embedded fonts, DeviceCMYK images) surface a diagnostic — `console.warn` by default, a custom `onDiagnostic` sink, or a thrown error under `strict: true`. **CMYK intents** (v1.8.0): CMYK and Gray OutputIntent profiles, with RGB content kept conforming through a calibrated `/DefaultRGB`. [Guide →](docs/guides/pdfa.md)
 - **PDF Encryption (round-trip)** — **write** AES-128 (V4/R4) and AES-256 (V5/R6) encrypted PDFs (RC4 is never emitted), and **read** all of AES-128, AES-256, and legacy RC4 (V1–V4); owner + user passwords, granular permissions. **v1.6.0** adds a Standard Security Handler **decryptor** — `openPdf(bytes, { password })` decrypts transparently, the merge/split API ingests encrypted sources **and re-encrypts its output** (`MergeOptions.encrypt`, AES only, fresh keys) — closing the full *open → edit → re-secure* round trip. [Guide →](docs/guides/pdf-manipulation.md)
 - **Native vector charts** (v1.6.0, **charts v2 in v1.7.0**) — bar, horizontal-bar, line, pie, donut, **stacked bars, area, and scatter** `chart` blocks rendered as pure PDF path operators (zero deps, no rasterisation); multi-series, legends, "nice" axis ticks, negative values, tagged `/Figure` + alt text. v1.7.0 adds a **secondary right axis**, **log and UTC-deterministic time scales**, **per-point data labels**, and x-label collision handling (automatic stride + `labelStride` / `labelRotation`). [Guide →](docs/guides/charts.md)
@@ -84,7 +85,7 @@ Detailed docs: [CLI guide](docs/guides/cli.md) · [MCP guide](docs/guides/mcp.md
 - **FlateDecode compression** — zlib stream compression (50–90% size reduction), zero-dependency, platform-native
 - **Web Worker support** — off-main-thread generation for large datasets
 - **Tree-shakeable** — ESM + CJS dual build with TypeScript declarations
-- **Heavily tested** — 4306+ tests across 177 files, fuzz suite, dual-mode visual-regression suite, performance benchmarks; 91.5 % statement coverage measured at the v1.8.0 release, with CI enforcing ≥88% statements / 80% branches / 85% functions / 90% lines (vitest.config.ts)
+- **Heavily tested** — 4316+ tests across 178 files, fuzz suite, dual-mode visual-regression suite, performance benchmarks; 91.5 % statement coverage measured at the v1.8.0 release, with CI enforcing ≥88% statements / 80% branches / 85% functions / 90% lines (vitest.config.ts)
 - **Zero breaking changes, proven** (v1.9.0) — the previous release's test suite is replayed against the current sources on every pull request (`compat-previous`), its API and error registries held by `tests/tools/api-compat.test.ts`; required checks on Linux (Node 22 and 24), Windows and macOS; the workflows linted (zizmor, actionlint), the built package smoke-tested on Deno, Bun and Chromium, the parser surface fuzzed by ClusterFuzzLite — see [SECURITY.md](SECURITY.md#compatibility-promise)
 - **NPM provenance** — SLSA Build L2: a guard → build → publish → attest release pipeline publishes through npm Trusted Publishing (OIDC) and attests the bytes the registry serves, with CycloneDX and SPDX SBOMs and a Sigstore bundle on the GitHub release (v1.9.0)
 - **On-device generation** — runs in Node, browsers, Workers, Deno, Bun. No SaaS round-trip; documents never leave the calling process unless your application explicitly sends them
@@ -292,11 +293,6 @@ const pdf = buildPDFBytes({
 | Tamil | `ta` | Noto Sans Tamil | Indic OpenType engine — ligatures, pre-base and split vowels (v1.8.0) |
 | Telugu | `te` | Noto Sans Telugu | Indic OpenType engine — subjoined consonants, vattu (v1.3.0; engine v1.8.0) |
 | Sinhala | `si` | Noto Sans Sinhala | Indic OpenType engine — kombuva, rakaransaya, two-part vowels (v1.3.0; engine v1.8.0) |
-| Gujarati | `gu` | Noto Sans Gujarati | Indic OpenType engine — reph, half forms, rakar, pre-base િ (v1.9.0) |
-| Punjabi (Gurmukhi) | `pa` | Noto Sans Gurmukhi | Indic OpenType engine — subjoined ਹ ਰ ਵ, tippi, addak, nukta letters (v1.9.0) |
-| Kannada | `kn` | Noto Sans Kannada | Indic OpenType engine — subjoined consonants, reph after the vowel sign, two-part vowels (v1.9.0) |
-| Malayalam | `ml` | Noto Sans Malayalam | Indic OpenType engine — chillu letters, pre-base ്ര, dot reph, two-part vowels (v1.9.0) |
-| Odia | `or` | Noto Sans Oriya | Indic OpenType engine — reph, ya-phala, two-part vowels, nukta letters (v1.9.0) |
 | Gujarati | `gu` | Noto Sans Gujarati | Indic OpenType engine — reph, half forms, rakar, pre-base િ (v1.9.0) |
 | Punjabi (Gurmukhi) | `pa` | Noto Sans Gurmukhi | Indic OpenType engine — subjoined ਹ ਰ ਵ, tippi, addak, nukta letters (v1.9.0) |
 | Kannada | `kn` | Noto Sans Kannada | Indic OpenType engine — subjoined consonants, reph after the vowel sign, two-part vowels (v1.9.0) |
@@ -551,7 +547,7 @@ See [scripts/README.md](scripts/README.md) for the modular generator architectur
 | `sample-hy.pdf` | Armenian |
 | `sample-bn.pdf` | Bengali (GSUB conjuncts + GPOS marks) |
 | `sample-ta.pdf` | Tamil (GSUB + split vowel decomposition) |
-| `sample-multi.pdf` | Mixed: all 32 scripts in one PDF |
+| `sample-multi.pdf` | Mixed: Arabic, Hebrew, Hindi, Thai and six more scripts in one tagged PDF/A-2b table — every cell's text as `/ActualText` (v1.9.0) |
 | `sample-pagination.pdf` | 200 rows, multi-page layout |
 
 ### Diverse Use Cases (non-financial)
@@ -651,11 +647,6 @@ See [scripts/README.md](scripts/README.md) for the modular generator architectur
 | `doc-tamil.pdf` | Tamil one-page conformance document — ி after its consonant, ெ ே ை before, split ொ ோ ௌ, pulli, ரூ ஸ்ரீ ligatures (rewritten v1.8.0) |
 | `doc-devanagari.pdf` | Hindi one-page conformance document — ि reordering, reph, rakar, half forms, क्ष ज्ञ त्र, nukta, anusvara, digits (rewritten v1.8.0) |
 | `doc-telugu.pdf` | Telugu one-page conformance document — subjoined consonants, vattu, ై, anusvara, digits (rewritten v1.8.0) |
-| `doc-gujarati.pdf` | Gujarati one-page conformance document — reph, half forms, rakar, pre-base િ, digits (v1.9.0) |
-| `doc-gurmukhi.pdf` | Punjabi (Gurmukhi) one-page conformance document — subjoined consonants, tippi, addak, nukta letters (v1.9.0) |
-| `doc-kannada.pdf` | Kannada one-page conformance document — subjoined consonants, reph, two-part vowel signs (v1.9.0) |
-| `doc-malayalam.pdf` | Malayalam one-page conformance document — chillu letters, pre-base ്ര, conjuncts, two-part vowel signs (v1.9.0) |
-| `doc-odia.pdf` | Odia one-page conformance document — reph, ya-phala, two-part vowel signs, nukta letters (v1.9.0) |
 | `doc-gujarati.pdf` | Gujarati one-page conformance document — reph, half forms, rakar, pre-base િ, digits (v1.9.0) |
 | `doc-gurmukhi.pdf` | Punjabi (Gurmukhi) one-page conformance document — subjoined consonants, tippi, addak, nukta letters (v1.9.0) |
 | `doc-kannada.pdf` | Kannada one-page conformance document — subjoined consonants, reph, two-part vowel signs (v1.9.0) |
@@ -811,10 +802,11 @@ See [scripts/README.md](scripts/README.md) for the modular generator architectur
 
 | Function | Description |
 |----------|-------------|
-| `parseImage(bytes)` | Auto-detect and parse JPEG or PNG |
+| `parseImage(bytes)` | Auto-detect and parse JPEG, PNG or JPEG 2000 (`ParsedImage.jpx` for a codestream, v1.9.0) |
+| `parseJPX(bytes)` | Read a JP2 container or raw codestream into a `JpxInfo` — channels, bit depth, opacity, declared colour (v1.9.0) |
 | `parseJPEG(bytes)` | Parse JPEG image (DCTDecode) |
 | `parsePNG(bytes)` | Parse PNG image (FlateDecode) |
-| `detectImageFormat(bytes)` | Detect JPEG or PNG from magic bytes |
+| `detectImageFormat(bytes)` | Detect `'jpeg'`, `'png'` or `'jpx'` from magic bytes (JPEG 2000 since v1.9.0) |
 | `buildImageXObject(img, smaskObj?)` | Build PDF Image XObject dictionary |
 | `buildImageOperators(ref, x, y, w, h)` | Build `q cm Do Q` content stream operators |
 
@@ -836,6 +828,8 @@ See [scripts/README.md](scripts/README.md) for the modular generator architectur
 | `shapeArabicText(str, fontData)` | Arabic GSUB positional shaping |
 | `containsArabic(text)` | Check for Arabic characters |
 | `containsHebrew(text)` | Check for Hebrew characters |
+| `resolveBidiLevels(text, direction?)` | Resolve a paragraph's embedding levels with the whole of UAX #9 — embeddings, overrides, isolates, bracket pairs, the neutral rules (v1.9.0) |
+| `bidiLineLevels(levels, start, end)` / `bidiRunsForLine(levels, start, end)` | The per-line steps L1 (trailing whitespace) and L2 (reordering into visual runs) over resolved levels (v1.9.0) |
 
 ### Barcode & QR Code
 
@@ -867,7 +861,7 @@ See [scripts/README.md](scripts/README.md) for the modular generator architectur
 | `buildAnnotation(annot, objNum)` | Build a full markup annotation indirect object (v1.5.0) |
 | `buildAnnotationBody(annot)` | Build a markup annotation dictionary body (for the modifier) (v1.5.0) |
 
-Supported `MarkupAnnotation` types: `text`, `highlight`, `underline`, `strikeout`, `squiggly`, `square`, `circle`, `line`, `freetext`.
+Supported `MarkupAnnotation` types: `text`, `highlight`, `underline`, `strikeout`, `squiggly`, `square`, `circle`, `line`, `freetext`, and since v1.9.0 `link` (`{ type: 'link', rect, url }`, a `/URI` action through the URL allow-list).
 
 ### Layout Debug & Inspection
 
@@ -883,6 +877,7 @@ Enable the visual overlay via `layout: { debug: true }` or a granular `LayoutDeb
 |----------|-------------|
 | `compileFontData(buffer, opts?)` | Compile a TTF/OTF `Uint8Array` into a font-data module source string (v1.5.0) |
 | `parseFontData(buffer, opts?)` | Parse a TTF/OTF `Uint8Array` into a `FontDataObject` (metrics, cmap, widths, glyph coverage) (v1.5.0) |
+| `buildSyntheticGrayProfile()` / `buildSyntheticCmykProfile()` | Structurally complete ICC v2 output profiles (`prtr`, Gray or CMYK) that validators accept and that characterise no press — for tests and samples, never a job (v1.9.0) |
 
 ### AcroForm Fields
 
@@ -907,6 +902,7 @@ Enable the visual overlay via `layout: { debug: true }` or a granular `LayoutDeb
 | `embedValidationInfo(pdf, data)` | Write pre-collected LTV material as `/DSS` + `/VRI` — sync, offline, deterministic (v1.7.0) |
 | `addValidationInfo(pdf, opts?)` | Collect + embed in one call (PAdES B-LT, v1.7.0) |
 | `addDocumentTimestamp(pdf, opts?)` | Append a `/DocTimeStamp` revision (PAdES B-LTA, v1.7.0) |
+| `composeLtvData(pdf, material, opts?)` | Build the `LtvData` that `embedValidationInfo` expects from flat lists of certificates, OCSP responses and CRLs collected out of band (`LtvMaterial`); `match: 'chain'` keeps what validates each signature, `'all'` keeps everything (v1.9.0) |
 | `estimateContentsSize(certSizes, algorithm?, opts?)` | Estimate `/Contents` size (`{ timestamp: true }` adds RFC 3161 headroom, v1.7.0) |
 | `setCryptoProvider(provider)` | Install (or clear with `null`) a global native signature provider (v1.4.0) |
 | `getCryptoProvider()` | Return the current global `CryptoProvider`, or `null` (v1.4.0) |
@@ -941,12 +937,14 @@ Enable the visual overlay via `layout: { debug: true }` or a granular `LayoutDeb
 | `derSetOf(...values)` / `derGeneralizedTime(date)` | Canonical DER SET OF (X.690 §11.6) / GeneralizedTime encoder (v1.7.0) |
 | `rsaSign(msg, key, digest?)` / `rsaVerify(msg, sig, key, digest?)` | RSA PKCS#1 v1.5 sign/verify — SHA-256/384/512 (digest param v1.7.0) |
 | `ecdsaSign(hash, key)` / `ecdsaVerify(hash, sig, key)` | ECDSA P-256 sign/verify |
+| `ecdsaSignHash(hash, key)` / `ecdsaVerifyHash(hash, sig, pub)` / `encodeDerSignature(r, s)` / `decodeDerSignature(der)` | ECDSA over a precomputed digest, and the DER ↔ raw `(r, s)` codecs (v1.9.0) |
 | `parseCertificate(der)` | Parse X.509 DER certificate — incl. SKI/AKI, EKU, AIA (OCSP/caIssuers URLs), CRL distribution points (v1.7.0) |
 | `certHasEku(cert, oid)` | Check an extended-key-usage OID (v1.7.0) |
 | `buildCmsSignedData(options)` | Build CMS SignedData — PKCS#7 or PAdES profile, SHA-256/384/512 (v1.7.0) |
 | `parseCmsSignedData(der)` / `addUnsignedAttribute(cms, attr)` / `buildAttribute(oid, ...v)` | CMS inspection + unsigned-attribute surgery, signed bytes untouched (v1.7.0) |
 | `buildTimestampRequest(imprint, opts?)` / `parseTimestampResponse(der)` / `parseTimestampToken(der)` / `verifyTimestampImprint(info, hash)` | RFC 3161 timestamp protocol (v1.7.0) |
-| `buildOcspRequest(cert, issuer, opts?)` / `parseOcspResponse(der)` | OCSP RFC 6960 (v1.7.0) |
+| `buildOcspRequest(cert, issuer, opts?)` / `parseOcspResponse(der)` | OCSP RFC 6960 (v1.7.0); the parsed response exposes its `OcspCertId` (v1.9.0) |
+| `ocspResponseMatchesCertificate(response, cert, issuer)` | Whether an OCSP response answers for a certificate — the matcher `composeLtvData` applies under `match: 'chain'` (v1.9.0) |
 | `parseCrl(der)` / `isSerialRevoked(crl, serial)` | CRL RFC 5280 (v1.7.0) |
 | `initCrypto()` | Initialize crypto module (lazy load) |
 
@@ -964,6 +962,8 @@ Enable the visual overlay via `layout: { debug: true }` or a granular `LayoutDeb
 | `isRef(v)` / `isDict(v)` / `isArray(v)` / `isStream(v)` | Type guards for parsed PDF values |
 | `dictGet(dict, key)` / `dictGetName(dict, key)` | Dictionary value accessors |
 | `inflateSync(data)` | Decompress FlateDecode data (zlib inflate) |
+| `decodePdfTextString(raw)` | Decode an ISO 32000-1 text string — UTF-16BE and UTF-8 byte-order marks, the full PDFDocEncoding table — the decoder every reader applies to `/Info`, outlines, page labels and signature names (v1.9.0) |
+| `PdfStreamLimitError` (`code: 'PDF_STREAM_LIMIT'`) | Thrown when a content or font stream exceeds its decode cap; `extractText({ onStreamError })` takes `'limit'` (default), `'skip'` (the 1.8.0 lenience) or `'throw'` (`StreamErrorPolicy`, v1.9.0) |
 | `validatePdfUA(bytes)` | Read-only PDF/UA structural checker — returns `{ valid, errors, warnings }` (v1.3.0) |
 | `mergePdfs(sources, opts?)` | Merge multiple PDFs into one, rebuilding a clean object graph; `opts.maxOutputSize` caps output at 256 MiB by default (v1.4.0); `opts.encrypt` re-encrypts the output (AES-128/AES-256, v1.6.0) |
 | `splitPdf(src, ranges, opts?)` | Split a PDF into multiple documents by inclusive 0-based page ranges (v1.4.0) |
@@ -982,7 +982,7 @@ Enable the visual overlay via `layout: { debug: true }` or a granular `LayoutDeb
 | `ParagraphBlock` | Text with fontSize, lineHeight, align, indent, color |
 | `TableBlock` | Headers + rows using PdfRow/ColumnDef |
 | `ListBlock` | Bullet or numbered items; entries may be plain strings or nested `ListItem` `{ text, items }` for hierarchical lists (v1.4.0) |
-| `ImageBlock` | JPEG/PNG with optional width, height, align, alt text |
+| `ImageBlock` | JPEG, PNG or JPEG 2000 (v1.9.0) with optional width, height, align, alt text |
 | `LinkBlock` | Hyperlink with URL, blue underline, tagged /Link |
 | `SpacerBlock` | Vertical whitespace |
 | `PageBreakBlock` | Force new page |
@@ -1018,7 +1018,7 @@ const pdf = buildPDFBytes(params, {
 | `isValidPdfRgb(str)` | Check if string is valid `"R G B"` format (0.0–1.0) |
 | `normalizeColors(colors)` | Validate and normalize all fields in a PdfColors object |
 
-Types (v1.8.0): `PdfCmykTuple` (`readonly [c, m, y, k]`, percent), `PdfCmykString` (`'c m y k'`, 0.0–1.0), `PdfColorSpace` (`'rgb' | 'cmyk'`), `ResolvedColor`. `PdfColor` is the union of every accepted form.
+Types (v1.8.0): `PdfCmykTuple` (`readonly [c, m, y, k]`, percent), `PdfCmykString` (`'c m y k'`, 0.0–1.0), `PdfColorSpace` (`'rgb' | 'cmyk' | 'separation' | 'devicen'`), `ResolvedColor`. `PdfColor` is the union of every accepted form — since v1.9.0 including `PdfSpotColor` (`{ spot, tint? }`) and `PdfInkMix` (`{ inks }`), painted through the `/Separation` and `/DeviceN` spaces that `layout.print.spotColours` (`SpotColourDef[]`: a name and a CMYK or RGB alternate) declares.
 
 ### Typography (v1.8.0)
 
@@ -1041,6 +1041,8 @@ Types (block-level `keepWithNext` on headings and paragraphs, and `splittable` o
 |----------|-------------|
 | `validatePdfX(bytes)` | Read-only PDF/X-4 structural checker (ISO 15930-7) — header, XMP identification, OutputIntent profile, page boxes, embedded fonts, annotations, actions, `LZWDecode`, transfer functions, device colour; returns `PdfXValidationResult` `{ valid, errors, warnings }`. Not a certified preflight |
 | `PDF_X_CONFORMANCE_TARGETS` | `['pdfx4']` — the accepted `layout.pdfx` values, the single source of truth for downstream tooling; `PdfXConformanceTarget` is its element type |
+
+Since v1.9.0 `pdfx: 'pdfx4'` combines with `tagged: 'pdfa2b' \| 'pdfa2u'` into one file that claims both (two OutputIntents on one ICC stream, `pdfaid` and `pdfxid` in one XMP packet); PDF/A-1 and PDF/A-3 do not combine with it, and `validatePdfX()` reads inside Form XObjects, images and the alternates of `/Separation`, `/DeviceN` and `/Indexed` spaces.
 
 Types: `PrintOptions` (`layout.print`: `bleed`, `trimBox`, `bleedBox`, `artBox`, `cropBox`, `marks`, `userUnit`), `PrinterMarksOptions` (`crop`, `registration`, `length`, `offset`, `weight`, `colourBars`), `ColourBarOptions` (`tints`, `size`), `CustomOutputIntent` (`iccProfile`, `outputConditionIdentifier`, `registryName`, `outputCondition`, `info` — RGB, CMYK or Gray), `PdfXConformanceTarget`, `PdfXValidationResult`. The build-time coherence errors a PDF/X claim can throw are listed verbatim in [docs/data/errors.json](docs/data/errors.json) (`buildErrors`). [Guide →](docs/guides/print.md)
 
@@ -1105,11 +1107,6 @@ Colour-glyph types (`ColorLayer`, `ColorPaint`, …) describe the bundled COLRv1
 | `shapeKannadaText(str, fontData)` | Kannada on the Indic OpenType engine — subjoined consonants, reph after the vowel sign, two-part vowels (v1.9.0) |
 | `shapeMalayalamText(str, fontData)` | Malayalam on the Indic OpenType engine — chillu letters, pre-base ്ര, dot reph (v1.9.0) |
 | `shapeOdiaText(str, fontData)` | Odia on the Indic OpenType engine — reph, ya-phala, two-part vowels (v1.9.0) |
-| `shapeGujaratiText(str, fontData)` | Gujarati on the Indic OpenType engine — reph, half forms, rakar (v1.9.0) |
-| `shapeGurmukhiText(str, fontData)` | Gurmukhi on the Indic OpenType engine — subjoined consonants, tippi, addak (v1.9.0) |
-| `shapeKannadaText(str, fontData)` | Kannada on the Indic OpenType engine — subjoined consonants, reph after the vowel sign, two-part vowels (v1.9.0) |
-| `shapeMalayalamText(str, fontData)` | Malayalam on the Indic OpenType engine — chillu letters, pre-base ്ര, dot reph (v1.9.0) |
-| `shapeOdiaText(str, fontData)` | Odia on the Indic OpenType engine — reph, ya-phala, two-part vowels (v1.9.0) |
 | `shapeSinhalaText(str, fontData)` | Sinhala on the Indic OpenType engine — kombuva, rakaransaya, two-part vowels (v1.3.0; engine v1.8.0) |
 | `shapeLatinMarksText(str, fontData)` | Latin combining marks — `ccmp`, mark-to-base, mark-to-mark for Yoruba, Igbo and NFD text (v1.8.0) |
 | `shapeTibetanText(str, fontData)` | Tibetan vertical subjoined stacking (v1.3.0) |
@@ -1134,11 +1131,6 @@ Colour-glyph types (`ColorLayer`, `ColorPaint`, …) describe the bundled COLRv1
 | `containsHebrew(text)` | Detect Hebrew content |
 | `containsTelugu(text)` | Detect Telugu content (v1.3.0) |
 | `isTeluguCodepoint(cp)` | Telugu codepoint predicate (v1.3.0) |
-| `containsGujarati(text)` / `isGujaratiCodepoint(cp)` | Gujarati detection (v1.9.0) |
-| `containsGurmukhi(text)` / `isGurmukhiCodepoint(cp)` | Gurmukhi detection (v1.9.0) |
-| `containsKannada(text)` / `isKannadaCodepoint(cp)` | Kannada detection (v1.9.0) |
-| `containsMalayalam(text)` / `isMalayalamCodepoint(cp)` | Malayalam detection (v1.9.0) |
-| `containsOdia(text)` / `isOdiaCodepoint(cp)` | Odia detection (v1.9.0) |
 | `containsGujarati(text)` / `isGujaratiCodepoint(cp)` | Gujarati detection (v1.9.0) |
 | `containsGurmukhi(text)` / `isGurmukhiCodepoint(cp)` | Gurmukhi detection (v1.9.0) |
 | `containsKannada(text)` / `isKannadaCodepoint(cp)` | Kannada detection (v1.9.0) |
@@ -1322,7 +1314,8 @@ src/
 │   ├── pdf-document.ts   # Free-form document builder (headings, paragraphs, lists, tables, images)
 │   ├── pdf-assembler.ts  # Shared PDF binary assembly primitives (xref, trailer, writer)
 │   ├── encoding-context.ts # Encoding context factory (dependency inversion from fonts/)
-│   ├── pdf-image.ts      # JPEG/PNG parsing + PDF Image XObject builder
+│   ├── pdf-image.ts      # JPEG/PNG/JPEG 2000 parsing + PDF Image XObject builder
+│   ├── pdf-spot.ts       # Spot colours: /Separation and /DeviceN resources, tint transforms (v1.9.0)
 │   ├── pdf-text.ts       # Text rendering (Latin + CIDFont + shaped + tagged)
 │   ├── pdf-stream.ts     # Binary utilities + download
 │   ├── pdf-stream-writer.ts # AsyncGenerator streaming output
@@ -1374,7 +1367,7 @@ src/
 fonts/                    # Pre-built font data modules (32 scripts)
 tools/                    # CLI: build-font-data.cjs (TTF → JS module)
 scripts/                  # Modular sample PDF generation (50 generators, 311 PDFs)
-tests/                    # 4306+ tests (177 files: unit + integration + fuzz + parser + docs)
+tests/                    # 4316+ tests (178 files: unit + integration + fuzz + parser + docs)
 bench/                    # Performance benchmarks (vitest bench)
 ```
 
@@ -1386,7 +1379,7 @@ cd pdfnative
 npm install
 
 npm run build            # tsup → dist/ (ESM + CJS + .d.ts)
-npm run test             # vitest run (4306+ tests)
+npm run test             # vitest run (4316+ tests)
 npm run test:coverage    # vitest with v8 coverage (91.5 % statements at the v1.8.0 release; CI gates: 88/80/85/90)
 npm run test:generate       # Generate 311 sample PDFs → test-output/ (dates are written in UTC, so the bytes are host-independent — see §Reproducible builds)
 npm run lint                # ESLint 9 + typescript-eslint strict
@@ -1404,7 +1397,7 @@ npm run verify:diagrams     # Documentation diagrams render without overflow, ov
 
 | Metric | Value |
 |--------|-------|
-| Tests | 4306+ (177 files) |
+| Tests | 4316+ (178 files) |
 | Statement coverage | 91.5 % (measured at the v1.8.0 release; CI enforces ≥88%, vitest.config.ts) |
 | Branch coverage | 82.71% (measured at the v1.8.0 release; CI enforces ≥80%) |
 | Function coverage | 96.87% (measured at the v1.8.0 release; CI enforces ≥85%; lines gate: ≥90%) |
@@ -1420,7 +1413,7 @@ pdfnative generates **visually pixel-perfect** PDFs for all 32 supported scripts
 
 ### Complex Text Layout (CTL) scripts
 
-For scripts with combining marks — **Thai**, **Devanagari**, **Vietnamese tones** — the shaper positions each mark in its own `BT…ET` block with precise GPOS offsets. PDF viewers **render** this correctly, but text extractors reconstruct content by spatial position rather than logical order. This can produce garbled output when copying text from the PDF.
+For scripts with combining marks — **Thai**, **Devanagari**, **Vietnamese tones** — the shaper places each mark with precise GPOS offsets inside the line's single text object (since v1.9.0 a line is one `BT … ET` whose `TJ` arrays and relative `Td` moves position every glyph). PDF viewers **render** this correctly, but text extractors reconstruct content by spatial position rather than logical order. This can produce garbled output when copying text from the PDF.
 
 | Scenario | Visual rendering | Text extraction (Ctrl+C) |
 |----------|:---:|:---:|
@@ -1432,6 +1425,7 @@ For scripts with combining marks — **Thai**, **Devanagari**, **Vietnamese tone
 | Bengali (conjuncts, GPOS marks) | ✅ Perfect | ✅ Conjuncts map to their letters (v1.8.0); a reordered syllable carries `/ActualText`, tagged or not (v1.9.0) |
 | Tamil (split vowels, GSUB) | ✅ Perfect | ✅ Ligatures map to their letters (v1.8.0); split vowels carry `/ActualText`, tagged or not (v1.9.0) |
 | Yoruba / Igbo (Latin combining marks) | ✅ Perfect | ✅ Composed marks map to base + mark (v1.8.0) |
+| Arabic, Hebrew, Persian, Urdu (right-to-left) | ✅ Perfect | ✅ Every untagged right-to-left run carries its logical text as `/ActualText`, so a line pastes as typed; a line mixing directions extracts its runs in geometric order, each run logical (v1.9.0) |
 
 ### Why this happens
 
@@ -1552,6 +1546,7 @@ const pdf = buildPDFBytes(params, { compress: true });
 | XMP metadata | ❌ (tagged mode) | — |
 | JPEG image | ❌ (already DCTDecode) | — |
 | PNG image | ❌ (already FlateDecode) | — |
+| JPEG 2000 image | ❌ (already JPXDecode, v1.9.0) | — |
 
 ### Compression + Encryption
 
@@ -1588,8 +1583,8 @@ pdfnative targets ES2020 and works in any environment that supports `Uint8Array`
 | Firefox | 80+ | ✅ | ESM via bundler or `<script type="module">` |
 | Safari | 14+ | ✅ | ESM via bundler or `<script type="module">` |
 | Edge | 80+ | ✅ | Chromium-based |
-| Deno | 1.0+ | ✅ | Native ESM imports |
-| Bun | 1.0+ | ✅ | Native ESM imports |
+| Deno | smoke-tested, no version floor promised | ✅ | Native ESM imports (the `runtimes` CI job runs the built package on Deno 2.9.7) |
+| Bun | smoke-tested, no version floor promised | ✅ | Native ESM imports (the `runtimes` CI job runs the built package on Bun 1.4.2) |
 | Web Workers | — | ✅ | Via `pdfnative/worker` entry point |
 | React Native | — | ⚠️ | Requires `TextEncoder` polyfill |
 

@@ -98,6 +98,7 @@ applyTo: "src/core/**"
 - Image XObjects: `/Type /XObject /Subtype /Image` indirect objects
 - JPEG images: `/Filter /DCTDecode` — raw JPEG bytes injected as stream
 - PNG images: `/Filter /FlateDecode` with `/DecodeParms << /Predictor 15 /Colors N /BitsPerComponent 8 /Columns W >>`
+- JPEG 2000 (v1.9.0): `/Filter /JPXDecode`, the JP2 container or raw codestream injected as written; `/ColorSpace` and `/BitsPerComponent` omitted when the codestream declares them, `/SMaskInData 1` for an opacity channel; the header rises to 1.5; PDF/A-1 refuses it (`PDFA1_JPX_IMAGE`), PDF/A-2+ holds it to one, three or four channels and no opacity (`PDFA_JPX_IMAGE`)
 - PNG alpha: separated into `/SMask` XObject (DeviceGray) when alpha decompression available
 - Color spaces: `/DeviceRGB`, `/DeviceGray`, `/DeviceCMYK` (JPEG only)
 - Image operators: `q W 0 0 H X Y cm /ImN Do Q` — save state, transform, paint, restore
@@ -184,7 +185,14 @@ applyTo: "src/core/**"
   WinAnsi high-band table is a documented local copy
 - `/ActualText` on marked content is honoured since v1.8.0: a span's declared
   text replaces the glyphs shown inside it, outermost span first — so tagged
-  pdfnative output extracts as written
+  pdfnative output extracts as written; since v1.9.0 the writers put the same
+  span on untagged reordered runs and on every untagged right-to-left run
+  (`layout.actualText: false` opts out), so logical text comes back tagged or not
+- An over-cap stream throws `PdfStreamLimitError` (`code: 'PDF_STREAM_LIMIT'`)
+  since v1.9.0 instead of returning the page without its text;
+  `extractText({ onStreamError })` takes `'limit'` (default), `'skip'` (the 1.8.0
+  lenience) or `'throw'`; the message names the remedy per filter — classify
+  by `code`, never by the text
 
 ## FlateDecode Compression (ISO 32000-1 §7.3.8.1)
 - Activated by `compress: true` in `PdfLayoutOptions` — backward compatible (default `false`)
@@ -212,11 +220,12 @@ applyTo: "src/core/**"
 
 ## Print & PDF/X (pdf-print.ts, pdf-tags.ts, parser/pdf-x-validator.ts — v1.7.0 / v1.8.0)
 - `pdf-print.ts`: `validatePrintOptions`, `resolvePrintBoxes` (bleed shorthand → TrimBox/BleedBox), `pdfxBoxes` (the TrimBox a PDF/X claim synthesises: BleedBox when only `bleedBox` is set, MediaBox otherwise; TrimBox and ArtBox never both), `buildPrinterMarksOps` (crop + registration marks, ≥ `max(weight, 0.5)` pt clear of trim line and sheet edge; colour bars as DeviceCMYK `re f` patches in the bottom bleed strip; registration colour `/Separation /All` under a CMYK intent; the whole block `/Artifact << /Type /Page >> BDC … EMC` under `tagged`)
-- `resolvePdfXConfig({ pdfx, tagged, encrypted, outputIntent, trapped })` in `pdf-tags.ts` is the PDF/X counterpart of `resolvePdfAConfig`: `PDF_X_CONFORMANCE_TARGETS` (`['pdfx4']`) is the source of truth, and the coherence errors it throws (with `tagged`, with `encryption`, without `outputIntent`, non-`prtr` profile, `trapped: 'Unknown'`) are quoted verbatim in `docs/data/errors.json` `buildErrors` — change the message and the JSON together. PDF/X writes `%PDF-1.6`, `pdfxid:GTS_PDFXVersion`, `xmpMM:DocumentID/VersionID/RenditionClass`, a `/GTS_PDFX` OutputIntent and `/Trapped` in `/Info` and XMP
+- `resolvePdfXConfig({ pdfx, tagged, encrypted, outputIntent, trapped })` in `pdf-tags.ts` is the PDF/X counterpart of `resolvePdfAConfig`: `PDF_X_CONFORMANCE_TARGETS` (`['pdfx4']`) is the source of truth, and the coherence errors it throws (with `tagged: 'pdfa1b' | 'pdfa3b'` — `'pdfa2b'` and `'pdfa2u'` combine with it since v1.9.0 into the dual claim, with `encryption`, without `outputIntent`, non-`prtr` profile, `trapped: 'Unknown'`) are quoted verbatim in `docs/data/errors.json` `buildErrors` — change the message and the JSON together. PDF/X writes `%PDF-1.6`, `pdfxid:GTS_PDFXVersion`, `xmpMM:DocumentID/VersionID/RenditionClass`, a `/GTS_PDFX` OutputIntent and `/Trapped` in `/Info` and XMP
 - `parser/pdf-x-validator.ts` (`validatePdfX`) is read-only and never renders; its module header lists what is and is not checked — keep that header, the print guide and `docs/data/surfaces.json` in step. veraPDF does not cover PDF/X
 - OutputIntent profiles (`resolveOutputIntent`): ≥ 128 bytes, `acsp` at byte 36, size field within the buffer, data colour space RGB / CMYK / Gray; the ICC version is not checked. Under a CMYK or Gray intent, RGB content is covered by a calibrated `/DefaultRGB` in every painting resource dictionary
 
-## Colour (pdf-color.ts, pdf-content-colour.ts — v1.8.0)
+## Colour (pdf-color.ts, pdf-content-colour.ts — v1.8.0; pdf-spot.ts — v1.9.0)
+- `pdf-spot.ts` (v1.9.0): `layout.print.spotColours` declares inks (`SpotColourDef`: name + CMYK or RGB alternate); `{ spot, tint? }` paints through a `/Separation` resource and `{ inks }` through a `/DeviceN` one, each with a type-4 tint transform over ISO 32000-1 Table 42 operators only (Acrobat refuses anything else), the `/DeviceN` array carrying a `/Colorants` attributes dictionary (ISO 19005-2 §6.2.4.4); an ink the content names without a declaration is refused before a byte is written; `validatePdfX()` reads every tint transform the content selects
 - `pdf-color.ts` is the one colour-operator choke point: `parseColor` (hex, RGB tuple, CMYK percent tuple, `'r g b'` / `'c m y k'` operand strings) → `resolveColor` (`{ space, operands }`) → `fillOp` / `strokeOp`, which pick `rg`/`RG` or `k`/`K` by component count. Every call site (101 at the 1.8.0 refactor) emits colour through these; never format a colour operator inline
 - CMYK never leaves its space silently: chart tints remove ink instead of mixing toward white, and an outline `/C` (DeviceRGB by definition) gets a device-formula approximation
 - `pdf-content-colour.ts` (`scanDeviceColour`) is a content-stream **tokenizer** (strings, comments, names and inline-image data skipped as ISO 32000-1 §7.2 defines them), used by the builders to check content against the OutputIntent before writing (`PDFA_DEVICE_CMYK_CONTENT`, `PDFX_DEVICE_CMYK`) and by `validatePdfX` afterwards. Never replace it with a regular expression over the stream

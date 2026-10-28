@@ -19,7 +19,7 @@ Target: exceed GAFAM-grade quality standards in code, testing, performance, and 
 | `src/shaping/` | GSUB/GPOS shapers (Thai, Arabic, Indic, Lao, …), USE engine, shaper registry, UAX #9 BiDi, script detection, emoji sequences | `instructions/text-shaping.instructions.md` |
 | `src/crypto/` | SHA, ASN.1/DER, RSA, ECDSA, X.509, CMS, RFC 3161, OCSP/CRL, injected timestamp/revocation providers | `instructions/pdf-core.instructions.md` |
 | `src/worker/` | Web Worker dispatch + self-contained worker entry | `instructions/worker.instructions.md` |
-| `src/tools/` | `pdfnative/tools` entry: `compileFontData` / `parseFontData` | `instructions/font-engineering.instructions.md` |
+| `src/tools/` | `pdfnative/tools`: `compileFontData`, `parseFontData`, `buildSynthetic{Gray,Cmyk}Profile` | `instructions/font-engineering.instructions.md` |
 | `src/types/` | All public types (`pdf-types.ts`, `pdf-document-types.ts`) | `instructions/api-design.instructions.md` |
 | `scripts/generators/` | Sample PDF generators (`npm run test:generate`); helpers in `scripts/helpers/`, shared cores in `scripts/lib/` | `instructions/testing.instructions.md` |
 | `tests/` | Vitest suites mirroring `src/`, plus fuzzing, visual, regression (sample byte manifest) and docs suites | `instructions/testing.instructions.md` |
@@ -63,7 +63,7 @@ Other top-level directories: `fonts/` (generated font-data modules + git-ignored
 ```bash
 npm run gate                 # CI profile (default)
 npm run gate -- --fast       # typecheck:all, lint, test, verify:docs — before every commit
-npm run gate -- --publish    # everything incl. test:generate, verify:samples, validate:pdfa, verify:fonts, verify:bundle
+npm run gate -- --publish    # + test:generate, verify:samples, validate:pdfa, verify:fonts, compat:previous, verify:diagrams, verify:bundle
 npm run gate -- --only <step>   # one step; --json for machine output
 ```
 
@@ -79,15 +79,15 @@ npm run lint             # ESLint 9 + typescript-eslint strict
 npm run validate:pdfa    # veraPDF over PDF/A claims, validatePdfX() over PDF/X claims (canaries in ecosystem.json)
 npm run verify:samples   # byte manifest of test-output/ vs tests/regression/baselines/samples.sha256.json; refuses identical pairs
 npm run verify:fonts     # fonts/*-data.js reproduce byte-identically from the TTF sources
-npm run verify:unicode   # src/shaping/use-data.ts matches scripts/data/*.txt
+npm run verify:unicode   # use-data.ts and the bidi data match scripts/data/*.txt
 npm run verify:bundle    # tree-shaking probe from dist/
 npm run verify:docs      # offline doc-consistency rules against docs/assets/ecosystem.json
 npm run docs:all         # docs:api + docs:guides + docs:llms
 ```
 
 - Build tool **tsup**; test runner **vitest**; CI: gate on Node 22/24, Windows and macOS, compat-previous, workflow lint, veraPDF, samples, docs.
-- Publish: GitHub Actions OIDC Trusted Publishing (`npm publish --access public`; provenance attached via `id-token: write`). Agents never publish.
-- Generated files are regenerated, never hand-edited: `fonts/*-data.js` + `.d.ts`, `src/shaping/use-data.ts`, `scripts/data/*.txt` (vendored UCD), `docs/assets/api.json`,
+- Publish: OIDC Trusted Publishing with provenance, guard → build → publish → attest. Agents never publish.
+- Generated files are regenerated, never hand-edited: `fonts/*-data.js` + `.d.ts`, `src/shaping/use-data.ts` and `bidi-*-data.ts`, `scripts/data/*.txt` (vendored UCD), `docs/assets/api.json`,
   `docs/guides/*.html`, `docs/llms*.txt` / `llms-index.json`, `tests/regression/baselines/samples.sha256.json` (`verify:samples --update`, only with a declared rebaseline),
   `dist/`, `coverage/`, `test-output/`, `package-lock.json`. Regenerate commands: AGENTS.md §Generated files.
 - All new code must have tests. Coverage ≥ 88 % statements is enforced by CI (currently 91.5 % statements); the thresholds (88/80/85/90) live once in `vitest.config.ts`.
@@ -110,9 +110,9 @@ npm run docs:all         # docs:api + docs:guides + docs:llms
 ### PDF-specific invariants
 
 - PDF operators are built as plain strings, not an AST: `"BT /F1 10 Tf ... ET"`. Binary offsets use `byteLength()` (never `.length`) — critical for the xref table.
-- Colours are PDF operand strings — RGB `"0.145 0.388 0.922"` or CMYK `"0 0 0 1"` (1.8.0, from `[c, m, y, k]` percent); `parseColor()` validates, `normalizeColors()` runs at the layout boundary,
+- Colours are PDF operands — RGB `"0.145 0.388 0.922"`, CMYK `"0 0 0 1"`, or a spot ink / `{ inks }` mix via `/Separation` and `/DeviceN` (`pdf-spot.ts`, 1.9.0); `parseColor()` validates, `normalizeColors()` runs at the layout boundary,
   and every colour operator goes through `fillOp()` / `strokeOp()` in `pdf-color.ts` (`rg`/`RG` or `k`/`K` by component count).
-- Tagged PDF: marked content `/Span << /MCID n /ActualText <hex> >> BDC…EMC`; MCIDs restart at 0 per page (`/StructParents`).
+- Tagged PDF: marked content `/Span << /MCID n /ActualText <hex> >> BDC…EMC`; MCIDs restart at 0 per page; untagged reordered and RTL runs carry `/Span /ActualText` too (1.9.0).
   Structure tree: `/Document → /Table → /TR → /TH|/TD`, `/H1–H3`, `/P`, `/L → /LI`, `/Figure`, `/Link`, `/TOC → /TOCI`, `/Form`.
 - XMP: `<?xpacket begin="\xEF\xBB\xBF"` uses raw UTF-8 BOM bytes (not `﻿`). XMP streams are never compressed. `dc:creator` is emitted only when `metadata.author` is set and mirrors `/Info /Author`.
 - PDF/A invariant: `/Info CreationDate` and `xmp:CreateDate` come from the SAME `buildPdfMetadata()` call in `pdf-tags.ts` — never inline `new Date()` in the builders. Both carry the timezone offset.
@@ -122,12 +122,12 @@ npm run docs:all         # docs:api + docs:guides + docs:llms
   PDF/A and encryption are mutually exclusive (ISO 19005-1 §6.3.2), validated at the build boundary.
 - Encryption: AES-128 (V4/R4) and AES-256 (V5/R6) with per-object keys and random IVs (AES-CBC + PKCS7); `emitStreamObj()` compresses and/or encrypts transparently.
   Compress BEFORE encrypt (ISO 32000-1 §7.3.8). `initNodeCompression()` enables native zlib in ESM; stored-block fallback otherwise.
-- Images: `/DCTDecode` (JPEG) or `/FlateDecode` + `/Predictor 15` (PNG); RGBA rejected. Links: only `http:` / `https:` / `mailto:`. Watermarks: ExtGState transparency, forbidden under PDF/A-1b (`validateWatermark()` throws).
-- Font subsetting always preserves `.notdef` (GID 0); CIDFont Type2 uses Identity-H — glyph IDs are hex-encoded directly. Right/centre-aligned bold text measures with `helveticaBoldWidth()`.
-- Typography: en-dash `–` (U+2013) with spaces as title/footer separator, not em-dash — WinAnsi-encodable and 44 % narrower. Uniform `•` bullet at every list depth (zero-tofu choice).
-- BiDi: UAX #9 with isolates, embeddings normalised to isolates, full L4 mirroring (generated `bidi-mirroring-data.ts`, applied before any cmap lookup), I1/I2 digit levels;
+- Images: `/DCTDecode` (JPEG), `/FlateDecode` + `/Predictor 15` (PNG), `/JPXDecode` (JPEG 2000, 1.9.0); RGBA rejected. Links: `http:`/`https:`/`mailto:` only. Watermarks: ExtGState transparency, not under PDF/A-1b.
+- Subsetting keeps `.notdef` (GID 0); CIDFont Type2 is Identity-H over CIDs in order of first use, the lean subset renumbered to match (1.9.0). Bold text measures with `helveticaBoldWidth()`.
+- Typography: en-dash `–` with spaces as title/footer separator (WinAnsi); uniform `•` bullet at every depth.
+- BiDi: full UAX #9 (embeddings, overrides, isolates, N0 brackets, per paragraph; 1.9.0), L4 mirroring (generated `bidi-mirroring-data.ts`);
   `resolveBidiRuns()` returns runs in visual order. Arabic: GSUB positional forms + lam-alef; Hebrew: BiDi order only.
-- Shaping: the five Indic scripts are `IndicScriptConfig`s for `indic-engine.ts` (`otl` features, `attachMarks()`); `latin-marks.ts` composes
+- Shaping: the ten Indic scripts are `IndicScriptConfig`s for `indic-engine.ts` (`otl` features, `attachMarks()`); `latin-marks.ts` composes
   combining marks; `classifyUseCategory()` (`use-lite.ts`) classifies joiners. Colour-emoji sequences are matched longest-first and fall back per codepoint.
   Dispatch is `findShaper()` over `SCRIPT_SHAPERS` (`shaper-registry.ts`), never a per-script `if` ladder; unmatched scripts go to `use-shaper.ts` (USE; `use-data.ts` is generated, `verify:unicode`).
 - Typography (`pdf-typography`, `pdf-pagination`) and PDF/X (`pdf-print`, `resolvePdfXConfig`, `parser/pdf-x-validator`) are opt-in: absent, output is byte-identical.

@@ -240,7 +240,7 @@ means the surface does not offer it.</p>
 </tr>
 <tr>
 <td>PDF/X-4 conformance claim</td>
-<td><code>layout: { pdfx: &#39;pdfx4&#39;, outputIntent, metadata.trapped }</code> <em>(v1.8.0; exclusive with <code>tagged</code> and encryption)</em></td>
+<td><code>layout: { pdfx: &#39;pdfx4&#39;, outputIntent, metadata.trapped }</code> <em>(v1.8.0; exclusive with encryption; since v1.9.0 combinable with <code>tagged: &#39;pdfa2b&#39; | &#39;pdfa2u&#39;</code> into one file that claims both)</em></td>
 <td><code>render --pdfx pdfx4 --output-intent-icc &lt;file.icc&gt; --trapped true|false|unknown</code> (coherence errors → <code>E_INPUT</code>, <code>PDFX_*</code> diagnostics fail under <code>--strict</code>) <em>(v1.5.0)</em></td>
 <td><code>pdfx: &#39;pdfx4&#39;</code> on six document tools (needs a <code>prtr</code> <code>outputIntent</code> and <code>embedFonts: true</code>; exclusive with <code>pdfA</code> / <code>encrypt</code>) <em>(v1.7.0)</em></td>
 <td><code>&lt;Document pdfx=&quot;pdfx4&quot; outputIntent metadata={{ trapped }}&gt;</code> with eight <code>L_PDFX_*</code> lint rules <em>(v1.3.0)</em></td>

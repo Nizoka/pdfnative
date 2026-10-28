@@ -13,7 +13,7 @@ npm run fonts:download   # fetch Noto Sans TTFs → fonts/ttf/
 
 ### Requirements
 
-- Node.js 22 — the line in `.nvmrc` and `.node-version` (`nvm use` / `fnm use` / `volta` pick it up; CI runs the gate on Node 22 and 24 on Linux and on Node 22 on Windows and macOS, Node 26 advisory until it enters LTS; `engines.node` allows `>=22`).
+- Node.js 22 — the line in `.nvmrc` and `.node-version` (`nvm use` / `fnm use` / `volta` pick it up; CI runs the gate on Node 22 and 24 on Linux and on Node 22 on Windows and macOS, Node 26 advisory — in LTS since 2026-10-28, it joins the required matrix at the first minor after that date; `engines.node` allows `>=22`).
 - npm — the version pinned by `packageManager` in `package.json` (Corepack honours it). The repository's `.npmrc` sets `ignore-scripts=true` (no dependency runs an install script here — esbuild resolves its platform binary from an optional dependency), `fund=false` and `audit-level=high`; `npm run <script>` still runs the script you name, but lifecycle hooks such as `prepublishOnly` do not fire, which is why the publish workflow builds explicitly before it packs.
 - Dev dependencies use caret ranges on purpose: `package-lock.json` plus `npm ci` is what makes an install reproducible, not narrow ranges. Let npm manage the lockfile.
 - Source fonts: `npm run fonts:download` fetches every TTF at the google/fonts commit pinned in [fonts/SOURCES.json](fonts/SOURCES.json) and refuses a file whose SHA-256 differs from the manifest; the four hinted static instances (Arabic, Armenian, Georgian, Hebrew) come from the notofonts release archives the manifest names (`origin: "release"`: repository, tag, asset, entry path), extracted and hash-checked by the same script; the five Latin subsets (Cyrillic, Greek, Polish, Turkish, Vietnamese) are cut by the same script from the pinned `NotoSans-VF.ttf` with the library's own `subsetTTF()`, from the code-point lists in `fonts/subsets/` (`derived[]`: tool, command, SHA-256). Nothing under `fonts/ttf/` is committed.
@@ -177,13 +177,13 @@ src/
 ├── crypto/       # Zero-dependency cryptographic primitives (SHA, AES, RSA, ECDSA, X.509, CMS)
 ├── parser/       # PDF reading & incremental modification (tokenizer, object parser, xref, reader, modifier, decode filters (pdf-decode-filters.ts), decryption (pdf-decrypt.ts), page-tree merge/split/extract (pdf-pagetree.ts), text extraction (pdf-text-extract.ts))
 ├── fonts/        # WinAnsi + CIDFont pure encoding, font loader, TTF subsetter (buffer guards), CMap
-├── shaping/      # Script registry, Thai/Devanagari/Bengali/Tamil GSUB+GPOS, Arabic positional shaping, BiDi resolution, script detection, multi-font splitting
+├── shaping/      # Shaper registry, the data-driven Indic engine (ten scripts), Thai, Lao, Khmer, Myanmar, Tibetan, Sinhala, Arabic and USE shapers, full UAX #9 BiDi, script detection, multi-font splitting
 ├── types/        # All public TypeScript type definitions (pdf-types.ts, pdf-document-types.ts)
 └── worker/       # Web Worker dispatch + self-contained worker entry
 fonts/            # 36 pre-built font-data modules (32 scripts + Latin + math + monochrome and colour emoji)
 tools/            # CLI tool for converting TTF → importable data modules
-scripts/          # Modular sample PDF generation (50 generators, 310 PDFs) and the verification scripts
-tests/            # 177 test files (unit + integration + fuzz + parser + regression + docs + tools), mirrors src/ structure
+scripts/          # Modular sample PDF generation (50 generators, 311 PDFs) and the verification scripts
+tests/            # 178 test files (unit + integration + fuzz + parser + regression + docs + tools), mirrors src/ structure
 bench/            # Performance benchmarks (vitest bench)
 ```
 
@@ -207,7 +207,7 @@ bench/            # Performance benchmarks (vitest bench)
 - [ ] New code has tests
 - [ ] No `any` types introduced
 - [ ] No new runtime dependencies added
-- [ ] If samples or PDF/A behaviour changed: `npm run test:generate && npm run verify:samples && npm run validate:pdfa` passes locally (veraPDF installed — see [PDF/A validation](#pdfa-validation-verapdf); new PDF/A-claiming samples bump `declared.pdfaSamples`; an intended output change is rebaselined with `npx tsx scripts/verify-samples.ts --update` and explained in the commit)
+- [ ] If samples or PDF/A behaviour changed: `npm run test:generate && npm run verify:samples && npm run validate:pdfa` passes locally (veraPDF installed — see [PDF/A and PDF/X validation](#pdfa-and-pdfx-validation-verapdf-validatepdfx); new PDF/A-claiming samples bump `declared.pdfaSamples`; an intended output change is rebaselined with `npx tsx scripts/verify-samples.ts --update` and explained in the commit)
 - [ ] If docs/, playgrounds, README or llms files changed: `npm run verify:docs` passes
 - [ ] CHANGELOG.md updated if user-facing changes
 - [ ] For releases: follow [Release](#release) — `release-notes/vX.Y.Z.md` written, and `npm run gate -- --publish` passes locally, which runs every individual gate: `typecheck:all`, `lint`, `verify:unicode`, `test:coverage`, `build`, `verify:bundle`, `test:generate`, `verify:samples`, `verify:fonts`, `validate:pdfa` (all PDF/A-claiming samples compliant), `compat:previous` (the previous release's suite against the current sources), `verify:docs`, `verify:diagrams` (documentation diagrams render without overflow or overlap)
@@ -235,7 +235,7 @@ The version bump is scripted; the judgement goes into the release note.
 6. `npm run gate -- --publish` (PowerShell: `npx tsx scripts/gate.ts --publish`): the full gate, veraPDF and the sample, font, Unicode and bundle checks included. `--require-all` (what `publish.yml` passes) turns a skipped step — veraPDF or the source fonts missing — into a failure.
 7. Draft the pull-request body from [release-notes/PR_TEMPLATE.md](release-notes/PR_TEMPLATE.md) into `RELEASE_PR_vX.Y.Z.md` at the repository root (git-ignored scratch file); paste the numbers the gate printed into its Verification section.
 8. Squash-merge with the title `release: vX.Y.Z — <headline>`, where the headline is the release note's GitHub Release title.
-9. Tag `vX.Y.Z` on the merge commit and publish the GitHub Release (title `vX.Y.Z — <headline>`, body = the release note). `publish.yml` fires on the published release: it waits for the `npm-publish` environment's reviewer, installs a checksummed veraPDF and the pinned source fonts, runs `gate --publish --require-all`, publishes to npm with provenance through an exact npm 11, then a second job attaches the CycloneDX SBOM, the tarball and their build-provenance attestations to the release. The tag ruleset ([.github/rulesets/tags.json](.github/rulesets/tags.json)) forbids deleting or moving a `v*` tag.
+9. Tag `vX.Y.Z` on the merge commit and publish the GitHub Release (title `vX.Y.Z — <headline>`, body = the release note). `publish.yml` fires on the published release and runs four jobs: `guard` refuses anything but a `v*` tag matching `package.json` before any approval is asked; `build` installs a checksummed veraPDF and the pinned source fonts, fetches the previous release tag, runs `gate --publish --require-all` and packs the tarball once, recording its digests; `publish`, behind the `npm-publish` environment's reviewer, installs nothing and uploads exactly that tarball with Trusted Publishing (OIDC, provenance); `attest` fetches the published bytes back, checks them against the digests and `npm audit signatures`, and attaches the SBOMs and the Sigstore bundle to the release.
 10. After publication: `npm view pdfnative version`, then open a playground — the site's CDN pins (`pdfnative@X.Y.Z`) only resolve once the package exists on the registry.
 
 ### Branch protection

@@ -131,6 +131,8 @@ The most common cause: missing `lang: 'ar'` on the font entry. Without it, BiDi 
 | `tagged: 'pdfa1b'` | 1.4 | PDF/A-1b (ISO 19005-1) |
 | `tagged: 'pdfa2u'` | 1.7 | PDF/A-2u (ISO 19005-2 with unicode) |
 | `tagged: 'pdfa3b'` | 1.7 | PDF/A-3b (ISO 19005-3, supports embedded files) |
+| `pdfx: 'pdfx4'` | 1.6 | PDF/X-4 (ISO 15930-7) — since v1.9.0 combinable with `tagged: 'pdfa2b'` or `'pdfa2u'` into one file that claims both |
+| any mode with a JPEG 2000 image | ≥ 1.5 | `/JPXDecode` (v1.9.0) raises the header to 1.5 when it was lower; PDF/A-1 refuses it (`PDFA1_JPX_IMAGE`) |
 
 ### Which PDF/A variant should I pick?
 
@@ -309,10 +311,11 @@ pdfnative is built from pure functions. State is passed explicitly. This makes t
 
 | Error | Likely cause | Fix |
 |-------|--------------|-----|
-| Blank / missing glyphs for a script (no error is thrown) | `loadFontData('xx')` resolved to `null` because no loader was registered for that code — it returns `null` rather than throwing | Call `registerFonts({ xx: … })` (or `registerFont`) first, then check the `loadFontData` result for `null` before building `fontEntries` |
+| Blank / missing glyphs for a script (a `TEXT_GLYPH_NOT_COVERED` diagnostic since v1.9.0, thrown under `strict`; no error before) | `loadFontData('xx')` resolved to `null` because no loader was registered for that code — it returns `null` rather than throwing | Call `registerFonts({ xx: … })` (or `registerFont`) first, then check the `loadFontData` result for `null` before building `fontEntries` |
 | `PDF/A and encryption are mutually exclusive` | `tagged: 'pdfa…'` combined with `encryption: …` | Pick one |
 | `Invalid color format: …` / `Invalid color tuple …` | Unrecognized color value passed to a layout option | Use `#rrggbb`, an `[r, g, b]` tuple with channels **0–255**, or a PDF RGB string `'r g b'` with channels 0.0–1.0 |
 | Boxes / blank glyphs | Font for that script is not loaded | See [Troubleshooting → Missing glyphs](troubleshooting.html) |
+| `PdfStreamLimitError` (`code: 'PDF_STREAM_LIMIT'`) from `extractText()` | A content or font stream exceeds its decode cap (v1.9.0 throws by default instead of returning the page without its text) | Raise `setMaxInflateOutputSize()` for FlateDecode, or pass `onStreamError: 'skip'` (the 1.8.0 lenience) or `'throw'`; classify by `code`, never by the message |
 | Parser throws on external PDF | Encrypted PDF opened without a password, or non-standard structure | Pass `openPdf(bytes, { password })` — the parser decrypts RC4, AES-128 and AES-256 since v1.6.0. A missing or wrong password throws `PdfPasswordError` |
 
 For more cases, see the [Troubleshooting guide](troubleshooting.html).

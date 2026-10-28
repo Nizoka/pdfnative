@@ -1,6 +1,6 @@
 {
   "$comment": "Machine-readable form of the capability × surface table in docs/guides/choose.md. Hand-maintained, verified against the sources on the date below: library `call` names against src/index.ts exports, CLI `command` names against packages.pdfnative-cli.commandGroups and MCP `tool` names against packages.pdfnative-mcp.tools in docs/assets/ecosystem.json (the single source of truth for names and counts — regenerate nothing from this file), React entries against docs/guides/react.md. Each `since` is a version of that surface's OWN package (pdfnative, pdfnative-cli, pdfnative-mcp or pdfnative-react); it is omitted where the capability predates 1.0.0 or the introducing release is not documented. `supported: false` cells carry a note naming the honest alternative where one exists.",
-  "verifiedOn": "2026-10-24",
+  "verifiedOn": "2026-10-29",
   "capabilities": [
     {
       "id": "generate",
@@ -149,7 +149,7 @@
     {
       "id": "pdfx4",
       "label": "PDF/X-4 conformance claim",
-      "library": { "supported": true, "call": "layout: { pdfx: 'pdfx4', outputIntent, metadata.trapped }", "since": "1.8.0", "notes": "Mutually exclusive with tagged and with encryption; requires a prtr OutputIntent and a known trapping state. The coherence errors it throws are listed in errors.json under buildErrors." },
+      "library": { "supported": true, "call": "layout: { pdfx: 'pdfx4', outputIntent, metadata.trapped }", "since": "1.8.0", "notes": "Mutually exclusive with encryption; since 1.9.0 it combines with tagged: 'pdfa2b' | 'pdfa2u' (PDF/A-1 and 3 are refused); requires a prtr OutputIntent and a known trapping state. The coherence errors it throws are listed in errors.json under buildErrors." },
       "cli": { "supported": true, "command": "render", "since": "1.4.0", "notes": "Dedicated flags since 1.5.0: --pdfx pdfx4, --output-intent-icc, --output-intent-id, --trapped true|false|unknown; the PDF/X coherence errors map to E_INPUT and the PDFX_* diagnostics fail the build under --strict." },
       "mcp": { "supported": true, "tool": "generate_basic_pdf", "since": "1.7.0", "notes": "pdfx: 'pdfx4' on generate_basic_pdf, add_table, add_chart, add_barcode, embed_image and add_international_text; requires an outputIntent with a prtr profile and embedFonts: true; exclusive with pdfA and encrypt. Under strict: true a PDFX_* diagnostic surfaces as PDF_X_COMPLIANCE_VIOLATION." },
       "react": { "supported": true, "call": "<Document pdfx=\"pdfx4\" outputIntent={…} metadata={{ trapped }}>", "since": "1.3.0", "notes": "Also DocSpec fields. Eight L_PDFX_* lint rules (target, tagged conflict, encrypted, output intent, trapped unknown, boxes, no fonts, annotations) pre-empt the engine errors." }

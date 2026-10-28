@@ -6,7 +6,7 @@
 > Longer forms: [llms.txt](https://pdfnative.dev/llms.txt) (index),
 > [llms-full.txt](https://pdfnative.dev/llms-full.txt) (full corpus),
 > [llms-index.json](https://pdfnative.dev/llms-index.json) (per-page sizes and anchors).
-> _Verified on 2026-10-24 against the source tree by `npm run verify:docs`._
+> _Verified on 2026-10-29 against the source tree by `npm run verify:docs`._
 
 ## What it is
 
@@ -20,8 +20,9 @@ decrypt, extract text, read/fill/flatten forms, merge/split/extract pages,
 verify PDF/UA and PDF/X-4 structure) — 32 Unicode scripts, with
 OpenType GSUB/GPOS shaping for the complex ones (Thai, Arabic, Devanagari,
 Bengali, Tamil, Telugu, Sinhala, Tibetan, Khmer, Myanmar, Lao, Tai Tham,
-New Tai Lue, Tai Le, Cham; the five Indic scripts on one OpenType engine
-since 1.8.0), Latin combining marks (Yoruba, Igbo, NFD text) on the
+New Tai Lue, Tai Le, Cham, Gujarati, Gurmukhi, Kannada, Malayalam, Odia;
+ten Indic scripts on one OpenType engine — five since 1.8.0, five more in
+1.9.0), Latin combining marks (Yoruba, Igbo, NFD text) on the
 bundled `latin` module, and full UAX #9 BiDi.
 
 ## Choose your surface
@@ -101,8 +102,8 @@ const bytes = buildDocumentPDFBytes({
 - Five more scripts on the Indic engine: `gu`, `pa`, `kn`, `ml`, `or` (`noto-gujarati`, `noto-gurmukhi`, `noto-kannada`, `noto-malayalam`, `noto-oriya`) — 32 scripts, 36 modules.
 - Every shaper's glyphs are named in `/ToUnicode`; `tagged: 'pdfa2u'` raises `PDFA_GLYPH_WITHOUT_UNICODE` for a glyph that still has none; in every mode `TEXT_GLYPH_NOT_COVERED` names the characters no registered font covers (a `.notdef` box, or `?` on the base-14 path).
 - `extractText()` throws `PdfStreamLimitError` (`PDF_STREAM_LIMIT`) on an over-cap stream — `onStreamError: 'skip'` for the old lenience.
-- `decodePdfTextString()`, `composeLtvData()` (offline LTV material, `match: 'chain'`), `{ type: 'link' }` markup annotations, `ecdsaVerifyHash`, `ChartSeries.label` optional, `buildSyntheticGrayProfile()` on `pdfnative/tools`.
-- Embedded subsets are lean (cmap over the used glyphs, no gasp): every CIDFont document is smaller and its bytes differ from 1.8.0 — rebaseline a downstream byte manifest once.
+- `decodePdfTextString()`, `composeLtvData()` (offline LTV material, `match: 'chain'`, `ocspResponseMatchesCertificate()`), `{ type: 'link' }` markup annotations, `ecdsaSignHash` / `ecdsaVerifyHash` and the DER signature codecs, `ChartSeries.label` optional and `ChartSeries.colors` (one colour per bar), `buildSyntheticGrayProfile()` / `buildSyntheticCmykProfile()` on `pdfnative/tools`.
+- Embedded subsets are lean and compact: a cmap over the used glyphs, no gasp, the kept glyphs renumbered into the document's CID space (glyph i is CID i, `EncodingContext.getCidMaps()`, `TextRun.cids`), the subset name carrying the §9.6.4 tag (`ABCDEF+…`, bare under PDF/A-1). A line is one text object (`TJ` arrays, relative `Td`), and untagged reordered or right-to-left runs carry `/Span /ActualText` (`layout.actualText: false` opts out). Every CIDFont document is far smaller and its bytes differ from 1.8.0 — rebaseline a downstream byte manifest once; a tool that resolved a code through the font module's tables must read the embedded program or `getCidMaps()` instead.
 - Pitfall: `direction` unset keeps the 1.8.0 left alignment; `direction: 'auto'` is what a browser does. Pitfall: a spot colour needs its `spotColours` declaration or the build refuses.
 
 ## What 1.8.0 adds (all opt-in, byte-identical when absent)
@@ -130,7 +131,7 @@ const bytes = buildDocumentPDFBytes({
     // pressProfileBytes: your printer's .icc (an output / prtr profile). For tests, the synthetic
     // profile at https://pdfnative.dev/assets/synthetic-cmyk.icc validates but characterises no press.
     outputIntent: { iccProfile: pressProfileBytes, outputConditionIdentifier: 'FOGRA39' },
-    pdfx: 'pdfx4',                                            // exclusive with tagged and encryption
+    pdfx: 'pdfx4',                                            // exclusive with encryption; tagged: 'pdfa2b' | 'pdfa2u' combines with it since 1.9.0
   },
 });
 const report = validatePdfX(bytes);                           // { valid, errors, warnings }
@@ -188,7 +189,11 @@ OutputIntent profile) are in
 10. **`extractText()` returns `/ActualText`, not the shown glyphs.** Since
     1.8.0 a tagged span extracts as the characters the writer declared — what
     a RAG pipeline receives from tagged pdfnative output (or any tagged PDF)
-    can differ from 1.7.0, and now matches the source text.
+    can differ from 1.7.0, and now matches the source text. Since 1.9.0 the
+    same holds for untagged output: a reordered Indic, Khmer, Myanmar, Thai or
+    Lao run and every right-to-left run carry the span, so an untagged Arabic
+    line extracts as typed; a line mixing directions extracts its runs in
+    geometric order, each run logical.
 11. **`{date}` in a header or footer follows `layout.creationDate`** (or the
     pinned default) since 1.8.0, not the wall clock; a pinned build renders
     the pinned date. Every date is written in UTC (`+00'00'`), so a pinned
@@ -217,7 +222,7 @@ const pages = extractText(bytes);          // → ExtractedPageText[], one per p
 if (!pages[0].text.includes('Report')) throw new Error('content missing');
 const ua = validatePdfUA(bytes);
 if (!ua.valid) console.warn(ua.errors);
-// For a print file built with layout.pdfx: 'pdfx4' (never tagged — PDF/X and tagged are exclusive):
+// For a print file built with layout.pdfx: 'pdfx4' (alone, or with tagged: 'pdfa2b' | 'pdfa2u' since 1.9.0):
 const x = validatePdfX(bytes);             // structural PDF/X-4 prerequisites, not a certified preflight
 if (!x.valid) console.warn(x.errors);
 ```

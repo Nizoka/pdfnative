@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.9.0] – 2026-10-24
+## [1.9.0] – 2026-10-29
 
 The conformance and fidelity release: the whole Unicode Bidirectional
 Algorithm (UAX #9) with per-paragraph resolution, a `direction` option and
@@ -16,7 +16,8 @@ level-U guard; mark anchors read through every class and Tibetan on the
 OpenType engine; spot colours (`/Separation`, `/DeviceN`) and a joint
 PDF/A-2 + PDF/X-4 claim, with `validatePdfX()` reading inside XObjects;
 JPEG 2000 images passed through as `/JPXDecode`; embedded TrueType subsets
-up to 61 % smaller; thirteen issues closed (#80–#92) and the SHA-256 length
+an order of magnitude smaller (lean and renumbered into the document's CID
+space); thirteen issues closed (#80–#92) and the SHA-256 length
 word fixed. Underneath, the zero-breaking-change policy is now proven on
 every pull request — the previous release's test suite and API registry
 replayed against the current sources — and CI runs on Windows and macOS as
@@ -25,9 +26,9 @@ Deno, Bun and Chromium, fuzzes the parser surface and publishes through a
 guard → build → publish → attest pipeline that attests the bytes the
 registry serves. Zero runtime dependencies; 39 exports
 added, none removed; every new behaviour opt-in; existing inputs render
-byte-identically except where the previous output was wrong — twenty
-causes, each listed in the release note's Upgrade section with the samples
-it re-anchors. 4306+ tests across 177 files; veraPDF-validated.
+byte-identically except where the previous output was wrong — the
+twenty-eight entries of the release note's compatibility ledger (two of them
+the behaviour changes), each with the samples it re-anchors. 4316+ tests across 177 files; veraPDF-validated.
 
 ### Added
 
@@ -52,7 +53,7 @@ it re-anchors. 4306+ tests across 177 files; veraPDF-validated.
 - **feat(ci): the release pipeline** — guard → build → publish → attest: a tag-only guard before any approval, a build job without a token, a publishing job that installs nothing and verifies the handed-on digests with an npm client pinned by content, an attest job that fetches the published tarball back and attests the registry's bytes with CycloneDX, SPDX and toolchain SBOMs and a Sigstore bundle (SLSA Build L2).
 - **feat(core): `layout.actualText`** — every untagged left-to-right shaped run whose glyph order differs from its text (an Indic pre-base vowel sign or reph, a split vowel sign, a Khmer or Myanmar pre-base vowel, a Thai or Lao tone mark set before a below vowel) carries its text as `/Span /ActualText`, so `extractText()` and every reader return the logical string; `false` restores the bare runs (compatibility ledger C20).
 - **feat(core): `/ActualText` on untagged right-to-left runs** — every run cut from a right-to-left bidi run carries that run's index and logical text (`TextRun.bidi`), and the emitters wrap the runs of one bidi run in a single untagged `/Span /ActualText` inside the line's text object, as Skia writes for reversed clusters: an untagged Arabic or Hebrew line pastes as typed in Acrobat Reader, Chrome and `extractText()`; `layout.actualText: false` switches it off with C20 (compatibility ledger C27).
-- **feat(fonts): compact CID space** — a font's glyphs take CIDs in order of first use (`EncodingContext.getCidMaps()`, `TextRun.cids`), the content streams show them by those codes and `subsetTTF(ttf, gids, { lean: { cmap, cids } })` renumbers the embedded program to match (glyph i = CID i under `/CIDToGIDMap /Identity`): `glyf`, `loca`, `hmtx`, `hhea` and `maxp` cover the kept glyphs only, `/W` is one contiguous group and ToUnicode is keyed by CID. Noto Sans JP 147.6 → 9.6 KB for one paragraph, `financial/sample-multi` 824.6 → 100.7 KB (compatibility ledger C28).
+- **feat(fonts): compact CID space** — a font's glyphs take CIDs in order of first use (`EncodingContext.getCidMaps()`, `TextRun.cids`), the content streams show them by those codes and `subsetTTF(ttf, gids, { lean: { cmap, cids } })` renumbers the embedded program to match (glyph i = CID i under `/CIDToGIDMap /Identity`): `glyf`, `loca`, `hmtx`, `hhea` and `maxp` cover the kept glyphs only, `/W` is one contiguous group and ToUnicode is keyed by CID. Noto Sans JP 275.0 → 9.6 KB for one paragraph, `financial/sample-multi` 824.6 → 100.7 KB (compatibility ledger C28).
 - **feat(core): `TEXT_GLYPH_NOT_COVERED`** — a character no registered font covers is reported once per font with its code points: drawn as `.notdef` in a CID run or written as `?` by the base-14 WinAnsi path (`toWinAnsi(str, onMiss?)`, `pdfString(str, onMiss?)`, `EncodingContext.getUncoveredCodepoints()`); bytes unchanged, `strict` throws.
 - **feat(chart): `ChartSeries.colors`** — one colour per value on the four bar types; the legend swatch keeps the series colour; a length mismatch throws; byte-identical when absent.
 - **docs:** guides *Right-to-left documents* and *Images*; the *Images* playground (fifteen in all); seven recipes (`rtl-document`, `jpx-image`, `spot-colours`, `dual-pdfa-pdfx`, `annotate-link`, `extract-roundtrip`, `ltv-compose-offline`); the `images/` and `bidi-uax9-conformance` samples; `tagged-pdfa2u-taitham` under veraPDF.
@@ -69,21 +70,22 @@ it re-anchors. 4306+ tests across 177 files; veraPDF-validated.
 - **Every embedded TrueType subset** is lean (C6) and compact (C28: glyphs renumbered into the document's CID space, so the program carries no `loca` or `hmtx` entry for a glyph it does not use); every font module header carries a `Copyright:` line (C15).
 - **A registered font no character reaches** embeds a `.notdef`-only lean subset with `/W []` instead of the whole program (C18); its objects and the numbering stay.
 - **Untagged shaped runs out of text order carry `/Span /ActualText`** (C20), and so does every untagged right-to-left run, with its logical text (C27); the tagged emitters pass their structure span's text and never nest a second span (a tagged sara am document loses one redundant span). The run `extractText()` makes of a span measures the width its glyphs took.
-- **Subset font names carry the six-letter tag** of ISO 32000-1 §9.6.4 (`ABCDEF+NotoSans-Regular`, deterministic from the glyph set; withheld under PDF/A-1, which would then require a `/CIDSet` stream) — every sample embedding a font re-anchors (C21).
+- **Subset font names carry the six-letter tag** of ISO 32000-1 §9.6.4 (`ABCDEF+NotoSans-Regular`, deterministic from the glyph set; withheld under PDF/A-1, which would then require a `/CIDSet` stream) — every sample embedding a font outside PDF/A-1 re-anchors (C21).
 - **Kannada and Telugu vowel signs sit before the subjoined consonants** (HarfBuzz `POS_BEFORE_SUB`), so ಕ್ಕಿ, ಸ್ತ್ರೀ and క్కి ligate consonant + sign as ಕಿ and కి do (C22); **Myanmar draws the e-vowel before the medial ra** and keeps a ra + wa/ha stack in one cluster (C23).
 - **Khmer two-part vowels draw their own right piece** — ើ ឿ ៀ ោ ៅ decompose as HarfBuzz does (េ + the sign) and the sign goes through the font's `abvf`/`psts` single; ទៅ no longer reads ទោ (C24).
+- **perf(fonts): lean, compact subsets** — Noto Sans 108.9 → 6.3 KB, Arabic 44.2 → 13.5 KB, Devanagari 34.2 → 5.8 KB, JP 275.0 → 9.6 KB, Thai 13.8 → 5.9 KB for one paragraph each (raw bytes before Flate); `financial/sample-multi` carries 57.9 KB of fonts instead of 781.1 KB. **perf(shaping):** the UAX #9 resolver keeps the 1.8.0 cost for text without directional controls.
 - **`verify:bundle`** — the `parseColor` probe budget moves from 4 to 6 KB (4.2 KB measured: spot colours and ink mixes in the `PdfColor` union); the other probes are unchanged.
 - **`setup-verapdf`** hands its install directory back as an output instead of writing `GITHUB_ENV`; `ci.yml`, `codeql.yml` and the publish workflow lost their path filters; every audit-mode `harden-runner` carries a dated reason.
 - **SECURITY.md** states the supported runtimes (Node 22 and 24 LTS required, 26 advisory; Deno, Bun and browsers smoke-tested) and the compatibility promise; the FAQ and the pipeline say SLSA Build L2 (the "L3-equivalent" claim is gone).
 
 ### Fixed
 
-- **fix(core): `sha256()` and the SHA-512 core wrote one word of the FIPS 180-4 bit length** — inputs of 2^29 octets and more hashed wrong; `writeBitLengthBE` writes both words.
+- **fix(crypto): `sha256()` and the SHA-512 core wrote one word of the FIPS 180-4 bit length** — inputs of 2^29 octets and more hashed wrong; `writeBitLengthBE` writes both words.
 - **fix(core): deep descenders clipped in table rows** — Myanmar stacks and Khmer subscripts clear the cell border; Latin rows are byte-identical ([#80]).
 - **fix(core): a table of contents longer than its page** no longer overflows the margin; `inspectDocumentLayout()` agrees with the build ([#83]).
 - **fix(chart): a series without `label`** no longer throws a `TypeError`; a non-string label is rejected; the legend is measured with the context's metrics in Unicode mode ([#82]).
 - **fix(parser): PDF text strings** in `/Info`, outlines, page labels and signature `/T` are decoded as ISO 32000-1 §7.9.2.2 specifies; non-Latin-1 characters written to `/P`, `/T`, `/V` and `/Opt` are no longer truncated ([#85]).
-- **fix(core): LTV** — `extraCertificates` are referenced from every `/VRI` entry ([#90]).
+- **fix(core): LTV** — `extraCertificates` are referenced from every `/VRI` entry; `ocspResponseMatchesCertificate()` is exported, the matcher `composeLtvData` applies ([#90]).
 - **fix(core): annotations** — a type outside the union throws instead of writing `/Subtype /undefined` ([#91]).
 - **fix(shaping): BiDi** — punctuation no longer attaches to the preceding Latin word in a right-to-left paragraph, brackets inside a Latin run of an Arabic paragraph are paired and mirrored, and a wrapped line no longer changes its neighbours' order (C1–C3, [#92]).
 - **fix(shaping): Malayalam `pref` and a ligature swallowing its base** in the Indic engine; General Punctuation and whitespace Bidi classes corrected to the UCD (U+2030 and U+2032 are ET, TAB is S).
@@ -102,10 +104,18 @@ it re-anchors. 4306+ tests across 177 files; veraPDF-validated.
 - **fix(shaping): a sentence-final danda sent an Odia or Gurmukhi line to the Devanagari shaper** — U+0964 sits in the Devanagari block; the registry now detects the Unicode Script property, so ଶିରୋନାମା keeps its split ୋ and ਲਾਇਬ੍ਰੇਰੀ its subjoined ra in the language documents' paragraphs (C26).
 - **fix(ci):** a docs-only pull request no longer leaves the required checks pending (`ci.yml` path filter removed); a `workflow_dispatch` on a branch can no longer publish (the guard refuses before any approval); the attest job no longer attests a rebuild; `package-manager-cache: false` on every release setup-node.
 
+### Security
+
+- **fix(crypto): CWE-682** — `sha256()` and the SHA-512 core wrote only the low word of the FIPS 180-4 message length, so an input of 2^29 octets (512 MiB) or more hashed wrong, silently; every shorter input was unaffected. Signature digests over files above that size, in every release up to 1.8.0.
+- **fix(parser): CWE-835** — a stray `)`, `{` or `}` made the tokenizer return an empty keyword without advancing, and every token loop (the ToUnicode CMap reader among them) spun forever on a one-byte corruption of any PDF handed to `extractText()` or `openPdf()`. Found by the fuzz targets.
+- **fix(tools): CWE-125** — `parseFontData()` read past the end of a malformed font (a `RangeError` rather than a refusal); bounds-checked in both generators.
+- **Hardening** — the release pipeline refuses anything but a `v*` tag before any approval, holds `id-token: write` only where no dev-dependency code runs, installs nothing in the publishing job, pins the npm client by the SHA-512 of its tarball and attests the registry's bytes; CodeQL runs `security-extended` with the `actions` language; Dependabot waits seven days; the workflows are linted on every pull request; the parser surface is fuzzed by ClusterFuzzLite.
+- **Dev toolchain** — vitest 4.1.12 (GHSA-qxg6-89mg-rqv8, GHSA-xp26-3454-mjgp), vite 8.3.5 (the launch-editor and `server.fs` advisories), brace-expansion 1.1.21 / 5.0.12 and source-map-js 1.2.2 close Dependabot alerts 21–29; `npm audit --audit-level=high` reports none. `scripts/build-guides.ts` decodes `&amp;` last and strips tags to a fixed point (CodeQL js/double-escaping, js/incomplete-multi-character-sanitization); the committed guide shells are byte-identical.
+
 ### Documentation
 
 - Guides *Right-to-left documents* ([rtl.md](docs/guides/rtl.md)) and *Images* ([images.md](docs/guides/images.md)); *Print production* (spot colours, the dual claim, `validatePdfX()` inside XObjects), *Text extraction* (ToUnicode guarantees, `onStreamError`), *Tables* (descenders, `/Scope`), *Outlines* (paginated TOC), *Annotations* (links), *LTV* (offline material), *Signatures* (`ecdsaVerifyHash`), *Charts* (optional label), *Accessibility* (table header semantics, transparency group), *PDF/A* (JPEG 2000 rules, the dual claim), *Typography* (U+202F on base-14), *Troubleshooting* (RTL).
-- The *Images* playground; seven recipes; `docs/data/errors.json` with every new code and message; `docs/assets/api.json` regenerated.
+- The guide *The native family* ([native-family.md](docs/guides/native-family.md)) — pdfnative, zipnative and pkinative composed through public APIs, with a diagram — and the pkinative sibling links beside zipnative's (README, llms.txt, the homepage, the guide index). The *Images* playground; nine 1.9.0 presets across the print, charts, typography, authoring, extreme-scripts, all-scripts, toolkit, images and inspect playgrounds, and the `release-coverage` rule of `verify:docs` (every export added since the previous release is shown by a playground, imported by a recipe or exempted with a reason); seven recipes; `docs/data/errors.json` with every new code and message; `docs/assets/api.json` regenerated.
 - Samples: `shaping/shaping-malayalam` (legacy and atomic chillus, split vowel signs, a justified paragraph — 311 in all); `financial/sample-multi` registers the ten fonts its rows use and is tagged (25 PDF/A-claiming samples); `print/print-spot-colours` paints each plate in its ink. The Images playground's three format paragraphs no longer set an arrow Helvetica cannot encode (a silent `?` until `TEXT_GLYPH_NOT_COVERED` named it). The debugging guide documents `TEXT_GLYPH_NOT_COVERED`; the charts guide `ChartSeries.colors`; the text-extraction guide the untagged `/ActualText` rule.
 - SECURITY.md §Supported runtimes and §Compatibility promise; CONTRIBUTING §Compatibility with the previous release and the required-checks list; `.github/instructions/testing` (fuzz targets, compat replay) and `font-engineering` (lean embeds, copyright header).
 

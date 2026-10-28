@@ -146,6 +146,11 @@ _All v1.9.0 items have been merged. See Released above._
 
 ## Planned
 
+### Next — v1.9.1
+
+- [ ] **PDF/UA-1 basics** — `metadata.language` → catalog `/Lang` and XMP `dc:language`, per-block `lang` on the structure elements, rules and table borders as `/Artifact << /Type /Layout >>`; veraPDF ua1 7.1-3 and 7.2-33/34 today (1.9.0 review, P-03/P-04).
+- [ ] **Small conformance polish** — a `/CIDSet` stream for CIDFont subsets so the §9.6.4 tag can be written under PDF/A-1 too, R6 passwords through SASLprep (ISO 32000-2 §7.6.4.3.3), the JPX `colr` METH/APPROX and bit-depth checks of ISO 19005-2 §6.2.8.3, an optional `/RegistryName` for unregistered output conditions, diagnostics deduplicated per message rather than per code, an unused registered font left out of `/Resources` instead of the C18 stub, ligature `cps` in source order, Kannada legacy `Ra H ZWJ C` (hb #435) (1.9.0 review).
+
 ### Long-Term
 
 - [ ] **Spacing signs emitted at zero advance** — the Khmer, Myanmar and Tai Tham shapers emit some glyphs at zero advance that their fonts give an advance and no anchor (Khmer subjoined consonants, Myanmar medials, the Tai Tham medial ra). The guard `tests/regression/language-docs.test.ts` holds over the Thai and Lao shapers trips on all three when widened; whether the fonts mean those glyphs to advance, as HarfBuzz would let them, must be settled against the visual baselines before the guard is widened. ([src/shaping/khmer-shaper.ts](src/shaping/khmer-shaper.ts), [src/shaping/myanmar-shaper.ts](src/shaping/myanmar-shaper.ts), [src/shaping/use-shaper.ts](src/shaping/use-shaper.ts))
@@ -158,16 +163,13 @@ _All v1.9.0 items have been merged. See Released above._
 - [ ] **ICC-based RGB → CMYK conversion** — RGB content under a CMYK intent is kept conforming through `/DefaultRGB`, not converted; a press workflow that wants CMYK-only content must author it in CMYK today.
 
 - [ ] **Error classes across the dual build** — a program that loads pdfnative once as ESM and once as CJS holds two copies of every error class and of the module-level setters, so `instanceof PdfPasswordError` and `setDeflateImpl()` can disagree between them; a `Symbol.hasInstance` brand on the exported classes and `globalThis` slots for the setters would make the two copies agree (the runtime-support half of that draft shipped as SECURITY.md §Supported runtimes in v1.9.0).
-- [ ] **PDF/UA-1 basics** — `metadata.language` → catalog `/Lang` and XMP `dc:language`, per-block `lang` on the structure elements, rules and table borders as `/Artifact << /Type /Layout >>`; veraPDF ua1 7.1-3 and 7.2-33/34 today (1.9.0 review, P-03/P-04).
 - [ ] **Thai and Lao marks in typed order** — the shapers emit above marks before below marks (`กุ้ง` → `ก ้ ุ ง`); HarfBuzz keeps the typed order and lets GPOS place them. Rendering is identical and the C20 span covers extraction; emitting storage order removes both (1.9.0 review, L-06).
-- [ ] **One text object per shaped run** — `txtShaped` writes one `BT…ET` per glyph; one `BT` with `Td` deltas (or a `TJ` array at dy 0) is what Skia, PDFBox and iText write (1.9.0 review, P-07).
 - [ ] **Bidi reordering in `extractText()`** — a line mixing directions extracts its runs in geometric order (each right-to-left run logical through its C27 span, as a Chrome-printed page); running UAX #9 L2 in reverse over the extracted line would return the logical sentence from any producer's PDF, at the cost of a `parser/ → shaping/` edge the architecture does not have today.
 - [ ] **Default-ignorable characters on the plain path** — a VS16, a tag or a Mongolian FVS the font lacks is drawn as `.notdef`; HarfBuzz hides them (zero-width space glyph). Never reported since 1.9.0, still drawn (L-07). An NFD mark the font lacks could compose to the precomposed letter first (L-08).
 - [ ] **PNG palette, 16-bit and interlaced images** — `/Indexed` with a `tRNS` soft mask, `/BitsPerComponent 16`, Adam7 — accepted by PDFBox, iText and pdf-lib (1.9.0 review, P-06).
-- [ ] **Small conformance polish** — a `/CIDSet` stream for CIDFont subsets so the §9.6.4 tag can be written under PDF/A-1 too, R6 passwords through SASLprep (ISO 32000-2 §7.6.4.3.3), the JPX `colr` METH/APPROX and bit-depth checks of ISO 19005-2 §6.2.8.3, an optional `/RegistryName` for unregistered output conditions, diagnostics deduplicated per message rather than per code, an unused registered font left out of `/Resources` instead of the C18 stub, ligature `cps` in source order, Kannada legacy `Ra H ZWJ C` (hb #435) (1.9.0 review).
 - [ ] **SLSA Build L3** — build and attest in a reusable workflow isolated from the job that holds `id-token: write`; the release pipeline is at Build L2 since v1.9.0 (guard → build → publish → attest, the registry's bytes attested).
 - [ ] **Fuzzing corpus storage** — a dedicated repository for the ClusterFuzzLite corpora, which live in the Actions cache today and are lost on eviction.
-- [ ] **Node 26 in the required matrix** — the line enters LTS on 2026-10-28; the advisory `node-current` workflow runs it until the first minor after that date, when it joins `ci.yml`.
+- [ ] **Node 26 in the required matrix** — the line entered LTS on 2026-10-28; the advisory `node-current` workflow runs it until the first minor after that date, when it joins `ci.yml`.
 - [ ] **`rlig` in the Indic feature stages** — HarfBuzz applies `rlig` everywhere; the engine runs `locl ccmp nukt akhn rphf rkrf pref blwf abvf half pstf vatu cjct` then `pres abvs blws psts haln calt`, so a required ligature a font files under `rlig` (one lookup in Noto Sans Malayalam) is never applied.
 - [ ] **Alphabet plates: vowel signs on a base** — the matra rows of the Indic alphabet plates list bare signs (`alphabet-data.ts`), which no syllable carries, so an above sign is drawn at zero advance over the preceding space; Unicode charts show them on U+25CC, but the bundled modules carry no anchors for the dotted circle, so a consonant base (ಕ, କ…) is the alternative.
 - [ ] **Colour bars from spot inks** — `print.marks.colourBars` paints the process inks; a bar built from the declared `spotColours` would let a press check every ink on the sheet.
@@ -177,3 +179,17 @@ _All v1.9.0 items have been merged. See Released above._
 - **Feature requests:** [Open an issue](https://github.com/Nizoka/pdfnative/issues/new?template=feature_request.md)
 - **Sponsorship:** Sponsored features get prioritized. See [funding options](https://github.com/sponsors/Nizoka)
 - **Pull requests:** Community contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md)
+
+[#80]: https://github.com/Nizoka/pdfnative/issues/80
+[#81]: https://github.com/Nizoka/pdfnative/issues/81
+[#82]: https://github.com/Nizoka/pdfnative/issues/82
+[#83]: https://github.com/Nizoka/pdfnative/issues/83
+[#84]: https://github.com/Nizoka/pdfnative/issues/84
+[#85]: https://github.com/Nizoka/pdfnative/issues/85
+[#86]: https://github.com/Nizoka/pdfnative/issues/86
+[#87]: https://github.com/Nizoka/pdfnative/issues/87
+[#88]: https://github.com/Nizoka/pdfnative/issues/88
+[#89]: https://github.com/Nizoka/pdfnative/issues/89
+[#90]: https://github.com/Nizoka/pdfnative/issues/90
+[#91]: https://github.com/Nizoka/pdfnative/issues/91
+[#92]: https://github.com/Nizoka/pdfnative/issues/92

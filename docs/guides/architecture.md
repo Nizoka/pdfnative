@@ -80,7 +80,7 @@ Input (params + options)
 types/ → core/ ← fonts/ ← shaping/ ← worker/
               ↑
           crypto/ (near-standalone, imports core/pdf-encrypt for sha256)
-          parser/ (imports core/pdf-compress, pdf-encrypt, pdf-tags)
+          parser/ (imports core/pdf-compress, pdf-encrypt, pdf-tags, pdf-page-labels, pdf-content-colour)
 ```
 
 - **No circular dependencies** — strict unidirectional flow, with **one
@@ -89,7 +89,7 @@ types/ → core/ ← fonts/ ← shaping/ ← worker/
   `pdf-form-fill`) import the parser to read existing documents before
   appending incremental revisions
 - **crypto/** is near-standalone — its only cross-module import is `sha256` from `core/pdf-encrypt.ts` (re-exported by `crypto/sha.ts`)
-- **parser/** imports from `core/pdf-compress.ts` (FlateDecode), `core/pdf-encrypt.ts` (decryption, incremental `/ID`) and `core/pdf-tags.ts` (XMP resync in `updateMetadata`)
+- **parser/** imports from `core/pdf-compress.ts` (FlateDecode), `core/pdf-encrypt.ts` (decryption, incremental `/ID`), `core/pdf-tags.ts` (XMP resync in `updateMetadata`), `core/pdf-page-labels.ts` (the label tree the reader walks) and `core/pdf-content-colour.ts` (the colour operators `validatePdfX` scans)
 - **fonts/** imports from `shaping/` for script detection
 - **shaping/** imports from `fonts/` encoding context (via `core/encoding-context.ts` to break cycle)
 
