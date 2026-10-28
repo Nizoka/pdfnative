@@ -17,7 +17,7 @@
  * @expect data.certificates.length === 2
  */
 import { addSignaturePlaceholder, buildDocumentPDFBytes, composeLtvData, embedValidationInfo, listSignatures, signPdfBytes } from 'pdfnative';
-import type { LtvData, PdfSignatureInfo, RsaPrivateKey, X509Certificate } from 'pdfnative';
+import type { ComposeLtvOptions, LtvData, LtvMaterial, PdfSignatureInfo, RsaPrivateKey, X509Certificate } from 'pdfnative';
 
 /** Key material supplied by the caller (e.g. from a PKCS#12 store). */
 export interface SignerMaterial {
@@ -26,12 +26,8 @@ export interface SignerMaterial {
     readonly chain?: readonly X509Certificate[];
 }
 
-/** Validation material gathered out of band: DER certificates, OCSP responses, CRLs. */
-export interface OfflineMaterial {
-    readonly certificates: readonly Uint8Array[];
-    readonly ocspResponses?: readonly Uint8Array[];
-    readonly crls?: readonly Uint8Array[];
-}
+/** Validation material gathered out of band: DER certificates, OCSP responses, CRLs — the public LtvMaterial shape. */
+export type OfflineMaterial = LtvMaterial;
 
 export async function run(signer: SignerMaterial, material: OfflineMaterial): Promise<{ bytes: Uint8Array; signatures: readonly PdfSignatureInfo[]; data: LtvData }> {
     const signingTime = new Date('2026-10-23T00:00:00Z');
@@ -52,8 +48,11 @@ export async function run(signer: SignerMaterial, material: OfflineMaterial): Pr
         signingTime,
     });
 
-    // Only the material that validates this document's signature is kept.
-    const data = composeLtvData(signed, material, { match: 'chain' });
+    // Only the material that validates this document's signature is kept: 'chain' keeps the
+    // certificates of the signer's chain and the OCSP responses and CRLs that answer for them
+    // (ocspResponseMatchesCertificate decides which response answers for which certificate).
+    const options: ComposeLtvOptions = { match: 'chain' };
+    const data = composeLtvData(signed, material, options);
     const bytes = embedValidationInfo(signed, data);
     return { bytes, signatures: listSignatures(bytes), data };
 }

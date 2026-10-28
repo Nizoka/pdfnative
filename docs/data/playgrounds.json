@@ -22,7 +22,8 @@
             "tamil",
             "bengali",
             "harakat",
-            "use"
+            "use",
+            "rtl"
           ]
         },
         {
@@ -60,7 +61,10 @@
         "shaping.use (nod, cjm)",
         "shaping.arabic",
         "shaping.indic",
-        "shaping.emoji (COLRv1)"
+        "shaping.emoji (COLRv1)",
+        "layout.direction: 'auto' (TextDirection) and ParagraphBlock.direction",
+        "right-to-left paragraphs aligned right and justified in visual order (align: 'justify')",
+        "UAX #9 isolates (FSI … PDI) and bracket pairs (N0) under the full resolver (resolveBidiLevels)"
       ],
       "codeView": "#code-view",
       "selfContained": false,
@@ -118,7 +122,7 @@
         "downloadBlob",
         "params.fontEntries",
         "font routing across 32 scripts",
-        "shaping.indic (hi, bn, ta, te, si — one OpenType engine since 1.8.0)",
+        "shaping.indic (hi, bn, ta, te, si since 1.8.0; gu, pa, kn, ml, or since 1.9.0 — one OpenType engine)",
         "shaping.use (nod, cjm)",
         "shaping.lao",
         "shaping.latin-marks (Yoruba and Igbo tone marks on the latin module)",
@@ -177,7 +181,9 @@
         "layout.encryption",
         "MergeOptions.encrypt",
         "extractText",
-        "downloadBlob"
+        "downloadBlob",
+        "toc block (generated from the headings; paginates when longer than its page since 1.9.0)",
+        "ColumnDef.kind: 'amount' on a table column"
       ],
       "codeView": "#code-view",
       "selfContained": true,
@@ -231,7 +237,10 @@
         "readFormFields",
         "PdfPasswordError",
         "buildDocumentPDFBytes (tagged sample with a justified paragraph and an svg block with alt)",
-        "setDefaultCreationDate"
+        "setDefaultCreationDate",
+        "decodePdfTextString (PDFDocEncoding and UTF-16BE text strings of /Info, read by the Overview card)",
+        "extractText onStreamError (StreamErrorPolicy: 'limit' by default, 'skip', 'throw') and PdfStreamLimitError",
+        "a tagged table in the generated sample: /TH with /Scope and /ID, /TD with /Headers, /IDTree under validatePdfUA"
       ],
       "codeView": null,
       "selfContained": false,
@@ -257,7 +266,8 @@
             "pie",
             "donut",
             "mixed",
-            "v2"
+            "v2",
+            "colors"
           ]
         },
         {
@@ -275,7 +285,9 @@
         "chart block (bar, barH, line, pie, donut, stackedBar, stackedBarH, area, scatter)",
         "chart.series",
         "chart.alt under layout.tagged",
-        "downloadBlob"
+        "downloadBlob",
+        "ChartSeries.colors (one colour per value on bar, barH, stackedBar, stackedBarH)",
+        "optional ChartSeries.label (a series without one draws without a legend entry)"
       ],
       "codeView": "#code-view",
       "selfContained": true,
@@ -325,7 +337,8 @@
         "registerFont (math)",
         "getPageLabels",
         "control-character sanitisation",
-        "downloadBlob"
+        "downloadBlob",
+        "LinkMarkupAnnotation ({ type: 'link', rect, url } through buildAnnotationBody)"
       ],
       "codeView": "#code-view",
       "selfContained": false,
@@ -595,7 +608,8 @@
             "metrics",
             "kerning",
             "figures",
-            "figures-tnum"
+            "figures-tnum",
+            "uncovered"
           ]
         },
         {
@@ -631,7 +645,9 @@
         "layout.onDiagnostic",
         "TYPOGRAPHY_FEATURE_INEFFECTIVE",
         "registerFonts",
-        "loadFontData"
+        "loadFontData",
+        "TEXT_GLYPH_NOT_COVERED (characters outside WinAnsi on the base-14 path, or a CID font's .notdef)",
+        "layout.strict (the diagnostic thrown instead of reported)"
       ],
       "codeView": "#code-view",
       "selfContained": true,
@@ -655,7 +671,9 @@
             "cmyk",
             "pdfa",
             "pdfx",
-            "errors"
+            "errors",
+            "spot",
+            "dual"
           ]
         },
         {
@@ -693,9 +711,14 @@
         "layout.tagged: 'pdfa2b' under a CMYK intent",
         "layout.pdfx: 'pdfx4'",
         "validatePdfX",
-        "PDF/X coherence errors (pdfx + tagged, pdfx + encryption, missing outputIntent, metadata.trapped: 'Unknown')",
+        "PDF/X coherence errors (pdfx + tagged: 'pdfa1b', pdfx + encryption, missing outputIntent, metadata.trapped: 'Unknown')",
         "registerFonts",
-        "loadFontData"
+        "loadFontData",
+        "layout.print.spotColours (SpotColourDef: name + CMYK or RGB alternate)",
+        "PdfSpotColor ({ spot, tint }) and PdfInkMix ({ inks }) — /Separation and /DeviceN with a type-4 tint transform",
+        "ChartSeries.colors painting each bar in its own ink",
+        "the dual claim: tagged: 'pdfa2b' next to pdfx: 'pdfx4' (one XMP packet, two OutputIntents on one ICC stream)",
+        "buildSyntheticCmykProfile from pdfnative/tools (the CMYK OutputIntent of every code view)"
       ],
       "codeView": "#code-view",
       "selfContained": true,
@@ -854,7 +877,8 @@
             "formats",
             "pdfa2b",
             "pdfa1",
-            "upload"
+            "upload",
+            "watermark"
           ]
         },
         {
@@ -879,12 +903,116 @@
         "layout.tagged: 'pdfa1b' with a JPEG 2000 image under strict (PDFA1_JPX_IMAGE thrown)",
         "detectImageFormat",
         "parseImage and ParsedImage.jpx",
-        "layout.onDiagnostic"
+        "layout.onDiagnostic",
+        "layout.watermark.image with a JPEG 2000 file (one /JPXDecode XObject behind every page)",
+        "parseJPX and JpxInfo (the reader on its own)"
       ],
       "codeView": "#code-view",
       "selfContained": true,
       "diagnostics": "#diagnostics",
       "output": "a downloaded PDF per preset (the pdfa1 preset reports the thrown message in #report instead)"
+    }
+  ],
+  "coverageExemptions": [
+    {
+      "name": "BidiLevels",
+      "reason": "The return type of resolveBidiLevels; the extreme-scripts rtl preset drives the resolver through layout.direction."
+    },
+    {
+      "name": "BidiDirection",
+      "reason": "The paragraph-direction member of BidiLevels; shown through layout.direction in the extreme-scripts rtl preset."
+    },
+    {
+      "name": "bidiLineLevels",
+      "reason": "The per-line step (L1) of the UAX #9 resolver the engine runs for every wrapped line; the extreme-scripts rtl preset shows the result."
+    },
+    {
+      "name": "bidiRunsForLine",
+      "reason": "The reordering step (L2) of the UAX #9 resolver the engine runs for every line; the extreme-scripts rtl preset shows the result."
+    },
+    {
+      "name": "containsGujarati",
+      "reason": "Script detection primitive routed by SCRIPT_SHAPERS; the all-scripts tour renders Gujarati through fontEntries."
+    },
+    {
+      "name": "containsGurmukhi",
+      "reason": "Script detection primitive routed by SCRIPT_SHAPERS; the all-scripts tour renders Gurmukhi through fontEntries."
+    },
+    {
+      "name": "containsKannada",
+      "reason": "Script detection primitive routed by SCRIPT_SHAPERS; the all-scripts tour renders Kannada through fontEntries."
+    },
+    {
+      "name": "containsMalayalam",
+      "reason": "Script detection primitive routed by SCRIPT_SHAPERS; the all-scripts tour renders Malayalam through fontEntries."
+    },
+    {
+      "name": "containsOdia",
+      "reason": "Script detection primitive routed by SCRIPT_SHAPERS; the all-scripts tour renders Odia through fontEntries."
+    },
+    {
+      "name": "isGujaratiCodepoint",
+      "reason": "Per-code-point classifier behind containsGujarati; exercised by the all-scripts tour through font routing."
+    },
+    {
+      "name": "isGurmukhiCodepoint",
+      "reason": "Per-code-point classifier behind containsGurmukhi; exercised by the all-scripts tour through font routing."
+    },
+    {
+      "name": "isKannadaCodepoint",
+      "reason": "Per-code-point classifier behind containsKannada; exercised by the all-scripts tour through font routing."
+    },
+    {
+      "name": "isMalayalamCodepoint",
+      "reason": "Per-code-point classifier behind containsMalayalam; exercised by the all-scripts tour through font routing."
+    },
+    {
+      "name": "isOdiaCodepoint",
+      "reason": "Per-code-point classifier behind containsOdia; exercised by the all-scripts tour through font routing."
+    },
+    {
+      "name": "shapeGujaratiText",
+      "reason": "The Indic-engine wrapper SCRIPT_SHAPERS dispatches to; the all-scripts tour shapes Gujarati through buildDocumentPDFBytes."
+    },
+    {
+      "name": "shapeGurmukhiText",
+      "reason": "The Indic-engine wrapper SCRIPT_SHAPERS dispatches to; the all-scripts tour shapes Gurmukhi through buildDocumentPDFBytes."
+    },
+    {
+      "name": "shapeKannadaText",
+      "reason": "The Indic-engine wrapper SCRIPT_SHAPERS dispatches to; the all-scripts tour shapes Kannada through buildDocumentPDFBytes."
+    },
+    {
+      "name": "shapeMalayalamText",
+      "reason": "The Indic-engine wrapper SCRIPT_SHAPERS dispatches to; the all-scripts tour shapes Malayalam through buildDocumentPDFBytes."
+    },
+    {
+      "name": "shapeOdiaText",
+      "reason": "The Indic-engine wrapper SCRIPT_SHAPERS dispatches to; the all-scripts tour shapes Odia through buildDocumentPDFBytes."
+    },
+    {
+      "name": "OcspCertId",
+      "reason": "The CertID parseOcspResponse exposes for ocspResponseMatchesCertificate; both run in the ltv-compose-offline recipe, not in a browser (no OCSP responder reachable from a page)."
+    },
+    {
+      "name": "ecdsaSignHash",
+      "reason": "A raw ECDSA primitive for custom signers; the signing flow a visitor runs is signPdfBytes (recipes sign-*, pdfnative-cli sign --algorithm ecdsa-sha256)."
+    },
+    {
+      "name": "ecdsaVerifyHash",
+      "reason": "A raw ECDSA primitive for custom verifiers; PDF signatures are verified by pdfnative-cli verify and the verify_pdf MCP tool, not in a page."
+    },
+    {
+      "name": "encodeDerSignature",
+      "reason": "The DER (r, s) encoder behind ecdsaSignHash; a signer primitive with no visible output of its own."
+    },
+    {
+      "name": "decodeDerSignature",
+      "reason": "The DER (r, s) decoder behind ecdsaVerifyHash; a verifier primitive with no visible output of its own."
+    },
+    {
+      "name": "ocspResponseMatchesCertificate",
+      "reason": "The matcher composeLtvData applies under match: 'chain' to keep the OCSP responses that answer for the signer's chain; the ltv-compose-offline recipe runs that path, and a page has no OCSP responder to query."
     }
   ]
 }

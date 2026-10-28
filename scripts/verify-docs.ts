@@ -1379,7 +1379,12 @@ if (existsSync(SITEMAP)) {
     };
     const toplevel = git('rev-parse', '--show-toplevel')?.trim().replace(/\\/g, '/');
     const shallow = git('rev-parse', '--is-shallow-repository')?.trim();
-    if (toplevel !== undefined && toplevel === ROOT.replace(/\\/g, '/') && shallow === 'false') {
+    // Windows paths are case-insensitive and git reports the drive letter in
+    // upper case; a shell that opened the checkout as d:\… must not make the
+    // rule skip itself silently (the 1.9.0 review found it never running here).
+    const samePath = (a: string, b: string): boolean =>
+        process.platform === 'win32' ? a.toLowerCase() === b.toLowerCase() : a === b;
+    if (toplevel !== undefined && samePath(toplevel, ROOT.replace(/\\/g, '/')) && shallow === 'false') {
         const tracked = new Set((git('ls-files', '--', 'docs') ?? '').split(/\r?\n/).filter(Boolean));
         const lastCommit = new Map<string, string>();
         const log = git('log', '--format=%x01%cs', '--name-only', '--', 'docs') ?? '';
@@ -1518,6 +1523,88 @@ const PLAYGROUNDS = existsSync(join(ROOT, 'docs', 'playgrounds'))
         const declared = manifest.derived['playgrounds'];
         if (declared !== undefined && listed.size !== declared) {
             fail(relManifest, 1, 'playgrounds-manifest', `lists ${listed.size} playgrounds but derived.playgrounds says ${declared}`);
+        }
+    }
+}
+
+// ── Rule: release-coverage ──────────────────────────────────────────
+
+/**
+ * Every export the current release added — `docs/assets/api.json` minus the
+ * previous release's registry in `tests/compat/api-<previous>.json` (the one
+ * `tests/compat/allow-<previous>.json` names, the same file
+ * `tests/tools/api-compat.test.ts` replays) — is shown somewhere a visitor
+ * or an agent can run it: named under `exercises` of a live playground in
+ * `docs/data/playgrounds.json`, imported by a recipe under `recipes/`, or
+ * listed under `coverageExemptions` of the playground manifest with a reason
+ * (a low-level primitive the playgrounds show through a higher-level option).
+ * The 1.9.0 review found none of the release's 39 exports in any playground
+ * manifest and twenty user-facing features in no playground at all; this rule
+ * is what keeps the next release from drifting the same way.
+ */
+{
+    const MANIFEST_FILE = join(ROOT, 'docs', 'data', 'playgrounds.json');
+    const relManifest = 'docs/data/playgrounds.json';
+    const API_FILE = join(ROOT, 'docs', 'assets', 'api.json');
+    const COMPAT_DIR = join(ROOT, 'tests', 'compat');
+    interface ApiEntry { readonly name: string }
+    interface Exemption { readonly name: string; readonly reason?: string }
+    interface Manifest { readonly playgrounds?: ReadonlyArray<{ readonly id: string; readonly exercises?: readonly string[] }>; readonly coverageExemptions?: readonly Exemption[] }
+    const previousTag = existsSync(COMPAT_DIR)
+        ? readdirSync(COMPAT_DIR)
+              .filter((f) => /^allow-.*\.json$/.test(f))
+              .map((f) => (JSON.parse(read(join(COMPAT_DIR, f))) as { tag?: string }).tag)
+              .filter((t): t is string => typeof t === 'string')
+              .sort()
+              .pop()
+        : undefined;
+    const previousFile = previousTag ? join(COMPAT_DIR, `api-${previousTag.replace(/^v/, '')}.json`) : undefined;
+    if (existsSync(MANIFEST_FILE) && existsSync(API_FILE) && previousFile && existsSync(previousFile)) {
+        const names = (file: string): string[] => {
+            const parsed = JSON.parse(read(file)) as ApiEntry[] | { exports?: ApiEntry[] };
+            return (Array.isArray(parsed) ? parsed : (parsed.exports ?? [])).map((e) => e.name);
+        };
+        const previous = new Set(names(previousFile));
+        const added = names(API_FILE).filter((n) => !previous.has(n));
+        let manifestJson: Manifest = {};
+        try {
+            manifestJson = JSON.parse(read(MANIFEST_FILE)) as Manifest;
+        } catch {
+            // playgrounds-manifest has already reported the parse failure.
+        }
+        const shown = new Set<string>();
+        for (const entry of manifestJson.playgrounds ?? []) {
+            for (const item of entry.exercises ?? []) {
+                for (const token of item.match(/[A-Za-z_][A-Za-z0-9_]*/g) ?? []) shown.add(token);
+            }
+        }
+        const recipesDir = join(ROOT, 'recipes');
+        if (existsSync(recipesDir)) {
+            for (const file of readdirSync(recipesDir).filter((f) => f.endsWith('.ts'))) {
+                for (const m of read(join(recipesDir, file)).matchAll(/import\s+(?:type\s+)?\{([^}]+)\}\s+from\s+'pdfnative(?:\/tools)?'/g)) {
+                    for (const token of m[1].match(/[A-Za-z_][A-Za-z0-9_]*/g) ?? []) shown.add(token);
+                }
+            }
+        }
+        const exempt = new Map<string, string>();
+        for (const e of manifestJson.coverageExemptions ?? []) {
+            if (typeof e.name !== 'string' || typeof e.reason !== 'string' || e.reason.trim().length < 20) {
+                fail(relManifest, 1, 'release-coverage', `coverageExemptions entry "${String(e.name)}" needs a reason of at least 20 characters`);
+                continue;
+            }
+            if (previous.has(e.name)) fail(relManifest, 1, 'release-coverage', `coverageExemptions lists "${e.name}", which ${previousTag} already exported — drop the stale entry`);
+            else if (!added.includes(e.name)) fail(relManifest, 1, 'release-coverage', `coverageExemptions lists "${e.name}", which docs/assets/api.json does not export — a typo, or an export that was renamed`);
+            else if (shown.has(e.name)) fail(relManifest, 1, 'release-coverage', `coverageExemptions lists "${e.name}", which a playground or a recipe already shows — drop the entry`);
+            exempt.set(e.name, e.reason);
+        }
+        for (const name of added) {
+            if (shown.has(name) || exempt.has(name)) continue;
+            fail(
+                relManifest,
+                1,
+                'release-coverage',
+                `"${name}" is new since ${previousTag} and no playground exercises it, no recipe imports it and no coverageExemptions entry explains why — add a preset, a recipe, or an exemption with its reason`,
+            );
         }
     }
 }
@@ -2222,6 +2309,7 @@ const OFFLINE_RULES = [
     'sitemap-lastmod-vs-git', // (full clones only) lastmod ≥ last commit of the page's sources and ≤ verifiedOn
     'cdn-sri', // third-party scripts carry integrity+crossorigin; pdfnative CDN imports are pinned
     'playgrounds-manifest', // docs/data/playgrounds.json lists every live playground with real control ids; count equals derived.playgrounds
+    'release-coverage', // every export added since the previous release is exercised by a playground, imported by a recipe, or exempted with a reason
     'switcher-parity', // playground switchers link every live playground, none link a noindex stub
     'learn-chain', // learn path prev/next links follow manifest.learnPath
     'bench-parity', // homepage benchmark bars round to bench/RESULTS.md

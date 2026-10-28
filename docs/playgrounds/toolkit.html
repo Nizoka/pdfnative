@@ -102,7 +102,7 @@
     <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:24px;">
       <label for="preset"><strong>Demo:</strong></label>
       <select id="preset" style="padding:6px 10px;border-radius:6px;border:1px solid #cbd5e1;font-size:14px;">
-        <option value="bookmarks">Bookmarks · page labels · viewer preferences</option>
+        <option value="bookmarks">Bookmarks · table of contents · page labels · viewer preferences</option>
         <option value="layout">Nested lists · table cell borders &amp; vertical alignment</option>
         <option value="manipulation">Merge · split · extract pages</option>
         <option value="formfill">Fill &amp; flatten an encrypted AcroForm (v1.6.0)</option>
@@ -175,7 +175,7 @@ function setStatus(msg, kind) {
 }
 
 const DESCRIPTIONS = {
-  bookmarks: 'Builds a six-section report. An auto-derived bookmark tree mirrors the headings, the front-matter pages use roman numerals (i, ii, iii) while the body uses decimals, and the viewer is asked to open with the bookmark panel showing. Open the result in a desktop reader to see the bookmarks panel.',
+  bookmarks: 'Builds a report with a generated table of contents: the toc block lists every heading with its page number — since 1.9.0 a contents list longer than its page breaks at entry boundaries and continues on the next page instead of overflowing the margin. An auto-derived bookmark tree mirrors the headings, the front-matter pages use roman numerals (i, ii, iii) while the body uses decimals, and the viewer is asked to open with the bookmark panel showing. Open the result in a desktop reader to see the bookmarks panel.',
   layout: 'Renders a hierarchical (multi-level) list and a table whose cells have dashed borders and middle vertical alignment — the amount column is right-aligned with its own per-column styling.',
   manipulation: 'Generates a 2-page cover PDF and a 2-page appendix PDF in memory, merges them into one 4-page document, then extracts pages 1 and 3 into a third PDF. The merged document is downloaded; the status line reports the split/extract page counts.',
   formfill: 'Builds a blank AcroForm (text, dropdown, checkbox) that is AES-128 encrypted, fills it with fillForm() — the appended field values and appearance streams are encrypted under the document’s existing scheme (encrypted incremental update) — then flattens it with flattenForm(). The flattened, still-encrypted PDF is downloaded (password: pdfnative).',
@@ -189,8 +189,9 @@ const CODE = {
 const pdf = buildDocumentPDFBytes({
   title: 'Quarterly Report',
   blocks: [
-    { type: 'heading', text: 'Cover', level: 1 },
-    { type: 'heading', text: 'Table of Contents', level: 1 }, { type: 'pageBreak' },
+    { type: 'heading', text: 'Cover', level: 1 }, { type: 'pageBreak' },
+    { type: 'toc', title: 'Table of Contents', maxLevel: 2 },   // generated from the headings; paginates when longer than its page (1.9.0)
+    { type: 'pageBreak' },
     { type: 'heading', text: '1. Summary', level: 1 },
     { type: 'paragraph', text: 'Executive summary…' }, { type: 'pageBreak' },
     { type: 'heading', text: '2. Results', level: 1 },
@@ -369,8 +370,8 @@ function buildBookmarks(mod) {
       // verify-docs:allow version-token (feature-era demo copy)
       { type: 'paragraph', text: 'pdfnative 1.4.0 — bookmarks, page labels and viewer preferences.' },
       { type: 'pageBreak' },
-      { type: 'heading', text: 'Table of Contents', level: 1 },
-      { type: 'paragraph', text: 'Front matter uses roman numerals.' },
+      { type: 'toc', title: 'Table of Contents', maxLevel: 2 },
+      { type: 'paragraph', text: 'Front matter uses roman numerals; the contents list above is generated from the headings and paginates when it outgrows its page (1.9.0).' },
       { type: 'pageBreak' },
       { type: 'heading', text: '1. Summary', level: 1 },
       { type: 'paragraph', text: 'Executive summary of the quarter.' },

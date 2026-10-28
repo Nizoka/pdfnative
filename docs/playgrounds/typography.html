@@ -145,6 +145,7 @@
         <option value="kerning">Pair kerning (Noto Sans)</option>
         <option value="figures">Tabular and old-style figures (Noto Sans)</option>
         <option value="figures-tnum">Ineffective feature: tnum on Noto Sans → TYPOGRAPHY_FEATURE_INEFFECTIVE (1.8.0)</option>
+        <option value="uncovered">Characters no font covers → TEXT_GLYPH_NOT_COVERED (1.9.0)</option>
       </select>
       <label style="display:flex;align-items:center;gap:6px;font-size:14px;"><input type="checkbox" id="apply" checked> Apply the option</label>
       <button id="generate" class="btn btn-primary" style="padding:8px 18px;">Generate PDF</button>
@@ -216,6 +217,7 @@ const DESCRIPTIONS = {
   metrics: 'Right-aligned and centred base-14 lines full of em dashes, ellipses and curly quotes. The historical estimate measures each of those at 556 units; the Helvetica AFM table says 1000, 1000 and 333. With metrics: \'exact\' every line lands on its margin; without it the lines overshoot or fall short by the accumulated error.',
   kerning: 'Display headings where kerning is most visible: AV, To, Yo, Wa. Loads Noto Sans from the CDN, since the base-14 faces carry no kerning data.',
   figures: 'A table of amounts and a line of prose. Noto Sans sets lining, tabular figures by default, so the variant turns on old-style figures (onum) and small capitals (smcp) — two single-substitution features whose effect is visible; tnum would change nothing here and would raise the TYPOGRAPHY_FEATURE_INEFFECTIVE diagnostic (see the next preset). Loads Noto Sans from the CDN.',
+  uncovered: 'A base-14 Helvetica paragraph with an arrow (U+2192), a Greek alpha and a check mark — three characters outside WinAnsiEncoding, which the base-14 path has always written as "?". Since 1.9.0 the build names them: one TEXT_GLYPH_NOT_COVERED diagnostic per font listing the code points, through layout.onDiagnostic, with the bytes unchanged. With the option on, strict: true turns the warning into a thrown error and no PDF is written; the remedy is a font that covers the characters (registerFont for math, or any registered font with fontEntries). The same diagnostic reports a .notdef box drawn by a CID font.',
   'figures-tnum': 'The same table with fontFeatures: [\'tnum\']. Noto Sans figures are tabular already, so no glyph is substituted and the build raises TYPOGRAPHY_FEATURE_INEFFECTIVE (severity warning) through layout.onDiagnostic — read it in the diagnostics box below the code. The PDF is byte-identical to the one built without the tag. Turn the option off and no diagnostic is raised. Loads Noto Sans from the CDN.',
 };
 
@@ -397,6 +399,20 @@ const pdf = buildDocumentPDFBytes({ title: 'Figures', fontEntries, blocks }, {
   onDiagnostic: (d) => console.warn(d.code, d.message),
 });
 downloadBlob(pdf, 'figures.pdf');`,
+  uncovered: `import { buildDocumentPDFBytes, downloadBlob } from 'pdfnative';
+
+const blocks = [
+  { type: 'heading', text: 'Characters the font does not carry', level: 1 },
+  { type: 'paragraph', text: 'Base-14 Helvetica is WinAnsi: an arrow → a Greek α and a check mark ✓ have no code there and are written as "?".' },
+  { type: 'paragraph', text: 'Since 1.9.0 the build says so instead of staying silent: TEXT_GLYPH_NOT_COVERED names the font and the code points.' },
+];
+
+const diagnostics = [];
+const pdf = buildDocumentPDFBytes({ title: 'Uncovered characters', blocks }, {
+  onDiagnostic: (d) => diagnostics.push(d),    // strict: true throws on the first one instead
+});
+for (const d of diagnostics) console.warn(d.code, d.message);   // TEXT_GLYPH_NOT_COVERED … U+2192 "→", U+03B1 "α", U+2713 "✓"
+downloadBlob(pdf, 'uncovered.pdf');`,
   'figures-tnum': `import { registerFonts, loadFontData, buildDocumentPDFBytes, downloadBlob } from 'pdfnative';
 
 registerFonts({ latin: () => import('pdfnative/fonts/noto-sans-data.js') });
@@ -597,6 +613,16 @@ const BUILDERS = {
   'figures-tnum': async (m, on) => m.buildDocumentPDFBytes(
     figuresParams(await latinEntries(m)),
     layout(on, { fontFeatures: ['tnum'] }),
+  ),
+  // The option here is `strict`: off, the uncovered characters raise TEXT_GLYPH_NOT_COVERED through
+  // onDiagnostic and the PDF is written with "?" in their place; on, the first diagnostic is thrown.
+  uncovered: (m, on) => m.buildDocumentPDFBytes(
+    { title: 'Uncovered characters', blocks: [
+      { type: 'heading', text: 'Characters the font does not carry', level: 1 },
+      { type: 'paragraph', text: 'Base-14 Helvetica is WinAnsi: an arrow → a Greek α and a check mark ✓ have no code there and are written as "?".' },
+      { type: 'paragraph', text: 'Since 1.9.0 the build says so instead of staying silent: TEXT_GLYPH_NOT_COVERED names the font and the code points.' },
+    ] },
+    on ? { onDiagnostic, strict: true } : { onDiagnostic },
   ),
 };
 

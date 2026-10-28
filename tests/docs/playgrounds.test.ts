@@ -76,11 +76,13 @@ function loadCodeViews(file: string): Record<string, string> {
 function toNodeSource(view: string): string {
     return view
         .replace(/^import\s*\{([^}]+)\}\s*from\s*'pdfnative';/gm, 'const {$1} = pdfnative;')
+        .replace(/^import\s*\{([^}]+)\}\s*from\s*'pdfnative\/tools';/gm, 'const {$1} = pdfnativeTools;')
         .replace(/import\('pdfnative\/fonts\/([^']+)'\)/g, "fonts['$1']()");
 }
 
 type ViewRunner = (
     pdfnative: Record<string, unknown>,
+    pdfnativeTools: Record<string, unknown>,
     fonts: Record<string, () => Promise<unknown>>,
     fetch: (url: string) => Promise<{ arrayBuffer(): Promise<ArrayBuffer> }>,
     console: Record<'log' | 'warn' | 'error', (...args: unknown[]) => void>,
@@ -97,6 +99,10 @@ interface RunResult {
 
 async function runView(view: string): Promise<RunResult> {
     const lib = (await import('../../src/index.js')) as Record<string, unknown>;
+    // `pdfnative/tools` (the font compiler and the synthetic ICC profiles) is the
+    // one other entry point a view may import: the print views build their
+    // CMYK OutputIntent with buildSyntheticCmykProfile() instead of fetching it.
+    const tools = (await import('../../src/tools/index.js')) as Record<string, unknown>;
     let bytes: Uint8Array | null = null;
     const pdfnative = { ...lib, downloadBlob: (b: Uint8Array) => { bytes = b; } };
     const out: { warn: string[]; error: string[]; log: string[] } = { warn: [], error: [], log: [] };
@@ -111,8 +117,8 @@ async function runView(view: string): Promise<RunResult> {
         const icc = readFileSync(ICC_FILE);
         return { arrayBuffer: async () => icc.buffer.slice(icc.byteOffset, icc.byteOffset + icc.byteLength) };
     };
-    const run = new AsyncFn('pdfnative', 'fonts', 'fetch', 'console', toNodeSource(view));
-    await run(pdfnative, FONT_MODULES, fetch, console);
+    const run = new AsyncFn('pdfnative', 'pdfnativeTools', 'fonts', 'fetch', 'console', toNodeSource(view));
+    await run(pdfnative, tools, FONT_MODULES, fetch, console);
     return { bytes, ...out };
 }
 
@@ -124,6 +130,27 @@ const manifest = JSON.parse(readFileSync(MANIFEST, 'utf8')) as { playgrounds: Ma
 const pages = manifest.playgrounds.filter(
     e => e.codeView === '#code-view' && readFileSync(join(PLAYGROUNDS, e.file), 'utf8').includes('\nconst CODE = {'),
 );
+
+/**
+ * A code view is what the visitor copies; the runtime builder is what the page
+ * runs. The 1.9.0 review found the print "errors" preset trying
+ * `tagged: 'pdfa2b'` next to PDF/X-4 at runtime — a legal dual claim since
+ * 1.9.0, so the page reported "built without an error (unexpected)" — while
+ * its code view had been corrected to `pdfa1b`. The labels of the attempts
+ * array name each configuration, so the two lists must be identical.
+ */
+describe('the print errors preset tries the same configurations in its code view and at runtime', () => {
+    it('lists identical attempt labels', () => {
+        const html = readFileSync(join(PLAYGROUNDS, 'print.html'), 'utf8');
+        const codeStart = html.indexOf('\nconst CODE = {');
+        const codeEnd = codeStart + '\nconst CODE = '.length + extractCodeObject(html).length;
+        const labels = (text: string): string[] => [...text.matchAll(/\["(pdfx: 'pdfx4'[^"]*)"/g)].map(m => m[1]);
+        const inCode = labels(html.slice(codeStart, codeEnd));
+        const atRuntime = labels(html.slice(codeEnd));
+        expect(inCode.length).toBe(4);
+        expect(atRuntime).toEqual(inCode);
+    });
+});
 
 // The bundled Noto Sans data module is large; its first import dominates the runtime.
 describe('playground code views run outside the browser', { timeout: 60_000 }, () => {
@@ -142,7 +169,7 @@ describe('playground code views run outside the browser', { timeout: 60_000 }, (
         for (const [key, view] of Object.entries(views)) {
             it(`${page.id} / ${key}`, async () => {
                 expect(view.startsWith("import {"), 'the first line imports from pdfnative').toBe(true);
-                expect(view, 'imports only from pdfnative').not.toMatch(/from\s+'(?!pdfnative')/);
+                expect(view, 'imports only from pdfnative or pdfnative/tools').not.toMatch(/from\s+'(?!pdfnative(?:\/tools)?')/);
                 expect(view, 'loads no module from a CDN').not.toMatch(/import\('https?:/);
 
                 const result = await runView(view);
@@ -168,16 +195,30 @@ describe('playground code views run outside the browser', { timeout: 60_000 }, (
 
                 expect(pdfHeader(result.bytes), 'downloadBlob received a PDF').toBe('%PDF-');
 
-                if (page.id === 'print' && key === 'pdfx') {
+                if (page.id === 'print' && (key === 'pdfx' || key === 'dual')) {
                     const { validatePdfX } = await import('../../src/index.js');
                     const report = validatePdfX(result.bytes!);
                     expect(report.errors).toEqual([]);
                     expect(report.valid).toBe(true);
                     expect(result.log.join('\n')).toContain('validatePdfX: valid');
                 }
+                if (page.id === 'print' && key === 'dual') {
+                    // The dual claim: PDF/A-2b identification and PDF/X-4 identification in one XMP packet.
+                    const xmp = new TextDecoder('latin1').decode(result.bytes!);
+                    expect(xmp).toContain('pdfaid:part');
+                    expect(xmp).toContain('pdfxid:GTS_PDFXVersion');
+                }
+                if (page.id === 'print' && key === 'spot') {
+                    const pdf = new TextDecoder('latin1').decode(result.bytes!);
+                    expect(pdf).toContain('/Separation');
+                    expect(pdf).toContain('/DeviceN');
+                }
                 if (page.id === 'typography') {
                     if (key === 'figures-tnum') {
                         expect(result.warn.some(l => l.startsWith('TYPOGRAPHY_FEATURE_INEFFECTIVE'))).toBe(true);
+                    } else if (key === 'uncovered') {
+                        // The arrow and the Greek letter are outside WinAnsi: one diagnostic for the base-14 font.
+                        expect(result.warn.some(l => l.startsWith('TEXT_GLYPH_NOT_COVERED'))).toBe(true);
                     } else {
                         expect(result.warn, 'a coherent build raises no diagnostic').toEqual([]);
                     }

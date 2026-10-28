@@ -91,7 +91,7 @@
   </nav>
   <article class="guide-content">
     <h1>Extreme Scripts Playground</h1>
-    <p>Stress-test the pdfnative shaping pipeline against the most demanding inputs: deep BiDi mixing across 3+ scripts, Tamil ultra-conjuncts, Bengali &amp; Devanagari with reph + multi-halant ligature chains, isolated Arabic harakat, and — since 1.8.0 — Tai Tham and Cham, the two scripts shaped by the Universal Shaping Engine. Pick a preset, edit the text, and click <strong>Generate PDF</strong>.</p>
+    <p>Stress-test the pdfnative shaping pipeline against the most demanding inputs: deep BiDi mixing across 3+ scripts, Tamil ultra-conjuncts, Bengali &amp; Devanagari with reph + multi-halant ligature chains, isolated Arabic harakat, since 1.8.0 Tai Tham and Cham, the two scripts shaped by the Universal Shaping Engine, and — since 1.9.0 — right-to-left paragraphs under the whole of UAX #9: <code>direction: 'auto'</code> aligns them to the right, justifies them in visual order, pairs their brackets and honours isolates. Pick a preset, edit the text, and click <strong>Generate PDF</strong>.</p>
 
     <div id="status" style="display:none;padding:10px 14px;border-radius:6px;margin:16px 0;font-size:14px;"></div>
 
@@ -105,6 +105,7 @@
         <option value="bengali">Bengali + Devanagari — reph &amp; ligature chains</option>
         <option value="harakat">Arabic harakat — isolated diacritics</option>
         <option value="use">Universal Shaping Engine — Tai Tham and Cham (1.8.0)</option>
+        <option value="rtl">Right-to-left paragraphs — direction: 'auto', justified, isolates and bracket pairs (1.9.0)</option>
       </select>
       <button id="generate" class="btn btn-primary" style="padding:8px 18px;">Generate PDF</button>
       <span id="timer" style="font-size:13px;color:#64748b;"></span>
@@ -117,7 +118,7 @@
     <input id="heading" type="text" style="width:100%;padding:10px;border-radius:6px;border:1px solid #cbd5e1;font-size:14px;font-family:monospace;">
 
     <h2 style="margin-top:24px;">Body paragraphs <span style="font-weight:400;color:#64748b;font-size:14px;">(one per line; blank line for a new paragraph)</span></h2>
-    <p style="margin:4px 0 8px;color:#64748b;font-size:13px;">Each line takes the direction of its first strong letter (UAX #9 P2/P3), the rule the engine applies to each rendered line; glyph order follows it, and lines stay left-aligned unless the block sets <code>align: 'right'</code>.</p>
+    <p style="margin:4px 0 8px;color:#64748b;font-size:13px;">Each paragraph takes the direction of its first strong letter (UAX #9 P2/P3) and its lines are resolved once over the whole paragraph; glyph order follows it. Under <code>direction: 'auto'</code> (1.9.0) a right-to-left paragraph is also aligned to the right and justified in visual order — the <em>rtl</em> preset sets it; the other presets keep the left alignment of a document built without the option.</p>
     <textarea id="body" rows="14" dir="auto" style="unicode-bidi:plaintext;text-align:left;width:100%;padding:10px;border-radius:6px;border:1px solid #cbd5e1;font-size:14px;font-family:monospace;line-height:1.5;"></textarea>
 
     <details style="margin-top:24px;">
@@ -154,6 +155,23 @@
 <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js" integrity="sha384-PeOqKNW/piETaCg8rqKFy+Pm6KEk7e36/5YZE5XO/OaFdO+/Aw3O8qZ9qDPKVUgx" crossorigin="anonymous" defer></script>
 <script type="module">
 const PRESETS = {
+  // 1.9.0 — layout.direction: 'auto' + align: 'justify'. Isolates (FSI … PDI, U+2068 / U+2069) and
+  // bracket pairs (N0) are resolved by the full UAX #9 implementation; the Hebrew paragraph carries a
+  // nested Latin parenthesis and the Arabic one an isolated English product name.
+  rtl: {
+    title: 'Right-to-left paragraphs',
+    heading: 'الفصل الأول (المقدمة) — פרק ראשון',
+    langs: ['ar', 'he'],
+    layout: { direction: 'auto' },
+    paragraph: { align: 'justify' },
+    body: [
+      'بلغت الإيرادات 1,250 مليون ريال في عام 2026، أي بزيادة 12% مقارنة بالعام السابق. المنتج \u2068pdfnative\u2069 يعمل بلا تبعيات في المتصفح وفي Node وفي Deno، ويكتب كل فقرة من اليمين إلى اليسار مع محاذاة يمنى وتوزيع للمسافات بالترتيب البصري.',
+      '',
+      'שלום עולם. דוח רבעוני לשנת 2026 (כולל נספח A ו-B) מציג גידול של 12% בהכנסות; הסוגריים והמקפים נשארים במקומם הנכון, והשורה האחרונה של הפסקה אינה מיושרת.',
+      '',
+      'A Latin paragraph in the same document keeps its left alignment: direction: \'auto\' decides per paragraph, from the first strong letter — this one is left-to-right, the two above are right-to-left.'
+    ].join('\n')
+  },
   bidi: {
     title: 'Extreme BiDi',
     heading: 'Extreme BiDi — Arabic + Hebrew + Thai + Latin + Numerals',
@@ -315,10 +333,10 @@ function updateCodeView(id) {
     `  title: ${JSON.stringify(p.title)},`,
     '  blocks: [',
     `    { type: 'heading', text: ${JSON.stringify(p.heading)}, level: 1 },`,
-    ...p.body.split(/\n\s*\n/).map(par => `    { type: 'paragraph', text: ${JSON.stringify(par.trim())} },`).filter(s => !s.includes('text: ""')),
+    ...p.body.split(/\n\s*\n/).map(par => `    { type: 'paragraph', text: ${JSON.stringify(par.trim())}${p.paragraph ? ', ' + JSON.stringify(p.paragraph).slice(1, -1).replace(/"(\w+)":/g, '$1: ').replace(/"/g, "'") : ''} },`).filter(s => !s.includes('text: ""')),
     '  ],',
     '  fontEntries,',
-    '});',
+    ...(p.layout ? ['}, ' + JSON.stringify(p.layout).replace(/"(\w+)":/g, '$1: ').replace(/"/g, "'") + ');   // 1.9.0: right-to-left paragraphs aligned right and justified in visual order'] : ['});']),
     '',
     "downloadBlob(pdf, 'extreme.pdf');"
   ].join('\n');
@@ -367,9 +385,11 @@ async function generate() {
     const body = $('body').value;
     for (const par of body.split(/\n\s*\n/)) {
       const t = par.trim();
-      if (t) blocks.push({ type: 'paragraph', text: t });
+      if (t) blocks.push({ type: 'paragraph', text: t, ...(p.paragraph || {}) });
     }
-    const pdf = mod.buildDocumentPDFBytes({ title: $('title').value, blocks, fontEntries });
+    const pdf = p.layout
+      ? mod.buildDocumentPDFBytes({ title: $('title').value, blocks, fontEntries }, p.layout)
+      : mod.buildDocumentPDFBytes({ title: $('title').value, blocks, fontEntries });
     mod.downloadBlob(pdf, `extreme-${id}.pdf`);
     const ms = (performance.now() - t0).toFixed(0);
     $('timer').textContent = `Generated ${(pdf.length / 1024).toFixed(1)} KB in ${ms} ms`;

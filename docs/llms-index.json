@@ -26,9 +26,9 @@
     {
       "url": "https://pdfnative.dev/llms-recipes.txt",
       "description": "Executable recipes: CI-verified, copy-ready code for the most common tasks.",
-      "bytes": 46544,
-      "approxTokens": 11636,
-      "sha256": "8432d0879a1e408f535c8b2ff91f05327a14e2689cbf859cc68dd82ae2d3da08"
+      "bytes": 46725,
+      "approxTokens": 11681,
+      "sha256": "86c00b99890aa539898500d52992bda96e28951f7a0308ea98dea89bcffdce97"
     },
     {
       "url": "https://pdfnative.dev/assets/api.json",
@@ -54,9 +54,9 @@
     {
       "url": "https://pdfnative.dev/data/playgrounds.json",
       "description": "Inventory of the live playgrounds — URL, purpose, DOM controls, options exercised, preconditions — so an agent can drive or reproduce one without scraping the page.",
-      "bytes": 32326,
-      "approxTokens": 8082,
-      "sha256": "48552edc183fbe82578b51df75aca2982137d80e2bc53009e9a053e664bc7d60"
+      "bytes": 39114,
+      "approxTokens": 9779,
+      "sha256": "c50c74f375d22e74957cdbed778d1d94ed61fb1df41c48fa430758f5748afa85"
     },
     {
       "url": "https://github.com/Nizoka/pdfnative/blob/main/README.md",

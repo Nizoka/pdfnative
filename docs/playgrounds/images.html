@@ -140,6 +140,7 @@
         <option value="formats">JPEG, PNG and JPEG 2000 on one page</option>
         <option value="pdfa2b">The three formats under PDF/A-2b (embedded Noto Sans)</option>
         <option value="pdfa1">PDF/A-1b refuses JPEG 2000 under strict — what the builder throws (no PDF)</option>
+        <option value="watermark">JPEG 2000 as a page watermark — layout.watermark.image</option>
         <option value="upload">Your own image (JPEG, PNG or JPEG 2000 from disk)</option>
       </select>
       <label for="file" style="font-size:14px;">Image file (upload preset):</label>
@@ -222,6 +223,7 @@ const DESCRIPTIONS = {
   formats: 'The three formats on one page: a baseline JPEG as /DCTDecode, a PNG as /FlateDecode with a PNG predictor, and the JPEG 2000 file as /JPXDecode. Each is scaled to the same width; the aspect ratio supplies the height.',
   pdfa2b: 'The same page claimed as PDF/A-2b with Noto Sans embedded. ISO 19005-2 §6.2.8.3 accepts JPEG 2000 with one, three or four colour channels and no opacity channel: the fixture carries an alpha channel, so the build raises PDFA_JPX_IMAGE (a warning — an error under strict) and still writes the file. A JPEG or a PNG raises nothing.',
   pdfa1: 'No PDF is produced. PDF/A-1 is PDF 1.4, which has no JPXDecode filter (ISO 19005-1 §6.1.10): tagged: \'pdfa1b\' with a JPEG 2000 image raises PDFA1_JPX_IMAGE — a warning by default, so the file would still be written with a 1.4 header that veraPDF rejects — and under strict: true, as here, the builder throws before any byte is written. The thrown message is reported below.',
+  watermark: 'The same JPEG 2000 fixture drawn behind every page through layout.watermark.image — the codestream is embedded once as a /JPXDecode XObject and painted at 25 % opacity under the content, with the page text on top. watermark.image accepts a JP2 file or a raw codestream like an image block does, next to or instead of a text watermark.',
   upload: 'Pick a JPEG, PNG or JPEG 2000 file; detectImageFormat() names the format, parseImage() reads its header, and the page embeds it at 400 pt wide. The code view shows the same call with the inlined PNG, so what the Copy button hands over runs anywhere.',
 };
 
@@ -229,7 +231,7 @@ const DESCRIPTIONS = {
 // Copy button hands over runs unchanged in Node, Deno, Bun or a bundler.
 // tests/docs/playgrounds.test.ts runs each one outside the browser.
 const CODE = {
-  jpx: `import { buildDocumentPDFBytes, parseImage, downloadBlob } from 'pdfnative';
+  jpx: `import { buildDocumentPDFBytes, parseImage, parseJPX, downloadBlob } from 'pdfnative';
 
 // An 8 × 8 JPEG 2000 file: JP2 container, RGB with an alpha channel (cdef box).
 const JP2_B64 = 'AAAADGpQICANCocKAAAAFGZ0eXBqcDIgAAAAAGpwMiAAAABJanAyaAAAABZpaGRyAAAACAAAAAgAAwcHAAAAAAAPY29scgEAAAAAABAAAAAcY2RlZgADAAAAAAABAAEAAAACAAIAAQAAAAAAYmpwMmP/T/9RAC8AAAAAAAgAAAAIAAAAAAAAAAAAAAAIAAAACAAAAAAAAAAAAAMHAQEHAQEHAQH/UgAMAAAAAQEABAQAAf9cAARAQP+QAAoAAAAAABEAAf+TAAAA/9k=';
@@ -243,6 +245,8 @@ const fromBase64 = (b64) => {
 const image = fromBase64(JP2_B64);
 const parsed = parseImage(image);
 console.log('format /JPXDecode, channels', parsed.jpx?.channels, 'alpha', parsed.jpx?.alpha, 'colour declared', parsed.jpx?.colourSpecified);
+const info = parseJPX(image);   // the JpxInfo reader on its own: ihdr/colr/cdef boxes or the SIZ marker (1.9.0)
+console.log('parseJPX:', info.channels, 'channels,', info.bitDepth, 'bits, alpha', info.alpha, 'colour declared', info.colourSpecified);
 
 const bytes = buildDocumentPDFBytes(
   {
@@ -346,6 +350,35 @@ try {
 } catch (err) {
   console.error("tagged: 'pdfa1b' + JPEG 2000 →", err.message);
 }`,
+
+  watermark: `import { buildDocumentPDFBytes, downloadBlob } from 'pdfnative';
+
+// The 8 × 8 JPEG 2000 fixture again (JP2 container, RGB + alpha).
+const JP2_B64 = 'AAAADGpQICANCocKAAAAFGZ0eXBqcDIgAAAAAGpwMiAAAABJanAyaAAAABZpaGRyAAAACAAAAAgAAwcHAAAAAAAPY29scgEAAAAAABAAAAAcY2RlZgADAAAAAAABAAEAAAACAAIAAQAAAAAAYmpwMmP/T/9RAC8AAAAAAAgAAAAIAAAAAAAAAAAAAAAIAAAACAAAAAAAAAAAAAMHAQEHAQEHAQH/UgAMAAAAAQEABAQAAf9cAARAQP+QAAoAAAAAABEAAf+TAAAA/9k=';
+const fromBase64 = (b64) => {
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+};
+
+const bytes = buildDocumentPDFBytes(
+  {
+    title: 'JPEG 2000 watermark',
+    blocks: [
+      { type: 'heading', text: 'A JPEG 2000 watermark behind the page', level: 1 },
+      { type: 'paragraph', text: 'The image is embedded once as a /JPXDecode XObject and drawn under the content of every page.' },
+      { type: 'pageBreak' },
+      { type: 'heading', text: 'Second page', level: 1 },
+      { type: 'paragraph', text: 'Same watermark, same XObject.' },
+    ],
+  },
+  {
+    watermark: { image: { data: fromBase64(JP2_B64), width: 300, height: 300, opacity: 0.25 }, position: 'background' },   // JP2 or raw codestream, as an image block
+    onDiagnostic: (d) => console.warn(d.code, d.message),
+  },
+);
+downloadBlob(bytes, 'image-watermark.pdf');`,
 
   upload: `import { buildDocumentPDFBytes, detectImageFormat, parseImage, downloadBlob } from 'pdfnative';
 
@@ -461,6 +494,16 @@ const BUILDERS = {
       return { report: "buildDocumentPDFBytes() under strict: true refuses before writing a byte:\n\ntagged: 'pdfa1b' + JPEG 2000\n  → Error: " + (err && err.message ? err.message : err) };
     }
   },
+  watermark: (m) => m.buildDocumentPDFBytes(
+    { title: 'JPEG 2000 watermark', blocks: [
+      { type: 'heading', text: 'A JPEG 2000 watermark behind the page', level: 1 },
+      { type: 'paragraph', text: 'The image is embedded once as a /JPXDecode XObject and drawn under the content of every page.' },
+      { type: 'pageBreak' },
+      { type: 'heading', text: 'Second page', level: 1 },
+      { type: 'paragraph', text: 'Same watermark, same XObject.' },
+    ] },
+    { watermark: { image: { data: fromBase64(JP2_B64), width: 300, height: 300, opacity: 0.25 }, position: 'background' }, onDiagnostic },
+  ),
   upload: async (m) => {
     const file = $('file').files && $('file').files[0];
     if (!file) throw new Error('Pick a JPEG, PNG or JPEG 2000 file first.');

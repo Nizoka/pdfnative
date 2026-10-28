@@ -225,7 +225,8 @@ const REGION_PARAS = [
   'Middle East & Africa (RTL + BiDi):  العربية السلام عليكم · فارسی سلام · עברית שלום · አማርኛ ሰላም — mixed with Latin 12345 and back.',
   // Latin-script Africa, 1.8.0: hooked letters and combining tone marks on the bundled Noto Sans (no extra module).
   'Latin-script Africa:  Hausa Sannu, ɓarka da zuwa · Yorùbá Ẹ n lẹ́ o, ẹ káàbọ̀ · Igbo Ndeewo, nnọọ · Kiswahili Habari, karibu',
-  'South Asia:  हिन्दी नमस्ते · বাংলা নমস্কার · தமிழ் வணக்கம் · తెలుగు నమస్తే · සිංහල ආයුබෝවන්',
+  // Five more Indic scripts on the OpenType engine since 1.9.0: Gujarati, Gurmukhi, Kannada, Malayalam, Odia.
+  'South Asia:  हिन्दी नमस्ते · বাংলা নমস্কার · தமிழ் வணக்கம் · తెలుగు నమస్తే · ગુજરાતી નમસ્તે · ਪੰਜਾਬੀ ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ · ಕನ್ನಡ ನಮಸ್ಕಾರ · മലയാളം നമസ്കാരം · ଓଡ଼ିଆ ନମସ୍କାର · සිංහල ආයුබෝවන්',
   'Southeast Asia & the Himalayas:  ไทย สวัสดี · ខ្មែរ សួស្តី · မြန်မာ မင်္ဂလာပါ · བོད་ཡིག བཀྲ་ཤིས་བདེ་ལེགས།',
   // Mainland South-East Asia, new in 1.8.0: Lao (GSUB + GPOS), Tai Tham and Cham (Universal Shaping
   // Engine), New Tai Lue and Tai Le (spacing vowels, font routing only). Sample words from the
@@ -242,7 +243,7 @@ const PRESETS = {
     langs: [...ALL_LANGS, 'emoji'],
     emojiColor: true,
     body: [
-      'pdfnative renders all 27 of its supported Unicode scripts and native COLRv1 colour emoji into a single PDF — no Cairo, no HarfBuzz, no fontkit, no rasterization. Each code point below is routed to the correct embedded font automatically.',
+      'pdfnative renders all 32 of its supported Unicode scripts and native COLRv1 colour emoji into a single PDF — no Cairo, no HarfBuzz, no fontkit, no rasterization. Each code point below is routed to the correct embedded font automatically.',
       '',
       ...REGION_PARAS.flatMap(p => [p, '']),
     ].join('\n').trimEnd()

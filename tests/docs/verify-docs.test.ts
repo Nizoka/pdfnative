@@ -240,6 +240,18 @@ describe('verify-docs', () => {
             });
         }, 240_000);
 
+        it('release-coverage requires every export added since the previous release to be shown or exempted', () => {
+            withSandbox((dir) => {
+                // Renaming an exemption leaves its export uncovered and names an export that does not exist.
+                patch(dir, 'docs/data/playgrounds.json', '"name": "ecdsaSignHash"', '"name": "ecdsaSignHashRenamed"');
+                const run = runVerifier(dir);
+                expect(run.output).toContain('release-coverage');
+                expect(run.output).toContain('"ecdsaSignHash" is new since');
+                expect(run.output).toContain('"ecdsaSignHashRenamed", which docs/assets/api.json does not export');
+                expect(run.status).toBe(1);
+            });
+        }, 240_000);
+
         it('llms-sync requires the current release note to be indexed', () => {
             withSandbox((dir) => {
                 patch(dir, 'llms.txt', `release-notes/v${CURRENT}.md`, 'release-notes/v0.0.1.md');

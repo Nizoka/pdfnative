@@ -105,7 +105,7 @@
       <select id="preset" style="padding:6px 10px;border-radius:6px;border:1px solid #cbd5e1;font-size:14px;">
         <option value="svgtext">SVG &lt;text&gt; labelled chart</option>
         <option value="debug">Layout debug overlay + inspection</option>
-        <option value="annotations">Markup annotations (build + read back)</option>
+        <option value="annotations">Markup annotations — highlight and link (build + read back)</option>
         <option value="math">Edge case · math / technical symbols</option>
         <option value="pagelabels">Edge case · page labels (write + read back)</option>
         <option value="controlchars">Edge case · control-character hardening</option>
@@ -171,7 +171,7 @@ function setStatus(msg, kind) {
 const DESCRIPTIONS = {
   svgtext: 'Renders a labelled bar chart from a single SVG string. The bars are <rect> elements; the axis and quarter labels are <text> elements with text-anchor="middle", which pdfnative draws as upright PDF text.',
   debug: 'Renders a short document with the layout debug overlay enabled (layout: { debug: true }), drawing the margin box, per-block content bounds, and table cell outlines. The status line reports the inspectDocumentLayout() block count.',
-  annotations: 'Builds a contract PDF, injects a highlight annotation onto it with addAnnotation(), and reads every annotation back out with getAnnotations(). The annotated PDF is downloaded and the status line lists what was read back.',
+  annotations: 'Builds a contract PDF, injects a highlight annotation and — since 1.9.0 — a link annotation (type: \'link\', a URI action over a rectangle) onto it with addAnnotation(), both as one non-destructive incremental update, and reads every annotation back out with getAnnotations(). The annotated PDF is downloaded and the status line lists what was read back.',
   math: 'Edge case — a document full of mathematical operators (∑ ∫ √ ≠ ≤ ⇒), arrows and letterlike symbols (ℝ ℕ). The bundled math font is registered from the CDN; script detection routes every math code point to it automatically while Latin words stay on the base font.',
   pagelabels: 'Edge case — writes a three-range page-label tree (front-matter in lowercase Roman, body in decimal, appendix with an "A-" prefix) then reads it straight back with getPageLabels() to prove the writer↔reader round-trip.',
   // verify-docs:allow version-token (feature-era demo copy)
@@ -236,10 +236,13 @@ const base = buildDocumentPDFBytes({
   ],
 });
 
-// 2. Inject a highlight via a non-destructive incremental update.
+// 2. Inject a highlight and a link via one non-destructive incremental update.
 const modifier = createModifier(openPdf(base));
 modifier.addAnnotation(0, buildAnnotationBody({
   type: 'highlight', rect: [72, 690, 320, 706], color: '#ffe14d', contents: 'Key clause',
+}));
+modifier.addAnnotation(0, buildAnnotationBody({
+  type: 'link', rect: [72, 660, 320, 676], url: 'https://pdfnative.dev/guides/annotations.html', contents: 'Read the terms online',   // 1.9.0
 }));
 const annotated = modifier.save();
 
@@ -396,6 +399,9 @@ function buildAnnotations(mod) {
   const modifier = mod.createModifier(mod.openPdf(base));
   modifier.addAnnotation(0, mod.buildAnnotationBody({
     type: 'highlight', rect: [72, 690, 320, 706], color: '#ffe14d', contents: 'Key clause',
+  }));
+  modifier.addAnnotation(0, mod.buildAnnotationBody({
+    type: 'link', rect: [72, 660, 320, 676], url: 'https://pdfnative.dev/guides/annotations.html', contents: 'Read the terms online',
   }));
   const annotated = modifier.save();
   const read = mod.openPdf(annotated).getAnnotations(0);
