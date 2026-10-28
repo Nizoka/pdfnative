@@ -308,6 +308,10 @@ jobs:
     needs: [build, publish]
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # The pipeline's only write grant on the repository. OpenSSF Scorecard
+    # (Token-Permissions) deducts one point for any job-level contents: write;
+    # the files can only be attached to the release with it, so the finding is
+    # accepted and documented in SECURITY.md §Code Safety.
     permissions:
       contents: write # Attach the files to the release.
       id-token: write # Sign the attestation with the workflow identity (Sigstore).
@@ -374,7 +378,18 @@ jobs:
 
       # The registry's signature and npm's provenance attestation, checked the
       # way a consumer checks them: the package just published, by exact
-      # version, installed into a throwaway project.
+      # version, installed into a throwaway project. OpenSSF Scorecard
+      # (Pinned-Dependencies) reads every Unknown command: "install"
+
+
+Did you mean one of these?
+  npm install # Install a package
+  npm uninstall # Remove a package
+To see a list of supported npm commands, run:
+  npm help as unpinned; this one
+      # names an exact version, runs no scripts, and follows the digest check
+      # above — ound 0 vulnerabilities needs an installed tree, so the finding
+      # is accepted (SECURITY.md §Code Safety).
       - name: Verify the registry signatures and provenance
         working-directory: ${{ runner.temp }}
         run: | # zizmor: ignore[adhoc-packages]
