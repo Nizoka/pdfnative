@@ -115,5 +115,6 @@ Issue drafts go to `.github/drafts/` and are validated with `npm run verify:issu
 - [pdfnative-cli](https://github.com/Nizoka/pdfnative-cli) — terminal wrapper with a JSON-in/JSON-out agent contract and the full PAdES ladder; requires pdfnative ≥ 1.8.0, Node ≥ 22.
 - [pdfnative-mcp](https://github.com/Nizoka/pdfnative-mcp) — Model Context Protocol server exposing the engine to conversational assistants; requires pdfnative ≥ 1.8.0.
 - [pdfnative-react](https://github.com/Nizoka/pdfnative-react) — React renderer (JSX → pdfnative blocks via a custom reconciler); React 19 and pdfnative ≥ 1.8.0 are peer dependencies of that package only.
+- Sibling engines, same doctrine, no dependency between them: [zipnative](https://zipnative.dev) (ZIP) and [pkinative](https://pkinative.dev) (X.509, CMS, RFC 3161); how the three compose is `docs/guides/native-family.md`.
 
 See also: [ROADMAP.md](ROADMAP.md), [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), [llms.txt](llms.txt).

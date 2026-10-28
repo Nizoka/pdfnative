@@ -5,23 +5,23 @@
     {
       "url": "https://pdfnative.dev/llms.txt",
       "description": "Documentation index (llmstxt.org convention).",
-      "bytes": 26487,
-      "approxTokens": 6622,
-      "sha256": "b2458338908dff27cc5b208d9c44ab79232b8cb0a13c0041ea8adfe5fb6ee9c9"
+      "bytes": 27241,
+      "approxTokens": 6810,
+      "sha256": "a7b0f0cd9ae1d6229a6d36fd994414b076d979b515944ccfbb78bcfad9a99cc2"
     },
     {
       "url": "https://pdfnative.dev/agent-brief.md",
       "description": "Compact paste-into-context briefing for coding agents: core API, verified pitfalls, surface decision tree, self-verification loop.",
-      "bytes": 18624,
-      "approxTokens": 4656,
-      "sha256": "a781a167cd7862653f44ca5baf1bbad82392321bfd0cf11b29a1826197651487"
+      "bytes": 18803,
+      "approxTokens": 4701,
+      "sha256": "62f809a585294d51f0bb07a80cdb76286979744bf2b7823988bcaee416a04641"
     },
     {
       "url": "https://pdfnative.dev/llms-full.txt",
       "description": "Full corpus: index + README + every guide, one request.",
-      "bytes": 760292,
-      "approxTokens": 190073,
-      "sha256": "ffbc9e57cdf48499dd444e6716b2826ac59f916f32593bf0b2d3ac656b619e19"
+      "bytes": 778161,
+      "approxTokens": 194540,
+      "sha256": "edc9b16a85c0274d644cdc6239e8e1683c41ee20512749714521fd29c5673749"
     },
     {
       "url": "https://pdfnative.dev/llms-recipes.txt",
@@ -61,9 +61,9 @@
     {
       "url": "https://github.com/Nizoka/pdfnative/blob/main/README.md",
       "description": "Complete feature and API reference (also embedded in llms-full.txt).",
-      "bytes": 130074,
-      "approxTokens": 32519,
-      "sha256": "870dbacc55da16115bac0ff55f955095c21d7c185a58008db3b5089f5dde50f2"
+      "bytes": 131169,
+      "approxTokens": 32792,
+      "sha256": "d3f08a2f47b7b2fb7add18c3b88ad3d11e11cbc0a02d9b14ccf90b4c6a26390f"
     }
   ],
   "guides": [
@@ -390,6 +390,23 @@
       "sha256": "27b3a2b1623444a52668333922c5062772ca20ab30776b71ea02d31d9a4c98dc"
     },
     {
+      "title": "The native family: pdfnative, zipnative and pkinative",
+      "summary": "Three zero-dependency engines, one doctrine. pdfnative writes and reads the document, zipnative packs it into a deterministic archive, pkinative holds the keys and the trust that make a signature mean something. Each is a strict, pure-TypeScript implementation of its ISO or IETF standard with an empty runtime dependency tree, and the three compose through public APIs only: sign with pdfnative…",
+      "html": "https://pdfnative.dev/guides/native-family.html",
+      "markdown": "https://pdfnative.dev/guides/native-family.md",
+      "anchors": [
+        "what-each-engine-owns",
+        "case-1--sign-with-pdfnative-prove-it-with-pkinative",
+        "case-2--archive-deterministically-with-zipnative",
+        "case-3--the-whole-chain-build-sign-pack-verify",
+        "picking-parts-not-a-platform",
+        "see-also"
+      ],
+      "bytes": 15371,
+      "approxTokens": 3843,
+      "sha256": "a8ab88d94fd4f278d97a4ad51a4b1bfa1f510885649faa945a5d52bb16672df7"
+    },
+    {
       "title": "Onboarding — the pdfnative ecosystem in 90 seconds",
       "summary": "Pick your entry point: the library for code, the CLI for shell scripts, MCP for AI assistants, and React for declarative JSX. They all produce the same ISO 32000-1 / PDF/A-conformant PDFs from the same zero-dependency engine. Live versions for every package are shown at the top of the documentation home.",
       "html": "https://pdfnative.dev/guides/onboarding.html",
@@ -598,9 +615,9 @@
         "full-example",
         "related-guides"
       ],
-      "bytes": 18040,
-      "approxTokens": 4510,
-      "sha256": "dd1bf7879e310895e60a2991fbc20523e4fcce21677517650e332ed523251953"
+      "bytes": 18309,
+      "approxTokens": 4577,
+      "sha256": "479e40689892a87b9766815d796da71596ccb5746fa52a7b9a599cc5d805833e"
     },
     {
       "title": "Streaming output",
@@ -765,9 +782,9 @@
         "picking-parts-not-a-platform",
         "see-also"
       ],
-      "bytes": 17023,
-      "approxTokens": 4256,
-      "sha256": "cb920e3642cc4936f4a2d4fded721ce654518d83188f3a847c86eba95b98c0f9"
+      "bytes": 17352,
+      "approxTokens": 4338,
+      "sha256": "c61325946f4e6441669684e0ec202df86274ed96e9b466d3457d1f955b8bce18"
     },
     {
       "title": "Viewer preferences",

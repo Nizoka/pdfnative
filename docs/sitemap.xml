@@ -837,6 +837,14 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://pdfnative.dev/guides/native-family.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/native-family.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/native-family.html"/>
+    <lastmod>2026-10-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://pdfnative.dev/guides/images.html</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/images.html"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/images.html"/>
@@ -848,6 +856,14 @@
     <loc>https://pdfnative.dev/guides/rtl.md</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/rtl.md"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/rtl.md"/>
+    <lastmod>2026-10-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>https://pdfnative.dev/guides/native-family.md</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/native-family.md"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/native-family.md"/>
     <lastmod>2026-10-24</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>

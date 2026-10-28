@@ -36,6 +36,8 @@ npm install -g pdfnative-mcp          # MCP server
 
 Detailed docs: [CLI guide](docs/guides/cli.md) · [MCP guide](docs/guides/mcp.md) · [React guide](docs/guides/react.md) · [Onboarding cheatsheet](docs/guides/onboarding.md).
 
+**Sibling engines.** The same doctrine — zero runtime dependencies, a strict reading of the standard, bytes that are identical for identical inputs, every refusal a named error — applied to two more formats by the same author: [zipnative](https://zipnative.dev) (ZIP: a lazy reader, a deterministic writer, an incremental modifier) and [pkinative](https://pkinative.dev) (X.509, CMS and RFC 3161: certificate chains with CRL and OCSP, signatures and timestamps, PKCS#12 into non-extractable keys — it began as pdfnative's PAdES signature stack). How the three compose — sign with pdfnative, prove it with pkinative, archive it with zipnative — is [the native family guide](docs/guides/native-family.md).
+
 ## Highlights
 
 - **Zero dependencies** — built from scratch in pure TypeScript. Zero runtime dependencies, tree-shakeable, auditable
@@ -109,6 +111,7 @@ npm install pdfnative
 - 🖨️ **Print production:** [docs/guides/print.md](docs/guides/print.md) — page boxes, printer's marks and colour bars, CMYK and spot colours, OutputIntents, PDF/X-4 and the PDF/A + PDF/X dual claim, `validatePdfX()`.
 - ↔️ **Right-to-left documents:** [docs/guides/rtl.md](docs/guides/rtl.md) — the whole UAX #9 algorithm, `direction`, right alignment and justification, directional controls, extraction of RTL output (v1.9.0).
 - 🖼️ **Images:** [docs/guides/images.md](docs/guides/images.md) — JPEG, PNG and JPEG 2000 as pass-through streams, alpha, the PDF/A and PDF/X rules (v1.9.0).
+- 🧩 **The native family:** [docs/guides/native-family.md](docs/guides/native-family.md) — pdfnative, [zipnative](https://zipnative.dev) and [pkinative](https://pkinative.dev) composed through public APIs: sign with pdfnative, prove the signature with pkinative, archive the dossier deterministically with zipnative — three cases, a diagram, the honest limits of each seam.
 - ❓ **FAQ:** [docs/guides/faq.md](docs/guides/faq.md) — fonts, encryption, signatures, comparisons.
 - 🤖 **Agentic workflows:** [docs/guides/agentic-workflows.md](docs/guides/agentic-workflows.md) — extend the engine at runtime (register fonts without a release) and embed agent-generated images.
 - 🛠️ **Troubleshooting:** [docs/guides/troubleshooting.md](docs/guides/troubleshooting.md) — common pitfalls.
