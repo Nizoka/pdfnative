@@ -43,17 +43,30 @@ marked.use({ gfm: true, breaks: false });
 
 // ── Heading slugs (GitHub convention, deterministic) ────────────────
 
-function decodeEntities(s: string): string {
+export function decodeEntities(s: string): string {
+    // `&amp;` is decoded LAST: decoding it first would turn `&amp;lt;` into
+    // `<` (CodeQL js/double-escaping). Only the five entities marked emits.
     return s
-        .replace(/&amp;/g, '&')
         .replace(/&lt;/g, '<')
         .replace(/&gt;/g, '>')
         .replace(/&quot;/g, '"')
-        .replace(/&#39;/g, "'");
+        .replace(/&#39;/g, "'")
+        .replace(/&amp;/g, '&');
 }
 
-function stripTags(html: string): string {
-    return html.replace(/<[^>]+>/g, '');
+export function stripTags(html: string): string {
+    // Tags are removed until nothing changes, then any stray angle bracket
+    // goes too: one pass over '<<b>>x' would leave '<>x' (CodeQL
+    // js/incomplete-multi-character-sanitization), and a raw '<' cannot be
+    // legitimate here — marked escapes it as &lt; in text. The input is marked's
+    // own output, so the loop ends after one or two rounds.
+    let out = html;
+    for (;;) {
+        const next = out.replace(/<[^>]*>/g, '');
+        if (next === out) break;
+        out = next;
+    }
+    return out.replace(/[<>]/g, '');
 }
 
 export function slugify(text: string): string {
