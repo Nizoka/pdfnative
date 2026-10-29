@@ -61,7 +61,7 @@
     {
       "id": "extract-text",
       "label": "Extract text",
-      "library": { "supported": true, "call": "extractText", "since": "1.6.0" },
+      "library": { "supported": true, "call": "extractText", "since": "1.6.0", "notes": "Since 1.9.0 every shaper's glyph has a ToUnicode entry and reordered or right-to-left runs come back in logical order through /ActualText; onStreamError: 'throw' | 'skip' | 'partial' (PdfStreamLimitError, StreamErrorPolicy) decides what a stream past the decode cap does; decodePdfTextString reads a PDF text string." },
       "cli": { "supported": true, "command": "extract-text", "since": "1.3.0" },
       "mcp": { "supported": true, "tool": "extract_text" },
       "react": { "supported": false }
@@ -77,9 +77,9 @@
     {
       "id": "annotate",
       "label": "Markup annotations",
-      "library": { "supported": true, "call": "buildAnnotation + PdfModifier.addAnnotation", "since": "1.5.0" },
+      "library": { "supported": true, "call": "buildAnnotation + PdfModifier.addAnnotation", "since": "1.5.0", "notes": "Ten MarkupAnnotation types; { type: 'link', rect, url } (LinkMarkupAnnotation, a /URI action through the URL allow-list) since 1.9.0." },
       "cli": { "supported": true, "command": "annotate", "since": "1.2.0" },
-      "mcp": { "supported": true, "tool": "annotate_pdf", "since": "1.4.0" },
+      "mcp": { "supported": true, "tool": "annotate_pdf", "since": "1.4.0", "notes": "No link type in 1.7.0; the link block of generate_basic_pdf covers new documents." },
       "react": { "supported": false }
     },
     {
@@ -137,6 +137,30 @@
       "cli": { "supported": true, "command": "render", "since": "1.4.0", "notes": "Colour fields in the document JSON accept 'c m y k' strings or [c, m, y, k] tuples (percent); documented and sampled since 1.5.0." },
       "mcp": { "supported": true, "tool": "generate_basic_pdf", "since": "1.7.0", "notes": "'0 0.6 1 0' or [0, 60, 100, 0] accepted on every colour input of every document tool and annotate_pdf. A 0–1 RGB triple renders the intended colour since 1.7.0." },
       "react": { "supported": true, "call": "Color = hex | RGB tuple | PdfCmykTuple | PdfCmykString on every colour prop", "since": "1.3.0", "notes": "No RGB→CMYK conversion: plate values are authored. L_CMYK_INTENT_MISMATCH warns when CMYK content meets a non-CMYK OutputIntent." }
+    },
+    {
+      "id": "spot-colours",
+      "label": "Spot colours (Separation and DeviceN)",
+      "library": { "supported": true, "call": "layout.print.spotColours: SpotColourDef[]; { spot, tint? } and { inks } on any color field and in ChartSeries.colors", "since": "1.9.0", "notes": "Emitted as /Separation and /DeviceN colour spaces with a type-4 tint transform over the declared CMYK alternates; valid under PDF/X-4 and the dual claim." },
+      "cli": { "supported": false, "notes": "pdfnative-cli 1.5.0 was released on the 1.8.0 engine; no flag or schema field for spot colours yet." },
+      "mcp": { "supported": false, "notes": "pdfnative-mcp 1.7.0 was released on the 1.8.0 engine; no tool input for spot colours yet." },
+      "react": { "supported": false, "notes": "pdfnative-react 1.3.0's Color union has no spot form yet." }
+    },
+    {
+      "id": "images-jpeg2000",
+      "label": "JPEG 2000 images",
+      "library": { "supported": true, "call": "image block / embedImage with a .jp2 or .j2k codestream; parseJPX, JpxInfo", "since": "1.9.0", "notes": "/JPXDecode pass-through with the colour and opacity the codestream declares; PDFA1_JPX_IMAGE warns under PDF/A-1 (throws under strict), PDFA_JPX_IMAGE names what PDF/A-2 and 3 forbid." },
+      "cli": { "supported": false, "notes": "pdfnative-cli 1.5.0 documents PNG and JPEG image inputs; JPEG 2000 is not documented for it." },
+      "mcp": { "supported": false, "notes": "pdfnative-mcp 1.7.0's embed_image documents PNG and JPEG." },
+      "react": { "supported": false, "notes": "pdfnative-react 1.3.0's <Image> documents PNG and JPEG." }
+    },
+    {
+      "id": "rtl-direction",
+      "label": "Right-to-left paragraphs (UAX #9)",
+      "library": { "supported": true, "call": "layout.direction: 'auto' | 'ltr' | 'rtl' (TextDirection), ParagraphBlock.direction; resolveBidiLevels, bidiLineLevels, bidiRunsForLine", "since": "1.9.0", "notes": "The whole of UAX #9 (embeddings, overrides, isolates, bracket pairs, neutral rules); 'auto' aligns right-to-left paragraphs to the right and justifies them in visual order; every reordered run carries its logical text as /ActualText unless layout.actualText is false." },
+      "cli": { "supported": false, "notes": "pdfnative-cli 1.5.0's layout schema has no direction field yet; right-to-left text is still shaped and reordered by the engine." },
+      "mcp": { "supported": false, "notes": "pdfnative-mcp 1.7.0 exposes no direction input yet." },
+      "react": { "supported": false, "notes": "pdfnative-react 1.3.0 exposes no direction prop yet." }
     },
     {
       "id": "output-intent-cmyk",

@@ -382,6 +382,8 @@ const pdf = buildPDFBytes(params, {
 });
 ```
 
+Since v1.9.0 the same options object takes `direction: 'auto' | 'ltr' | 'rtl'` (`TextDirection`) — `'auto'` lets every paragraph follow its first strong letter, aligns right-to-left paragraphs to the right and justifies them in visual order; `ParagraphBlock.direction` overrides it per block — and `actualText: false` to opt out of the `/ActualText` spans that give reordered and right-to-left runs their logical text (see the [right-to-left guide](docs/guides/rtl.md)).
+
 ### Color Formats
 
 All color values accept five formats — three RGB, two CMYK (v1.8.0):
@@ -830,6 +832,7 @@ See [scripts/README.md](scripts/README.md) for the modular generator architectur
 | `containsHebrew(text)` | Check for Hebrew characters |
 | `resolveBidiLevels(text, direction?)` | Resolve a paragraph's embedding levels with the whole of UAX #9 — embeddings, overrides, isolates, bracket pairs, the neutral rules (v1.9.0) |
 | `bidiLineLevels(levels, start, end)` / `bidiRunsForLine(levels, start, end)` | The per-line steps L1 (trailing whitespace) and L2 (reordering into visual runs) over resolved levels (v1.9.0) |
+| `TextDirection` / `BidiDirection` / `BidiLevels` | The `'ltr' \| 'rtl' \| 'auto'` union `layout.direction`, `ParagraphBlock.direction` and `resolveBidiLevels` take (`BidiDirection` is its alias), and the `{ paraLevel, levels }` the resolver returns (v1.9.0) |
 
 ### Barcode & QR Code
 
@@ -861,7 +864,7 @@ See [scripts/README.md](scripts/README.md) for the modular generator architectur
 | `buildAnnotation(annot, objNum)` | Build a full markup annotation indirect object (v1.5.0) |
 | `buildAnnotationBody(annot)` | Build a markup annotation dictionary body (for the modifier) (v1.5.0) |
 
-Supported `MarkupAnnotation` types: `text`, `highlight`, `underline`, `strikeout`, `squiggly`, `square`, `circle`, `line`, `freetext`, and since v1.9.0 `link` (`{ type: 'link', rect, url }`, a `/URI` action through the URL allow-list).
+Supported `MarkupAnnotation` types: `text`, `highlight`, `underline`, `strikeout`, `squiggly`, `square`, `circle`, `line`, `freetext`, and since v1.9.0 `link` (`LinkMarkupAnnotation`: `{ type: 'link', rect, url }`, a `/URI` action through the URL allow-list).
 
 ### Layout Debug & Inspection
 
@@ -902,7 +905,7 @@ Enable the visual overlay via `layout: { debug: true }` or a granular `LayoutDeb
 | `embedValidationInfo(pdf, data)` | Write pre-collected LTV material as `/DSS` + `/VRI` — sync, offline, deterministic (v1.7.0) |
 | `addValidationInfo(pdf, opts?)` | Collect + embed in one call (PAdES B-LT, v1.7.0) |
 | `addDocumentTimestamp(pdf, opts?)` | Append a `/DocTimeStamp` revision (PAdES B-LTA, v1.7.0) |
-| `composeLtvData(pdf, material, opts?)` | Build the `LtvData` that `embedValidationInfo` expects from flat lists of certificates, OCSP responses and CRLs collected out of band (`LtvMaterial`); `match: 'chain'` keeps what validates each signature, `'all'` keeps everything (v1.9.0) |
+| `composeLtvData(pdf, material, opts?)` | Build the `LtvData` that `embedValidationInfo` expects from flat lists of certificates, OCSP responses and CRLs collected out of band (`LtvMaterial`, options `ComposeLtvOptions`); `match: 'chain'` keeps what validates each signature, `'all'` keeps everything (v1.9.0) |
 | `estimateContentsSize(certSizes, algorithm?, opts?)` | Estimate `/Contents` size (`{ timestamp: true }` adds RFC 3161 headroom, v1.7.0) |
 | `setCryptoProvider(provider)` | Install (or clear with `null`) a global native signature provider (v1.4.0) |
 | `getCryptoProvider()` | Return the current global `CryptoProvider`, or `null` (v1.4.0) |

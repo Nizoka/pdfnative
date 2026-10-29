@@ -80,7 +80,7 @@ Functions an agent reaches for most, all exported from `'pdfnative'`:
 | `setDefaultCreationDate(date)` | Pin every date the writer emits (and so the trailer `/ID`) for reproducible bytes; or pass `layout.creationDate` per build (v1.8.0). |
 | `setHyphenationProvider(fn)` | Install a `(word, lang?) => number[]` break-point provider for `typography` (v1.8.0). |
 
-## What 1.9.0 adds (all opt-in, byte-identical when absent)
+## What 1.9.0 adds (opt-in unless noted; bytes move only where 1.8.0 was wrong — see the compatibility ledger in the release note)
 
 ```ts
 const bytes = buildDocumentPDFBytes({

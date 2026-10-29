@@ -320,7 +320,9 @@ function applyPreset(id) {
 function updateCodeView(id) {
   const p = PRESETS[id];
   const code = [
-    "import { registerFonts, loadFontData, buildDocumentPDFBytes, downloadBlob } from 'pdfnative';",
+    p.layout
+      ? "import { registerFonts, loadFontData, buildDocumentPDFBytes, resolveBidiLevels, downloadBlob } from 'pdfnative';"
+      : "import { registerFonts, loadFontData, buildDocumentPDFBytes, downloadBlob } from 'pdfnative';",
     '',
     'registerFonts({',
     ...p.langs.map(l => `  ${l}: () => import('https://esm.sh/pdfnative@1.9.0/fonts/${FONT_MODULE_BY_LANG[l]}'),`),
@@ -338,6 +340,12 @@ function updateCodeView(id) {
     '  ],',
     '  fontEntries,',
     ...(p.layout ? ['}, ' + JSON.stringify(p.layout).replace(/"(\w+)":/g, '$1: ').replace(/"/g, "'") + ');   // 1.9.0: right-to-left paragraphs aligned right and justified in visual order'] : ['});']),
+    ...(p.layout ? [
+      '',
+      '// The resolver the layout ran, on its own: the paragraph level (1 = right-to-left) and one embedding level per character (UAX #9).',
+      `const levels = resolveBidiLevels(${JSON.stringify(p.body.split(/\n\s*\n/)[0].trim())}, 'auto');`,
+      "console.log(levels.paraLevel, levels.levels);",
+    ] : []),
     '',
     "downloadBlob(pdf, 'extreme.pdf');"
   ].join('\n');
@@ -394,7 +402,15 @@ async function generate() {
     mod.downloadBlob(pdf, `extreme-${id}.pdf`);
     const ms = (performance.now() - t0).toFixed(0);
     $('timer').textContent = `Generated ${(pdf.length / 1024).toFixed(1)} KB in ${ms} ms`;
-    setStatus('PDF generated and downloaded.', 'success');
+    if (p.layout && typeof mod.resolveBidiLevels === 'function') {
+      // 1.9.0: the same resolver the layout ran, called on the first paragraph — the status line shows its verdict.
+      const first = body.split(/\n\s*\n/)[0].trim();
+      const levels = mod.resolveBidiLevels(first, 'auto');
+      console.log('resolveBidiLevels', levels);
+      setStatus(`PDF generated and downloaded. resolveBidiLevels(first paragraph): paragraph level ${levels.paraLevel} (${levels.paraLevel % 2 ? 'right-to-left' : 'left-to-right'}), ${levels.levels.length} character levels — see the console.`, 'success');
+    } else {
+      setStatus('PDF generated and downloaded.', 'success');
+    }
   } catch (err) {
     setStatus('Error: ' + (err.message || err), 'error');
     console.error(err);

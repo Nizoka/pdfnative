@@ -75,7 +75,7 @@ _Verified on 2026-10-29 against the source tree by `npm run verify:docs`; the ca
 ## Playgrounds (zero-install, the engine runs in the browser from a CDN)
 
 - [Typography](https://pdfnative.dev/playgrounds/typography.html): each `layout.typography` option generated with and without it — breaks, justification, spacing, kerning, figures, short words, hyphenation, exact metrics — with the reproducing code and the diagnostics channel.
-- [Print](https://pdfnative.dev/playgrounds/print.html): bleed and marks, CMYK colours, a CMYK OutputIntent (bundled synthetic profile or your own `.icc`), PDF/X-4 with the `validatePdfX()` report, and the PDF/X coherence errors.
+- [Print](https://pdfnative.dev/playgrounds/print.html): bleed and marks, CMYK colours, a CMYK OutputIntent (bundled synthetic profile or your own `.icc`), PDF/X-4 with the `validatePdfX()` report, spot colours (`/Separation` inks and a `/DeviceN` mix), the dual PDF/A-2b + PDF/X-4 claim, and the PDF/X coherence errors.
 - [Images](https://pdfnative.dev/playgrounds/images.html): a JPEG 2000 file passed through as JPXDecode (colour and opacity from the codestream), JPEG + PNG + JPEG 2000 on one page and under PDF/A-2b, the PDF/A-1b refusal, your own image file; every code view runs unchanged outside the browser.
 - [All scripts](https://pdfnative.dev/playgrounds/all-scripts.html): every one of the 32 scripts plus colour emoji in one document. [Extreme scripts](https://pdfnative.dev/playgrounds/extreme-scripts.html): BiDi, Indic, Arabic and USE stress tests.
 - [Inspect](https://pdfnative.dev/playgrounds/inspect.html): drop any PDF — metadata, text, PDF/UA and PDF/X-4 checks, signatures, forms, encryption. [Toolkit](https://pdfnative.dev/playgrounds/toolkit.html): outlines, page labels, merge/split/extract, forms, encryption.
@@ -487,6 +487,8 @@ const pdf = buildPDFBytes(params, {
   ],
 });
 ```
+
+Since v1.9.0 the same options object takes `direction: 'auto' | 'ltr' | 'rtl'` (`TextDirection`) — `'auto'` lets every paragraph follow its first strong letter, aligns right-to-left paragraphs to the right and justifies them in visual order; `ParagraphBlock.direction` overrides it per block — and `actualText: false` to opt out of the `/ActualText` spans that give reordered and right-to-left runs their logical text (see the [right-to-left guide](docs/guides/rtl.md)).
 
 ### Color Formats
 
@@ -936,6 +938,7 @@ See [scripts/README.md](scripts/README.md) for the modular generator architectur
 | `containsHebrew(text)` | Check for Hebrew characters |
 | `resolveBidiLevels(text, direction?)` | Resolve a paragraph's embedding levels with the whole of UAX #9 — embeddings, overrides, isolates, bracket pairs, the neutral rules (v1.9.0) |
 | `bidiLineLevels(levels, start, end)` / `bidiRunsForLine(levels, start, end)` | The per-line steps L1 (trailing whitespace) and L2 (reordering into visual runs) over resolved levels (v1.9.0) |
+| `TextDirection` / `BidiDirection` / `BidiLevels` | The `'ltr' \| 'rtl' \| 'auto'` union `layout.direction`, `ParagraphBlock.direction` and `resolveBidiLevels` take (`BidiDirection` is its alias), and the `{ paraLevel, levels }` the resolver returns (v1.9.0) |
 
 ### Barcode & QR Code
 
@@ -967,7 +970,7 @@ See [scripts/README.md](scripts/README.md) for the modular generator architectur
 | `buildAnnotation(annot, objNum)` | Build a full markup annotation indirect object (v1.5.0) |
 | `buildAnnotationBody(annot)` | Build a markup annotation dictionary body (for the modifier) (v1.5.0) |
 
-Supported `MarkupAnnotation` types: `text`, `highlight`, `underline`, `strikeout`, `squiggly`, `square`, `circle`, `line`, `freetext`, and since v1.9.0 `link` (`{ type: 'link', rect, url }`, a `/URI` action through the URL allow-list).
+Supported `MarkupAnnotation` types: `text`, `highlight`, `underline`, `strikeout`, `squiggly`, `square`, `circle`, `line`, `freetext`, and since v1.9.0 `link` (`LinkMarkupAnnotation`: `{ type: 'link', rect, url }`, a `/URI` action through the URL allow-list).
 
 ### Layout Debug & Inspection
 
@@ -1008,7 +1011,7 @@ Enable the visual overlay via `layout: { debug: true }` or a granular `LayoutDeb
 | `embedValidationInfo(pdf, data)` | Write pre-collected LTV material as `/DSS` + `/VRI` — sync, offline, deterministic (v1.7.0) |
 | `addValidationInfo(pdf, opts?)` | Collect + embed in one call (PAdES B-LT, v1.7.0) |
 | `addDocumentTimestamp(pdf, opts?)` | Append a `/DocTimeStamp` revision (PAdES B-LTA, v1.7.0) |
-| `composeLtvData(pdf, material, opts?)` | Build the `LtvData` that `embedValidationInfo` expects from flat lists of certificates, OCSP responses and CRLs collected out of band (`LtvMaterial`); `match: 'chain'` keeps what validates each signature, `'all'` keeps everything (v1.9.0) |
+| `composeLtvData(pdf, material, opts?)` | Build the `LtvData` that `embedValidationInfo` expects from flat lists of certificates, OCSP responses and CRLs collected out of band (`LtvMaterial`, options `ComposeLtvOptions`); `match: 'chain'` keeps what validates each signature, `'all'` keeps everything (v1.9.0) |
 | `estimateContentsSize(certSizes, algorithm?, opts?)` | Estimate `/Contents` size (`{ timestamp: true }` adds RFC 3161 headroom, v1.7.0) |
 | `setCryptoProvider(provider)` | Install (or clear with `null`) a global native signature provider (v1.4.0) |
 | `getCryptoProvider()` | Return the current global `CryptoProvider`, or `null` (v1.4.0) |
@@ -3012,6 +3015,9 @@ means the surface does not offer it.
 | Typography (paragraph breaking, justification, hyphenation, kerning, OpenType features) | `layout.typography` (`TypographyOptions`) + `setHyphenationProvider` / `bindUnits` / `bindShortWords` / `applyPunctuationSpacing` _(v1.8.0; every option opt-in and byte-identical when absent)_ | `render --split-paragraphs` / `--keep-headings-with-next` / `--kerning` / `--font-features`, or the full `layout.typography` object in the document JSON / a `--layout` file _(v1.5.0)_ | `typography` object on the nine document tools and `inspect_layout`; paragraph `align: 'justify'` / `keepWithNext` / `splittable`, heading `keepWithNext` _(v1.7.0)_ | `<Document typography>` · `<Paragraph align="justify" keepWithNext splittable>` · `<Heading keepWithNext>` _(v1.3.0)_ |
 | CMYK content colours | `[c, m, y, k]` tuples (percent) or `'c m y k'` strings on any colour field; `parseColor` / `resolveColor` / `fillOp` / `strokeOp` _(v1.8.0)_ | `render` (`"c m y k"` or `[c, m, y, k]` colour fields in the document JSON) _(v1.5.0)_ | `'0 0.6 1 0'` or `[0, 60, 100, 0]` on every colour input _(v1.7.0)_ | `Color` accepts a CMYK tuple or string on every colour prop; `L_CMYK_INTENT_MISMATCH` _(v1.3.0)_ |
 | CMYK / Gray OutputIntent with RGB content kept conforming | `layout.outputIntent` with a CMYK or Gray ICC profile _(v1.8.0; RGB content routed through a calibrated `/DefaultRGB`; no press profile shipped)_ | `render --output-intent-icc <file.icc> --output-intent-id <s>` _(v1.5.0)_ | `outputIntent` accepts CMYK and Gray profiles on the document tools _(v1.7.0)_ | `<Document outputIntent>` (also a DocSpec field) _(v1.3.0)_ |
+| Spot colours (Separation and DeviceN) | `layout.print.spotColours`; `{ spot, tint? }` and `{ inks }` on any colour field and in `ChartSeries.colors` _(v1.9.0)_ | — (pdfnative-cli 1.5.0 predates the 1.9.0 engine) | — (pdfnative-mcp 1.7.0 predates it) | — (pdfnative-react 1.3.0 predates it) |
+| JPEG 2000 images | `image` block or `embedImage` with a `.jp2` / `.j2k` codestream, `/JPXDecode` pass-through; `parseJPX` _(v1.9.0)_ | — (PNG and JPEG documented) | — (PNG and JPEG documented) | — (PNG and JPEG documented) |
+| Right-to-left paragraphs (UAX #9) | `layout.direction: 'auto'`, `ParagraphBlock.direction`; `resolveBidiLevels` _(v1.9.0)_ | — (no `direction` field yet; the engine still shapes and reorders) | — | — |
 | PDF/X-4 conformance claim | `layout: { pdfx: 'pdfx4', outputIntent, metadata.trapped }` _(v1.8.0; exclusive with encryption; since v1.9.0 combinable with `tagged: 'pdfa2b' \| 'pdfa2u'` into one file that claims both)_ | `render --pdfx pdfx4 --output-intent-icc <file.icc> --trapped true\|false\|unknown` (coherence errors → `E_INPUT`, `PDFX_*` diagnostics fail under `--strict`) _(v1.5.0)_ | `pdfx: 'pdfx4'` on six document tools (needs a `prtr` `outputIntent` and `embedFonts: true`; exclusive with `pdfA` / `encrypt`) _(v1.7.0)_ | `<Document pdfx="pdfx4" outputIntent metadata={{ trapped }}>` with eight `L_PDFX_*` lint rules _(v1.3.0)_ |
 | Validate PDF/X-4 | `validatePdfX` _(v1.8.0; structural ISO 15930-7 prerequisites, not a certified preflight)_ | `inspect --pdfx` / `--check pdfx` _(v1.5.0)_ | `validate_pdf` with `standard: 'pdf-x-4'` (result carries `caveats[]`); `inspect_pdf` reports `pdfX` _(v1.7.0)_ | — (import `validatePdfX` from the `pdfnative` peer and run it on the rendered bytes) |
 | Printer's marks: registration colour and colour control bars | `layout.print.marks` (`true`, or `{ colourBars: true \| { tints, size } }`) _(v1.8.0; bars off by default and byte-neutral when off)_ | `render` (`print.marks` incl. `colourBars` in the document JSON or a `--layout` file) _(v1.5.0)_ | `print.marks: true` _(v1.6.0)_ or `{ colourBars: true \| { tints, size } }` _(v1.7.0)_ | `<Document print={{ marks: { colourBars: true } }}>` (`ColourBarOptions`, `L_PRINT_COLOUR_BARS`) _(v1.3.0)_ |
@@ -8271,7 +8277,7 @@ buildDocumentPDFBytes(params, {
 
 RGB profiles since v1.7.0; **CMYK and Gray profiles since v1.8.0**. The profile's ICC header decides the stream's `/N`. Omitted, the historical built-in sRGB profile is used byte-identically. The profile is checked before any byte is written: it must be at least 128 bytes, carry the `acsp` signature at byte 36 (v1.8.0), declare a size field that fits the supplied buffer (v1.8.0 — a partial download is the usual cause of a mismatch) and name RGB, CMYK or Gray as its data colour space; each failure throws with the message listed under `buildErrors` in [`docs/data/errors.json`](../data/errors.json). The ICC *version* is not checked — PDF/A-1b needs a v2 profile, see the [PDF/A guide](pdfa.html).
 
-pdfnative ships no CMYK profile — press profiles (ISO Coated v2, GRACoL, SWOP) are large and often licensed. Use the one your printer names. For tests and demos only, a synthetic output profile (`prtr`, CMYK, structurally complete, characterising no printing condition) is served at <https://pdfnative.dev/assets/synthetic-cmyk.icc>; the repository builds it with `scripts/lib/synthetic-cmyk-profile.ts` and the print playground embeds it.
+pdfnative ships no press profile — ISO Coated v2, GRACoL and SWOP are large and often licensed. Use the one your printer names. For tests and demos only, `buildSyntheticCmykProfile()` and `buildSyntheticGrayProfile()` from `pdfnative/tools` (v1.9.0) build a synthetic output profile in memory — `prtr`, CMYK or Gray, structurally complete, accepted by validators, characterising no printing condition — the same bytes the repository's samples and the print playground's code views use; a copy is also served at <https://pdfnative.dev/assets/synthetic-cmyk.icc>.
 
 Under a CMYK or Gray intent, the colours pdfnative draws in RGB — default text, rules, charts, emoji, RGB images, form fields — are remapped through a calibrated sRGB `/DefaultRGB` in every resource dictionary that paints. Device RGB under a CMYK intent would otherwise break the conformance claim (ISO 19005-2 §6.2.4.3); remapping tells the print workflow what the colours mean rather than rewriting them as naive CMYK. veraPDF accepts the result under PDF/A-1b and PDF/A-2b.
 

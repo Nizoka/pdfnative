@@ -671,9 +671,9 @@
             "cmyk",
             "pdfa",
             "pdfx",
-            "errors",
             "spot",
-            "dual"
+            "dual",
+            "errors"
           ]
         },
         {
@@ -877,8 +877,8 @@
             "formats",
             "pdfa2b",
             "pdfa1",
-            "upload",
-            "watermark"
+            "watermark",
+            "upload"
           ]
         },
         {
@@ -920,7 +920,7 @@
     },
     {
       "name": "BidiDirection",
-      "reason": "The paragraph-direction member of BidiLevels; shown through layout.direction in the extreme-scripts rtl preset."
+      "reason": "An alias of TextDirection (the direction parameter of resolveBidiLevels and of layout.direction); the extreme-scripts rtl preset passes 'auto' to both."
     },
     {
       "name": "bidiLineLevels",
@@ -992,11 +992,11 @@
     },
     {
       "name": "OcspCertId",
-      "reason": "The CertID parseOcspResponse exposes for ocspResponseMatchesCertificate; both run in the ltv-compose-offline recipe, not in a browser (no OCSP responder reachable from a page)."
+      "reason": "The CertID parseOcspResponse exposes for ocspResponseMatchesCertificate; the ltv-compose-offline recipe reaches both through composeLtvData({ match: 'chain' }) rather than by name, and a page has no OCSP responder to query."
     },
     {
       "name": "ecdsaSignHash",
-      "reason": "A raw ECDSA primitive for custom signers; the signing flow a visitor runs is signPdfBytes (recipes sign-*, pdfnative-cli sign --algorithm ecdsa-sha256)."
+      "reason": "A raw ECDSA primitive for custom signers (#88); the signing flow a visitor runs is signPdfBytes (recipe signed-pades, pdfnative-cli sign --algorithm ecdsa-sha256)."
     },
     {
       "name": "ecdsaVerifyHash",
@@ -1012,7 +1012,7 @@
     },
     {
       "name": "ocspResponseMatchesCertificate",
-      "reason": "The matcher composeLtvData applies under match: 'chain' to keep the OCSP responses that answer for the signer's chain; the ltv-compose-offline recipe runs that path, and a page has no OCSP responder to query."
+      "reason": "The matcher composeLtvData applies under match: 'chain' to keep the OCSP responses that answer for the signer's chain; the ltv-compose-offline recipe runs that path through composeLtvData rather than by name, and a page has no OCSP responder to query."
     }
   ]
 }

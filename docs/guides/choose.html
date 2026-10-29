@@ -240,6 +240,27 @@ means the surface does not offer it.</p>
 <td><code>&lt;Document outputIntent&gt;</code> (also a DocSpec field) <em>(v1.3.0)</em></td>
 </tr>
 <tr>
+<td>Spot colours (Separation and DeviceN)</td>
+<td><code>layout.print.spotColours</code>; <code>{ spot, tint? }</code> and <code>{ inks }</code> on any colour field and in <code>ChartSeries.colors</code> <em>(v1.9.0)</em></td>
+<td>— (pdfnative-cli 1.5.0 predates the 1.9.0 engine)</td>
+<td>— (pdfnative-mcp 1.7.0 predates it)</td>
+<td>— (pdfnative-react 1.3.0 predates it)</td>
+</tr>
+<tr>
+<td>JPEG 2000 images</td>
+<td><code>image</code> block or <code>embedImage</code> with a <code>.jp2</code> / <code>.j2k</code> codestream, <code>/JPXDecode</code> pass-through; <code>parseJPX</code> <em>(v1.9.0)</em></td>
+<td>— (PNG and JPEG documented)</td>
+<td>— (PNG and JPEG documented)</td>
+<td>— (PNG and JPEG documented)</td>
+</tr>
+<tr>
+<td>Right-to-left paragraphs (UAX #9)</td>
+<td><code>layout.direction: &#39;auto&#39;</code>, <code>ParagraphBlock.direction</code>; <code>resolveBidiLevels</code> <em>(v1.9.0)</em></td>
+<td>— (no <code>direction</code> field yet; the engine still shapes and reorders)</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
 <td>PDF/X-4 conformance claim</td>
 <td><code>layout: { pdfx: &#39;pdfx4&#39;, outputIntent, metadata.trapped }</code> <em>(v1.8.0; exclusive with encryption; since v1.9.0 combinable with <code>tagged: &#39;pdfa2b&#39; | &#39;pdfa2u&#39;</code> into one file that claims both)</em></td>
 <td><code>render --pdfx pdfx4 --output-intent-icc &lt;file.icc&gt; --trapped true|false|unknown</code> (coherence errors → <code>E_INPUT</code>, <code>PDFX_*</code> diagnostics fail under <code>--strict</code>) <em>(v1.5.0)</em></td>
