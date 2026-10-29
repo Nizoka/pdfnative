@@ -13,7 +13,7 @@
 // Node built-ins only; this file is a CI harness, never part of the package.
 
 import { spawn } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, readdirSync, rmSync, statSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { dirname, join, normalize, resolve, sep } from 'node:path';
@@ -35,17 +35,26 @@ try {
 }
 </script>`;
 
-/** Only the three directories the page imports from are served. */
+/**
+ * Only the three directories the page imports from are served, and only the
+ * files they held when the server started: the request path is a key into
+ * this table, never a path handed to the file system.
+ */
+const SERVED = new Map();
+for (const dir of ['dist', 'fonts', join('.github', 'runtime-smoke')]) {
+    const base = join(ROOT, dir);
+    for (const rel of readdirSync(base, { recursive: true })) {
+        const file = join(base, String(rel));
+        if (!statSync(file).isFile()) continue;
+        SERVED.set(`${dir}${sep}${rel}`.split(sep).join('/'), file);
+    }
+}
 function serveFile(url) {
-    const path = normalize(decodeURIComponent(url.split('?')[0])).replace(/^[\\/]+/, '');
-    const allowed = [`dist${sep}`, `fonts${sep}`, `.github${sep}runtime-smoke${sep}`];
-    if (!allowed.some((prefix) => path.startsWith(prefix))) return undefined;
-    // A prefix check alone lets "dist/../x" through: the resolved path must stay under ROOT.
-    const rootWithSep = ROOT.endsWith(sep) ? ROOT : `${ROOT}${sep}`;
-    const resolvedPath = resolve(ROOT, path);
-    if (!(resolvedPath === ROOT || resolvedPath.startsWith(rootWithSep))) return undefined;
+    const key = normalize(decodeURIComponent(url.split('?')[0])).replace(/^[\\/]+/, '').split(sep).join('/');
+    const file = SERVED.get(key);
+    if (file === undefined) return undefined;
     try {
-        return readFileSync(resolvedPath);
+        return readFileSync(file);
     } catch {
         return undefined;
     }

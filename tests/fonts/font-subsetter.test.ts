@@ -168,12 +168,13 @@ function parseSubset(binary: string): { numGlyphs: number; locaFormat: number; g
     const view = new DataView(buf);
 
     const numTables = view.getUint16(4);
-    const tables: Record<string, { offset: number; length: number }> = Object.create(null) as Record<string, { offset: number; length: number }>;
+    const directory = new Map<string, { offset: number; length: number }>();
     for (let i = 0; i < numTables; i++) {
         const off = 12 + i * 16;
         const tag = String.fromCharCode(u8[off], u8[off + 1], u8[off + 2], u8[off + 3]);
-        tables[tag] = { offset: view.getUint32(off + 8), length: view.getUint32(off + 12) };
+        directory.set(tag, { offset: view.getUint32(off + 8), length: view.getUint32(off + 12) });
     }
+    const tables: Record<string, { offset: number; length: number }> = Object.fromEntries(directory);
 
     const numGlyphs = view.getUint16(tables['maxp'].offset + 4);
     const locaFormat = view.getInt16(tables['head'].offset + 50);
@@ -202,15 +203,15 @@ function parseTableDirectory(u8: Uint8Array): { entries: TableEntry[]; tables: R
     const view = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
     const numTables = view.getUint16(4);
     const entries: TableEntry[] = [];
-    const tables: Record<string, Uint8Array> = Object.create(null) as Record<string, Uint8Array>;
+    const directory = new Map<string, Uint8Array>();
     for (let i = 0; i < numTables; i++) {
         const off = 12 + i * 16;
         const tag = String.fromCharCode(u8[off], u8[off + 1], u8[off + 2], u8[off + 3]);
         const entry = { tag, checksum: view.getUint32(off + 4), offset: view.getUint32(off + 8), length: view.getUint32(off + 12) };
         entries.push(entry);
-        tables[tag] = u8.subarray(entry.offset, entry.offset + entry.length);
+        directory.set(tag, u8.subarray(entry.offset, entry.offset + entry.length));
     }
-    return { entries, tables };
+    return { entries, tables: Object.fromEntries(directory) };
 }
 
 /**

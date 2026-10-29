@@ -379,17 +379,10 @@ jobs:
       # The registry's signature and npm's provenance attestation, checked the
       # way a consumer checks them: the package just published, by exact
       # version, installed into a throwaway project. OpenSSF Scorecard
-      # (Pinned-Dependencies) reads every Unknown command: "install"
-
-
-Did you mean one of these?
-  npm install # Install a package
-  npm uninstall # Remove a package
-To see a list of supported npm commands, run:
-  npm help as unpinned; this one
+      # (Pinned-Dependencies) reads every `npm install` as unpinned; this one
       # names an exact version, runs no scripts, and follows the digest check
-      # above — found 0 vulnerabilities needs an installed tree, so the finding
-      # is accepted (SECURITY.md §Code Safety).
+      # above — and `npm audit`'s "found 0 vulnerabilities" needs an installed
+      # tree, so the finding is accepted (SECURITY.md §Code Safety).
       - name: Verify the registry signatures and provenance
         working-directory: ${{ runner.temp }}
         run: | # zizmor: ignore[adhoc-packages]
