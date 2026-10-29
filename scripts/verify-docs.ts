@@ -553,7 +553,13 @@ for (const [name, pkg] of Object.entries(manifest.packages)) {
         // the 1.8.0 bump while every sentence around them said 27. Word
         // numerals count too: the playground index said "Ten" playgrounds.
         { pattern: /\b(\d+)[ -](?:Unicode\s+)?scripts?\b/gi, source: 'declared.scripts', mode: 'equal' },
-        { pattern: /\b(\d+|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen)\s+(?:zero-install\s+|hands-on\s+|interactive\s+|live\s+)?(?:pdfnative\s+)?playgrounds\b/gi, source: 'derived.playgrounds', mode: 'equal' },
+        // The 1.9.0 final pass found "Fourteen <a href>playgrounds</a>" and
+        // "Fourteen hands-on environments" (a tag or a synonym between the
+        // numeral and the noun), "27 writing systems" and "35 reference guides"
+        // — all invisible to the three tokens above.
+        { pattern: /\b(\d+|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen)\s+(?:<a\s[^>]*>\s*)?(?:zero-install\s+|hands-on\s+|interactive\s+|live\s+)?(?:pdfnative\s+)?(?:playgrounds|environments)\b/gi, source: 'derived.playgrounds', mode: 'equal' },
+        { pattern: /\b(\d+)\s+writing systems\b/gi, source: 'declared.scripts', mode: 'equal' },
+        { pattern: /\b(\d+)\s+(?:<a\s[^>]*>\s*)?reference guides\b/gi, source: 'derived.guides', mode: 'equal' },
     ];
     const NUMERALS: Record<string, number> = { ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16 };
     const COMPANION_DOC = /docs[\\/](?:guides|playgrounds)[\\/](?:react|cli|mcp)\.(?:md|html)$/;
@@ -1538,6 +1544,39 @@ const PLAYGROUNDS = existsSync(join(ROOT, 'docs', 'playgrounds'))
     }
 }
 
+// ── Rule: jsonld-item-count ─────────────────────────────────────────
+
+/**
+ * The guides and playgrounds index pages carry a JSON-LD ItemList whose
+ * `numberOfItems` and ListItem count must equal the manifest's counters —
+ * the playgrounds index shipped a 14 over 15 entries for a release.
+ */
+{
+    const LISTS: ReadonlyArray<readonly [string, string]> = [
+        ['docs/guides/index.html', 'derived.guides'],
+        ['docs/playgrounds/index.html', 'derived.playgrounds'],
+    ];
+    for (const [relFile, source] of LISTS) {
+        const file = join(ROOT, relFile);
+        if (!existsSync(file)) continue;
+        const expected = manifestRef(source);
+        if (expected === undefined) continue;
+        const text = read(file);
+        const m = /"numberOfItems":\s*(\d+)/.exec(text);
+        if (!m) {
+            fail(relFile, 1, 'jsonld-item-count', 'no JSON-LD "numberOfItems" found');
+            continue;
+        }
+        if (Number(m[1]) !== expected) fail(relFile, lineOf(text, m.index), 'jsonld-item-count', `"numberOfItems": ${m[1]} — the manifest says ${expected} (${source})`);
+        // Count inside the ItemList only: the same script block also carries a BreadcrumbList.
+        const blockEnd = text.indexOf('</script>', m.index);
+        const block = text.slice(m.index, blockEnd < 0 ? undefined : blockEnd);
+        const crumbs = block.indexOf('"BreadcrumbList"');
+        const items = ((crumbs < 0 ? block : block.slice(0, crumbs)).match(/"@type":\s*"ListItem"/g) ?? []).length;
+        if (items !== expected) fail(relFile, lineOf(text, m.index), 'jsonld-item-count', `${items} ListItem entries — the manifest says ${expected} (${source})`);
+    }
+}
+
 // ── Rule: release-coverage ──────────────────────────────────────────
 
 /**
@@ -1558,9 +1597,9 @@ const PLAYGROUNDS = existsSync(join(ROOT, 'docs', 'playgrounds'))
     const relManifest = 'docs/data/playgrounds.json';
     const API_FILE = join(ROOT, 'docs', 'assets', 'api.json');
     const COMPAT_DIR = join(ROOT, 'tests', 'compat');
-    interface ApiEntry { readonly name: string }
+    interface ApiEntry { readonly name: string; readonly kind?: string }
     interface Exemption { readonly name: string; readonly reason?: string }
-    interface Manifest { readonly playgrounds?: ReadonlyArray<{ readonly id: string; readonly exercises?: readonly string[] }>; readonly coverageExemptions?: readonly Exemption[] }
+    interface Manifest { readonly playgrounds?: ReadonlyArray<{ readonly id: string; readonly file?: string; readonly exercises?: readonly string[] }>; readonly coverageExemptions?: readonly Exemption[] }
     const previousTag = existsSync(COMPAT_DIR)
         ? readdirSync(COMPAT_DIR)
               .filter((f) => /^allow-.*\.json$/.test(f))
@@ -1571,12 +1610,15 @@ const PLAYGROUNDS = existsSync(join(ROOT, 'docs', 'playgrounds'))
         : undefined;
     const previousFile = previousTag ? join(COMPAT_DIR, `api-${previousTag.replace(/^v/, '')}.json`) : undefined;
     if (existsSync(MANIFEST_FILE) && existsSync(API_FILE) && previousFile && existsSync(previousFile)) {
-        const names = (file: string): string[] => {
+        const entries = (file: string): ApiEntry[] => {
             const parsed = JSON.parse(read(file)) as ApiEntry[] | { exports?: ApiEntry[] };
-            return (Array.isArray(parsed) ? parsed : (parsed.exports ?? [])).map((e) => e.name);
+            return Array.isArray(parsed) ? parsed : (parsed.exports ?? []);
         };
-        const previous = new Set(names(previousFile));
-        const added = names(API_FILE).filter((n) => !previous.has(n));
+        const previous = new Set(entries(previousFile).map((e) => e.name));
+        const current = entries(API_FILE);
+        const added = current.filter((e) => !previous.has(e.name)).map((e) => e.name);
+        // A type never appears in a JavaScript code view; only a value export can be required in the page.
+        const values = new Set(current.filter((e) => e.kind !== 'type').map((e) => e.name));
         let manifestJson: Manifest = {};
         try {
             manifestJson = JSON.parse(read(MANIFEST_FILE)) as Manifest;
@@ -1584,10 +1626,28 @@ const PLAYGROUNDS = existsSync(join(ROOT, 'docs', 'playgrounds'))
             // playgrounds-manifest has already reported the parse failure.
         }
         const shown = new Set<string>();
+        const claimedBy = new Map<string, Array<{ readonly id: string; readonly file: string }>>();
         for (const entry of manifestJson.playgrounds ?? []) {
             for (const item of entry.exercises ?? []) {
-                for (const token of item.match(/[A-Za-z_][A-Za-z0-9_]*/g) ?? []) shown.add(token);
+                for (const token of item.match(/[A-Za-z_][A-Za-z0-9_]*/g) ?? []) {
+                    shown.add(token);
+                    claimedBy.set(token, [...(claimedBy.get(token) ?? []), { id: entry.id, file: entry.file ?? '' }]);
+                }
             }
+        }
+        // An `exercises` sentence is a claim about its page: a new export named
+        // there must appear in the page (a code view, the inline script), or
+        // the claim is prose — the 1.9.0 final pass found resolveBidiLevels
+        // "covered" by a parenthesis the extreme-scripts page never ran.
+        for (const name of added) {
+            const claims = claimedBy.get(name) ?? [];
+            if (claims.length === 0 || !values.has(name)) continue;
+            const backed = claims.filter((c) => c.file !== '' && existsSync(join(ROOT, 'docs', 'playgrounds', c.file)) && read(join(ROOT, 'docs', 'playgrounds', c.file)).includes(name));
+            for (const c of claims) {
+                if (backed.includes(c)) continue;
+                fail(relManifest, 1, 'release-coverage', `"${c.id}" names "${name}" under exercises but docs/playgrounds/${c.file || '?'} does not contain it — call it in a code view or drop the claim`);
+            }
+            if (backed.length === 0) shown.delete(name);
         }
         const recipesDir = join(ROOT, 'recipes');
         if (existsSync(recipesDir)) {
@@ -1619,6 +1679,38 @@ const PLAYGROUNDS = existsSync(join(ROOT, 'docs', 'playgrounds'))
         }
     }
 }
+
+// ── Rule: social-image-fresh ────────────────────────────────────────
+
+/**
+ * og-image.png and social-preview.png are hand-rendered from their SVG
+ * sources (the procedure is in each SVG's header). A PNG committed before its
+ * SVG's last change shows the previous release — both shipped "27 Unicode
+ * scripts" for the whole 1.9.0 branch while their sources said 32. Full
+ * clones only, as sitemap-lastmod-vs-git.
+ */
+{
+    const gitDate = (path: string): string | null => {
+        const r = spawnSync('git', ['-C', ROOT, 'log', '-1', '--format=%cs', '--', path], { encoding: 'utf8', windowsHide: true });
+        return r.status === 0 && r.stdout.trim() !== '' ? r.stdout.trim() : null;
+    };
+    const top = spawnSync('git', ['-C', ROOT, 'rev-parse', '--show-toplevel'], { encoding: 'utf8', windowsHide: true });
+    const shallow = spawnSync('git', ['-C', ROOT, 'rev-parse', '--is-shallow-repository'], { encoding: 'utf8', windowsHide: true });
+    const here = top.status === 0 && top.stdout.trim().replace(/\\/g, '/').toLowerCase() === ROOT.replace(/\\/g, '/').toLowerCase();
+    if (here && shallow.stdout.trim() === 'false') {
+        for (const base of ['og-image', 'social-preview']) {
+            const svg = `docs/assets/${base}.svg`;
+            const png = `docs/assets/${base}.png`;
+            if (!existsSync(join(ROOT, svg)) || !existsSync(join(ROOT, png))) continue;
+            const svgDate = gitDate(svg);
+            const pngDate = gitDate(png);
+            if (svgDate !== null && pngDate !== null && pngDate < svgDate) {
+                fail(png, 1, 'social-image-fresh', `last committed ${pngDate}, before its source ${svg} (${svgDate}) — re-render it (headless Chrome, see the SVG header) and commit the PNG`);
+            }
+        }
+    }
+}
+
 
 const SWITCHER = /<nav class="playground-switcher"[\s\S]*?<\/nav>/;
 
@@ -2318,9 +2410,11 @@ const OFFLINE_RULES = [
     'seo-head', // lang, canonical, hreflang self-references, og:locale, description
     'sitemap-parity', // sitemap lists every indexable page; lastmod inside the audit window
     'sitemap-lastmod-vs-git', // (full clones only) lastmod ≥ last commit of the page's sources (commits in .git-blame-ignore-revs excepted) and ≤ verifiedOn
+    'social-image-fresh', // (full clones only) og-image.png and social-preview.png are not older than their SVG sources
     'cdn-sri', // third-party scripts carry integrity+crossorigin; pdfnative CDN imports are pinned
     'playgrounds-manifest', // docs/data/playgrounds.json lists every live playground with real control ids; count equals derived.playgrounds
-    'release-coverage', // every export added since the previous release is exercised by a playground, imported by a recipe, or exempted with a reason
+    'jsonld-item-count', // the guides and playgrounds indexes' JSON-LD ItemList sizes equal derived.guides / derived.playgrounds
+    'release-coverage', // every export added since the previous release is exercised by a playground (the page contains it), imported by a recipe, or exempted with a reason
     'switcher-parity', // playground switchers link every live playground, none link a noindex stub
     'learn-chain', // learn path prev/next links follow manifest.learnPath
     'bench-parity', // homepage benchmark bars round to bench/RESULTS.md

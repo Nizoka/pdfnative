@@ -223,6 +223,43 @@ describe('verify-docs', () => {
             });
         }, 120_000);
 
+        it('count-tokens sees "writing systems", "reference guides" and a link tag between numeral and noun', () => {
+            withSandbox((dir) => {
+                const p = join(dir, 'docs', 'guides', 'faq.md');
+                writeFileSync(p, readFileSync(p, 'utf8') + '\nFourteen <a href="../playgrounds/">playgrounds</a> cover 27 writing systems; the <a href="../guides/">35 reference guides</a> are the shelf.\n');
+                const run = runVerifier(dir);
+                expect(run.output).toContain('count-tokens');
+                expect(run.output).toContain('derived.playgrounds');
+                expect(run.output).toContain('declared.scripts');
+                expect(run.output).toContain('derived.guides');
+                expect(run.status).toBe(1);
+            });
+        }, 120_000);
+
+        it('jsonld-item-count rejects an ItemList whose numberOfItems disagrees with the manifest', () => {
+            withSandbox((dir) => {
+                const p = join(dir, 'docs', 'playgrounds', 'index.html');
+                writeFileSync(p, readFileSync(p, 'utf8').replace(/"numberOfItems":\s*\d+/, '"numberOfItems": 14'));
+                const run = runVerifier(dir);
+                expect(run.output).toContain('jsonld-item-count');
+                expect(run.output).toContain('derived.playgrounds');
+                expect(run.status).toBe(1);
+            });
+        }, 120_000);
+
+        it('release-coverage rejects an exercises claim the playground page does not back', () => {
+            withSandbox((dir) => {
+                // parseJPX is a 1.9.0 export the images page runs; claiming it from the
+                // extreme-scripts entry, whose page never names it, is prose only.
+                patch(dir, 'docs/data/playgrounds.json', '"shaping.bidi",', '"shaping.bidi", "the JPEG 2000 header read by parseJPX",');
+                const run = runVerifier(dir);
+                expect(run.output).toContain('release-coverage');
+                expect(run.output).toContain('does not contain it');
+                expect(run.output).toContain('parseJPX');
+                expect(run.status).toBe(1);
+            });
+        }, 120_000);
+
         it('playgrounds-manifest rejects a control id the page does not contain and an unlisted playground', () => {
             withSandbox((dir) => {
                 patch(dir, 'docs/data/playgrounds.json', '"id": "preset"', '"id": "preset-that-does-not-exist"');
