@@ -2572,7 +2572,7 @@ Input (params + options)
 types/ → core/ ← fonts/ ← shaping/ ← worker/
               ↑
           crypto/ (near-standalone, imports core/pdf-encrypt for sha256)
-          parser/ (imports core/pdf-compress, pdf-encrypt, pdf-tags, pdf-page-labels, pdf-content-colour)
+          parser/ (imports core/pdf-encrypt, pdf-tags, pdf-page-labels, pdf-content-colour; inflate is its own pdf-inflate)
 ```
 
 - **No circular dependencies** — strict unidirectional flow, with **one
@@ -2581,7 +2581,7 @@ types/ → core/ ← fonts/ ← shaping/ ← worker/
   `pdf-form-fill`) import the parser to read existing documents before
   appending incremental revisions
 - **crypto/** is near-standalone — its only cross-module import is `sha256` from `core/pdf-encrypt.ts` (re-exported by `crypto/sha.ts`)
-- **parser/** imports from `core/pdf-compress.ts` (FlateDecode), `core/pdf-encrypt.ts` (decryption, incremental `/ID`), `core/pdf-tags.ts` (XMP resync in `updateMetadata`), `core/pdf-page-labels.ts` (the label tree the reader walks) and `core/pdf-content-colour.ts` (the colour operators `validatePdfX` scans)
+- **parser/** has its own bounded inflater (`parser/pdf-inflate.ts`, `PdfStreamLimitError`) and imports from `core/pdf-encrypt.ts` (decryption, incremental `/ID`), `core/pdf-tags.ts` (XMP resync in `updateMetadata`), `core/pdf-page-labels.ts` (the label tree the reader walks) and `core/pdf-content-colour.ts` (the colour operators `validatePdfX` scans)
 - **fonts/** imports from `shaping/` for script detection
 - **shaping/** imports from `fonts/` encoding context (via `core/encoding-context.ts` to break cycle)
 
@@ -6922,7 +6922,7 @@ X.509, CMS and RFC 3161 library. The family shares an author, a licence
 every package) and a vocabulary: an *engine* is the library, its *satellites*
 are a command-line tool and a Model Context Protocol server built on it.
 
-![Architecture: three columns, one per engine. On the left, pkinative holds the keys and the trust: a PKCS#12 store opened into a non-extractable key or an external signer, certificate-chain validation against trust anchors with CRL and OCSP, and the verifier that checks a CMS signature over the PDF's /ByteRange digest and its RFC 3161 timestamp. In the middle, pdfnative builds the document as PDF/A-2b with a pinned creationDate, signs it to PAdES B-T through a signature placeholder and a crypto provider, and writes the CMS into /Contents. On the right, zipnative packs the signed PDF with its evidence into a deterministic ZIP whose SHA-256 is the same for the same inputs, and reads it back lazily years later. Arrows: the key signs the PDF, the signed PDF is bundled into the archive, and a dashed path from the archive back to pkinative shows the later verification: open the ZIP, verify the signed data.](../assets/use-case-native-family.svg)
+![Architecture: three columns, one per engine. In the middle, pdfnative builds the document as PDF/A-2b with a pinned creationDate, signs it to PAdES B-T through a signature placeholder, the caller's synchronous crypto provider and an injected RFC 3161 timestamp provider, and writes the CMS into /Contents. On the left, pkinative holds the trust: trust anchors decoded from PEM with CRL and OCSP material, certificate-chain validation at the time the timestamp token proves, and the verifier that checks the CMS signature over the digest of the PDF's /ByteRange. On the right, zipnative packs the signed PDF with its evidence into a deterministic ZIP whose SHA-256 is the same for the same inputs, and reads it back lazily years later. Arrows: the signed PDF is proven by pkinative (its /ByteRange digest and CMS go to verifySignedData), the signed PDF is packed into the archive, and a dashed path from the archive back to the verifier shows the later verification: open the ZIP, read the signatures back with pdfnative, verify the signed data with pkinative.](../assets/use-case-native-family.svg)
 
 ## What each engine owns
 
@@ -11248,10 +11248,12 @@ Honest limits: `inspect --check pdfx` is pdfnative's **structural validator,
 not a certified preflight** — it checks the output intent, the page boxes,
 font embedding and forbidden annotations, not colour appearance or rendering;
 the printer's preflight still runs. Only PDF/X-4 is exposed: no PDF/X-1a, no
-PDF/X-3, no spot colours. `metadata` rewrites the XMP without the PDF/X
-identification, so re-check any file you edit afterwards. The claim is
-exclusive with PDF/A (`--tagged`) and with encryption — the pre-check exits 2
-before the build. And no press profile ships: the `synthetic-cmyk.icc` under
+PDF/X-3, and no spot colours through the CLI yet — the engine's
+`print.spotColours` (1.9.0) waits for a CLI release. `metadata` rewrites the
+XMP without the PDF/X identification, so re-check any file you edit afterwards.
+In CLI 1.5.0 the claim is exclusive with PDF/A (`--tagged`) and with
+encryption — the pre-check exits 2 before the build — although the engine
+writes the dual PDF/A-2 + PDF/X-4 claim since 1.9.0. And no press profile ships: the `synthetic-cmyk.icc` under
 the CLI's samples is structurally valid and colourimetrically meaningless —
 ask the printer for theirs.
 
@@ -11655,11 +11657,11 @@ house typeface needs the CLI (`render --font-file`) or the library. Every
 script passes PDF/A-2**u** since pdfnative 1.9.0 (every shaper's glyph is named
 in `ToUnicode`, and `PDFA_GLYPH_WITHOUT_UNICODE` names any glyph that still is
 not). Text extraction from an **untagged** PDF returns
-the logical string since pdfnative 1.9.0 (every reordered run carries its text
-as `/ActualText`); right-to-left lines still come back in visual order unless a
-`pdfA` claim makes the output tagged. And `annotate_pdf` has no `link` annotation
-type yet (the engine's markup union lacks it); the `link` block of
-`generate_basic_pdf` covers new documents.
+the logical string since pdfnative 1.9.0 (every reordered run, right-to-left
+runs included, carries its text as `/ActualText`, tagged or not). And
+`annotate_pdf` in pdfnative-mcp 1.7.0 has no `link` annotation type yet — the
+engine added `{ type: 'link' }` to its markup union in 1.9.0; the `link` block
+of `generate_basic_pdf` covers new documents.
 
 ## See also
 
@@ -11888,9 +11890,10 @@ What you gain, concretely:
 
 Honest limits: there is **no RGB → CMYK conversion** — plate values are
 authored, and the engine performs no colour management beyond mapping RGB
-content under a CMYK or Gray intent through `/DefaultRGB`. `pdfx` and `tagged`
-are mutually exclusive (one conformance claim per file), so the press file is
-not tagged. The bytes-level PDF/X-4 check is the engine's `validatePdfX`
+content under a CMYK or Gray intent through `/DefaultRGB`. In pdfnative-react
+1.3.0 `pdfx` and `tagged` are mutually exclusive, so the press file is not
+tagged — the engine itself writes the dual PDF/A-2 + PDF/X-4 claim since
+1.9.0, and a later renderer release will expose it. The bytes-level PDF/X-4 check is the engine's `validatePdfX`
 import shown in Case 1, and a `valid` result means the structural
 prerequisites hold — confirm the file with a certified preflight before it goes
 to press. No press profile ships with either package; the ICC profile is yours.

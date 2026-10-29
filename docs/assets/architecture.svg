@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 600" role="img" aria-labelledby="arch-title arch-desc" font-family="Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif">
   <title id="arch-title">pdfnative — module architecture</title>
-  <desc id="arch-desc">Layered dependency diagram for pdfnative 1.9.0. Top band: three ecosystem consumers install pdfnative from npm — pdfnative-cli (command-line interface, 21 commands: render, fill, annotate, metadata, merge, split, extract, sign, verify, ltv, doc-timestamp, encrypt, decrypt, inspect, extract-text, compare, batch, doctor, schema, completion, govern), pdfnative-mcp (Model Context Protocol server exposing 28 tools to Claude, Cursor, Zed and any MCP client), and pdfnative-react (on-device JSX-to-PDF renderer). Bottom band: the zero-dependency library. Strict unidirectional flow — types feeds core; fonts imports into core; shaping imports into fonts; worker imports into shaping. Core groups pdf-builder, pdf-document, pdf-encrypt, pdf-tags plus outline, page labels, annotations and layout inspection. fonts covers encoding, subsetting, CMap and the font-data tools sub-path. Shaping covers GSUB, GPOS, BiDi and 32 Unicode scripts. crypto is a standalone module (AES, RSA, ECDSA, SHA, CMS and a pluggable native signing provider). parser is standalone, imports the compression layer, and provides page-tree manipulation: read, decrypt, extract text, modify, annotate, merge, split and re-encrypt. A header badge notes the repository's AI-agent governance with a human-in-the-loop (HITL) contribution gate. A legend explains the four edge types: imports, consumes via npm, standalone, and imports compress.</desc>
+  <desc id="arch-desc">Layered dependency diagram for pdfnative 1.9.0. Top band: three ecosystem consumers install pdfnative from npm — pdfnative-cli (command-line interface, 21 commands: render, fill, annotate, metadata, merge, split, extract, sign, verify, ltv, doc-timestamp, encrypt, decrypt, inspect, extract-text, compare, batch, doctor, schema, completion, govern), pdfnative-mcp (Model Context Protocol server exposing 28 tools to Claude, Cursor, Zed and any MCP client), and pdfnative-react (on-device JSX-to-PDF renderer). Bottom band: the zero-dependency library. Strict unidirectional flow — types feeds core; fonts imports into core; shaping imports into fonts; worker imports into shaping. Core groups pdf-builder, pdf-document, pdf-encrypt, pdf-tags plus outlines, annotations, images (PNG, JPEG, JPEG 2000), charts, print and spot colours, typography, forms, signing and LTV. fonts covers encoding, subsetting, CMap and the font-data tools sub-path. Shaping covers OpenType GSUB and GPOS, the full UAX #9 bidirectional algorithm and 32 Unicode scripts. crypto is a standalone module (RSA, ECDSA, X.509, CMS, RFC 3161 and a pluggable signing provider; it imports only sha256 from core). parser imports pdf-encrypt, pdf-tags, pdf-page-labels and pdf-content-colour from core and provides page-tree manipulation: read, decrypt, extract text, modify, annotate, merge, split, re-encrypt, and validate PDF/UA and PDF/X-4; the one sanctioned reverse edge, the signing and form-fill core modules reading an existing document through the parser, is drawn back from core to parser. A header badge notes the repository's AI-agent governance with a human-in-the-loop (HITL) contribution gate. A legend explains the four edge types: imports, consumes via npm, standalone, and the parser-core pair.</desc>
 
   <defs>
     <!-- Directional arrowheads -->
@@ -139,9 +139,9 @@
   <text x="336" y="342" text-anchor="middle" font-size="11.5" font-weight="600" fill="#1D4ED8">pdf-builder · pdf-document</text>
   <text x="336" y="362" text-anchor="middle" font-size="11.5" font-weight="600" fill="#1D4ED8">pdf-encrypt · pdf-tags</text>
   <line x1="262" y1="376" x2="410" y2="376" stroke="#BFDBFE" stroke-width="1"/>
-  <text x="336" y="393" text-anchor="middle" font-size="10.5" fill="#3B82F6">outline · page labels · annotations</text>
-  <text x="336" y="409" text-anchor="middle" font-size="10.5" fill="#3B82F6">layout inspect · viewer-prefs · barcode</text>
-  <text x="336" y="425" text-anchor="middle" font-size="10.5" fill="#3B82F6">charts · form fill / flatten</text>
+  <text x="336" y="393" text-anchor="middle" font-size="10.5" fill="#3B82F6">outline · annotations · images</text>
+  <text x="336" y="409" text-anchor="middle" font-size="10.5" fill="#3B82F6">charts · print · spot colours</text>
+  <text x="336" y="425" text-anchor="middle" font-size="10.5" fill="#3B82F6">typography · forms · sign · LTV</text>
 
   <!-- fonts -->
   <g filter="url(#soft-sm)"><rect x="500" y="286" width="150" height="66" rx="12" fill="url(#g-fonts)" stroke="#A78BFA" stroke-width="1.25"/></g>
@@ -152,7 +152,7 @@
   <!-- shaping -->
   <g filter="url(#soft-sm)"><rect x="500" y="372" width="150" height="66" rx="12" fill="url(#g-shaping)" stroke="#2DD4BF" stroke-width="1.25"/></g>
   <text x="575" y="400" text-anchor="middle" font-size="14.5" font-weight="700" fill="#0D9488">shaping</text>
-  <text x="575" y="419" text-anchor="middle" font-size="9.5" fill="#14B8A6">GSUB · GPOS · BiDi · 32 scripts</text>
+  <text x="575" y="419" text-anchor="middle" font-size="9.5" fill="#14B8A6">OpenType · UAX #9 · 32 scripts</text>
 
   <!-- worker -->
   <g filter="url(#soft-sm)"><rect x="716" y="322" width="132" height="70" rx="12" fill="url(#g-worker)" stroke="#FBBF24" stroke-width="1.25"/></g>
@@ -162,13 +162,13 @@
   <!-- crypto (standalone) -->
   <g filter="url(#soft-sm)"><rect x="238" y="462" width="196" height="62" rx="12" fill="url(#g-crypto)" stroke="#34D399" stroke-width="1.25"/></g>
   <text x="336" y="489" text-anchor="middle" font-size="14.5" font-weight="700" fill="#059669">crypto</text>
-  <text x="336" y="508" text-anchor="middle" font-size="9.5" fill="#10B981">AES · RSA · ECDSA · SHA · CMS · provider</text>
+  <text x="336" y="508" text-anchor="middle" font-size="9.5" fill="#10B981">RSA · ECDSA · X.509 · CMS · RFC 3161</text>
 
   <!-- parser (standalone) -->
   <g filter="url(#soft-sm)"><rect x="500" y="462" width="196" height="62" rx="12" fill="url(#g-parser)" stroke="#FB923C" stroke-width="1.25"/></g>
   <text x="598" y="489" text-anchor="middle" font-size="14.5" font-weight="700" fill="#C2410C">parser</text>
   <text x="598" y="503" text-anchor="middle" font-size="8.5" fill="#F97316">read · decrypt · extract text · modify</text>
-  <text x="598" y="514" text-anchor="middle" font-size="8.5" fill="#F97316">merge / split · re-encrypt · stream</text>
+  <text x="598" y="514" text-anchor="middle" font-size="8.5" fill="#F97316">merge / split · validate PDF/UA · PDF/X-4</text>
 
   <!-- ─── Edges ─── -->
   <!-- consumers → core (npm) -->
@@ -190,8 +190,10 @@
   <line x1="714" y1="366" x2="654" y2="392" stroke="#94A3B8" stroke-width="1.6" marker-end="url(#ah-import)"/>
   <!-- crypto → core (standalone) -->
   <line x1="336" y1="460" x2="336" y2="440" stroke="#10B981" stroke-width="1.6" stroke-dasharray="5,3" marker-end="url(#ah-standalone)"/>
-  <!-- parser → core (imports compress) -->
+  <!-- parser → core (imports pdf-encrypt, pdf-tags, pdf-page-labels, pdf-content-colour) -->
   <path d="M540 460 C 500 440, 460 430, 436 415" fill="none" stroke="#F97316" stroke-width="1.6" stroke-dasharray="5,3" marker-end="url(#ah-compress)"/>
+  <!-- core → parser (the sanctioned reverse edge: sign, LTV and form-fill read the existing document) -->
+  <path d="M404 438 C 436 452, 468 462, 498 486" fill="none" stroke="#F97316" stroke-width="1.6" stroke-dasharray="5,3" marker-end="url(#ah-compress)"/>
 
   <!-- ── Legend ─────────────────────────────────────────────────── -->
   <line x1="28" y1="558" x2="932" y2="558" stroke="#E2E8F0" stroke-width="1"/>
@@ -206,6 +208,6 @@
     <text x="508" y="582">standalone module</text>
 
     <line x1="678" y1="578" x2="708" y2="578" stroke="#F97316" stroke-width="1.8" stroke-dasharray="5,3" marker-end="url(#ah-compress)"/>
-    <text x="716" y="582">imports compress</text>
+    <text x="716" y="582">parser ⇄ core</text>
   </g>
 </svg>

@@ -73,6 +73,6 @@
 
   <!-- Footer -->
   <rect x="40" y="480" width="880" height="64" rx="12" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="1"/>
-  <text x="480" y="504" text-anchor="middle" font-size="12.5" font-weight="600" fill="#334155">Structural validation evidence, not a certified preflight. PDF/X-4 only: no PDF/X-1a, no PDF/X-3, no spot colours.</text>
-  <text x="480" y="524" text-anchor="middle" font-size="12.5" fill="#475569">Exclusive with PDF/A and encryption. metadata rewrites the XMP without the PDF/X identification — re-check after editing.</text>
+  <text x="480" y="504" text-anchor="middle" font-size="12.5" font-weight="600" fill="#334155">Structural validation evidence, not a certified preflight. PDF/X-4 only: no PDF/X-1a, no PDF/X-3; spot colours are engine-only (1.9.0).</text>
+  <text x="480" y="524" text-anchor="middle" font-size="12.5" fill="#475569">The CLI claims PDF/X-4 or PDF/A, never both (the engine does since 1.9.0); metadata drops the PDF/X identification — re-check.</text>
 </svg>

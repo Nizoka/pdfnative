@@ -19,9 +19,9 @@
     {
       "url": "https://pdfnative.dev/llms-full.txt",
       "description": "Full corpus: index + README + every guide, one request.",
-      "bytes": 781528,
-      "approxTokens": 195382,
-      "sha256": "32db219f32ada8882deb1181d2809c849ae0b6d33b87eb49c52f49bd57620b4c"
+      "bytes": 782031,
+      "approxTokens": 195508,
+      "sha256": "9c0134531c959b5f74cac37b4d0dc691a7f1355b062f1009a7155a41478dab7d"
     },
     {
       "url": "https://pdfnative.dev/llms-recipes.txt",
@@ -149,9 +149,9 @@
         "key-design-decisions",
         "ecosystem"
       ],
-      "bytes": 11612,
-      "approxTokens": 2903,
-      "sha256": "43ac57bf4f5ace86532a73979efe9a8d4eff90fb0b0b7c51c1bb6de873b977c2"
+      "bytes": 11674,
+      "approxTokens": 2919,
+      "sha256": "f34ff10dc28f2876ec39f25c20920fce14816c4268283b40106cbd3a9408cf63"
     },
     {
       "title": "Charts (native vector)",
@@ -402,9 +402,9 @@
         "picking-parts-not-a-platform",
         "see-also"
       ],
-      "bytes": 15371,
-      "approxTokens": 3843,
-      "sha256": "a8ab88d94fd4f278d97a4ad51a4b1bfa1f510885649faa945a5d52bb16672df7"
+      "bytes": 15518,
+      "approxTokens": 3880,
+      "sha256": "faac115df3bfa20e3c129c1ae6914191e63871270ef5d5c82eac8bbc639bac7c"
     },
     {
       "title": "Onboarding — the pdfnative ecosystem in 90 seconds",
@@ -734,9 +734,9 @@
         "case-4--any-language-orchestrator-on-the-process-contract",
         "see-also"
       ],
-      "bytes": 19501,
-      "approxTokens": 4875,
-      "sha256": "5c0e5c0b75d18cf638372b36ebea2e818ed4fb1b2b2bad6fad565f908625fd79"
+      "bytes": 19683,
+      "approxTokens": 4921,
+      "sha256": "240b3f40303b766b72d3f529011dde14c81257407b6670a44199d889f97a3763"
     },
     {
       "title": "MCP use cases",
@@ -749,9 +749,9 @@
         "case-3--multilingual-notices-in-every-script-from-a-conversation",
         "see-also"
       ],
-      "bytes": 15178,
+      "bytes": 15179,
       "approxTokens": 3795,
-      "sha256": "fb2b492297f5f1571646821d8649d290bfe435e0f4257fd7069034daa5bd964b"
+      "sha256": "c1637c8f700960073fbf0bb99360dfe1877e2197d7a35c98d022e0bacd69ed56"
     },
     {
       "title": "React use cases",
@@ -764,9 +764,9 @@
         "case-3--one-component-tree-two-palettes-screen-pdfa-and-press-pdfx-4",
         "see-also"
       ],
-      "bytes": 13638,
-      "approxTokens": 3410,
-      "sha256": "8dba1b7556bde3ef4b5fa8ec427befa500ff14f338057e057acb1d74d0d47a87"
+      "bytes": 13749,
+      "approxTokens": 3437,
+      "sha256": "73763dfa834e3084a4b3a5cbf4bca58f9d31760f31af12a1e88e2ffbc1257559"
     },
     {
       "title": "Ecosystem use cases",

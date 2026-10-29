@@ -210,9 +210,10 @@ What you gain, concretely:
 
 Honest limits: there is **no RGB → CMYK conversion** — plate values are
 authored, and the engine performs no colour management beyond mapping RGB
-content under a CMYK or Gray intent through `/DefaultRGB`. `pdfx` and `tagged`
-are mutually exclusive (one conformance claim per file), so the press file is
-not tagged. The bytes-level PDF/X-4 check is the engine's `validatePdfX`
+content under a CMYK or Gray intent through `/DefaultRGB`. In pdfnative-react
+1.3.0 `pdfx` and `tagged` are mutually exclusive, so the press file is not
+tagged — the engine itself writes the dual PDF/A-2 + PDF/X-4 claim since
+1.9.0, and a later renderer release will expose it. The bytes-level PDF/X-4 check is the engine's `validatePdfX`
 import shown in Case 1, and a `valid` result means the structural
 prerequisites hold — confirm the file with a certified preflight before it goes
 to press. No press profile ships with either package; the ICC profile is yours.

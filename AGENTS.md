@@ -51,8 +51,8 @@ pdfnative is a zero-runtime-dependency TypeScript library that writes and reads 
 | `recipes/` | Executable documentation (`recipes/*.ts`, indexed by `recipes/index.json`), scanned by `verify:docs` | `.github/instructions/api-design.instructions.md` |
 
 1.8.0 modules — core: `pdf-typography` + `hyphenation`, `pdf-pagination` (the one planner for builder and `inspectDocumentLayout`), `pdf-print`, `pdf-color` (`fillOp`/`strokeOp` choke point),
-1.9.0 modules — core: `pdf-spot` (Separation/DeviceN); shaping: `bidi` (full UAX #9, generated `bidi-*-data`), five Indic shapers (gu, pa, kn, ml, or); scripts: `run-compat`, `verify-unicode`; `fuzz/` targets; `tests/compat/`.
 `pdf-content-colour`, `pdf-reproducible`; shaping: `shaper-registry` (`SCRIPT_SHAPERS`/`findShaper`), `use-engine` + generated `use-data`, `use-shaper` (Tai Tham, Cham), `lao-shaper`; parser: `pdf-x-validator`.
+1.9.0 modules — core: `pdf-spot` (Separation/DeviceN); shaping: `bidi` (full UAX #9, generated `bidi-*-data`), five Indic shapers (gu, pa, kn, ml, or); scripts: `run-compat`, `verify-unicode`; `fuzz/` targets; `tests/compat/`.
 Cross-cutting: public API → `api-design.instructions.md`; PDF/A metadata, XMP, OutputIntent → `pdfa-conformance.instructions.md`; hot paths → `performance.instructions.md`.
 
 ## Architecture
@@ -62,7 +62,7 @@ Strict unidirectional dependency flow:
 ```
 types → core ← fonts ← shaping ← worker
 crypto imports core/pdf-encrypt (sha256) and nothing else outside crypto/
-parser depends on core: pdf-compress (inflate), pdf-encrypt, pdf-tags, pdf-page-labels, pdf-content-colour
+parser depends on core: pdf-encrypt, pdf-tags, pdf-page-labels, pdf-content-colour (inflate is the parser's own pdf-inflate)
 ```
 
 One sanctioned reverse edge: incremental-update features in `core/` (`pdf-sig-placeholder`, `pdf-form-fill`, `pdf-dss`, `pdf-sig-utils`, `pdf-doc-timestamp`)

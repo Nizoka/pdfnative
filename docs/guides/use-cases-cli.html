@@ -202,10 +202,12 @@ engine&#39;s <code>validatePdfX</code>, one import away.</p>
 not a certified preflight</strong> — it checks the output intent, the page boxes,
 font embedding and forbidden annotations, not colour appearance or rendering;
 the printer&#39;s preflight still runs. Only PDF/X-4 is exposed: no PDF/X-1a, no
-PDF/X-3, no spot colours. <code>metadata</code> rewrites the XMP without the PDF/X
-identification, so re-check any file you edit afterwards. The claim is
-exclusive with PDF/A (<code>--tagged</code>) and with encryption — the pre-check exits 2
-before the build. And no press profile ships: the <code>synthetic-cmyk.icc</code> under
+PDF/X-3, and no spot colours through the CLI yet — the engine&#39;s
+<code>print.spotColours</code> (1.9.0) waits for a CLI release. <code>metadata</code> rewrites the
+XMP without the PDF/X identification, so re-check any file you edit afterwards.
+In CLI 1.5.0 the claim is exclusive with PDF/A (<code>--tagged</code>) and with
+encryption — the pre-check exits 2 before the build — although the engine
+writes the dual PDF/A-2 + PDF/X-4 claim since 1.9.0. And no press profile ships: the <code>synthetic-cmyk.icc</code> under
 the CLI&#39;s samples is structurally valid and colourimetrically meaningless —
 ask the printer for theirs.</p>
 <h2 id="case-3--a-house-font-and-book-typesetting-without-a-code-change">Case 3 — A house font and book typesetting without a code change<a class="heading-anchor" href="#case-3--a-house-font-and-book-typesetting-without-a-code-change" aria-label="Link to this section">#</a></h2>

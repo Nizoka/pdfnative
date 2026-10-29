@@ -128,7 +128,7 @@ const pdf = buildDocumentPDFBytes({
 <pre><code>types/ → core/ ← fonts/ ← shaping/ ← worker/
               ↑
           crypto/ (near-standalone, imports core/pdf-encrypt for sha256)
-          parser/ (imports core/pdf-compress, pdf-encrypt, pdf-tags, pdf-page-labels, pdf-content-colour)
+          parser/ (imports core/pdf-encrypt, pdf-tags, pdf-page-labels, pdf-content-colour; inflate is its own pdf-inflate)
 </code></pre>
 <ul>
 <li><strong>No circular dependencies</strong> — strict unidirectional flow, with <strong>one
@@ -137,7 +137,7 @@ sanctioned, documented reverse edge</strong>: the signature-workflow core module
 <code>pdf-form-fill</code>) import the parser to read existing documents before
 appending incremental revisions</li>
 <li><strong>crypto/</strong> is near-standalone — its only cross-module import is <code>sha256</code> from <code>core/pdf-encrypt.ts</code> (re-exported by <code>crypto/sha.ts</code>)</li>
-<li><strong>parser/</strong> imports from <code>core/pdf-compress.ts</code> (FlateDecode), <code>core/pdf-encrypt.ts</code> (decryption, incremental <code>/ID</code>), <code>core/pdf-tags.ts</code> (XMP resync in <code>updateMetadata</code>), <code>core/pdf-page-labels.ts</code> (the label tree the reader walks) and <code>core/pdf-content-colour.ts</code> (the colour operators <code>validatePdfX</code> scans)</li>
+<li><strong>parser/</strong> has its own bounded inflater (<code>parser/pdf-inflate.ts</code>, <code>PdfStreamLimitError</code>) and imports from <code>core/pdf-encrypt.ts</code> (decryption, incremental <code>/ID</code>), <code>core/pdf-tags.ts</code> (XMP resync in <code>updateMetadata</code>), <code>core/pdf-page-labels.ts</code> (the label tree the reader walks) and <code>core/pdf-content-colour.ts</code> (the colour operators <code>validatePdfX</code> scans)</li>
 <li><strong>fonts/</strong> imports from <code>shaping/</code> for script detection</li>
 <li><strong>shaping/</strong> imports from <code>fonts/</code> encoding context (via <code>core/encoding-context.ts</code> to break cycle)</li>
 </ul>

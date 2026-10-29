@@ -35,7 +35,7 @@ Other top-level directories: `fonts/` (generated font-data modules + git-ignored
 
 - **Single entry point**: `src/index.ts` re-exports everything public. **Types-first**: domain types live in `src/types/`; consumers import them from the root.
 - **Strict unidirectional flow**: `types → core ← fonts ← shaping ← worker`; `crypto` imports only `sha256` from `core/pdf-encrypt`;
-  `parser` imports from `core` (`pdf-compress`, `pdf-encrypt`, `pdf-tags`, `pdf-page-labels`, `pdf-content-colour`).
+  `parser` imports from `core` (`pdf-encrypt`, `pdf-tags`, `pdf-page-labels`, `pdf-content-colour`).
 - **One sanctioned reverse edge**: the incremental-update modules in `core/` (`pdf-sig-placeholder`, `pdf-form-fill`, `pdf-dss`, `pdf-sig-utils`, `pdf-doc-timestamp`)
   import the `parser/` reader/modifier because they operate on existing PDFs. Keep new reverse edges to that feature family.
 - `encoding-context.ts` lives in `core/` (dependency inversion that broke the `fonts/ → shaping/` cycle); `script-registry.ts` in `shaping/` is the single source of Unicode range constants and script predicates.

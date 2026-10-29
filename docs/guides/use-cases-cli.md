@@ -153,10 +153,12 @@ Honest limits: `inspect --check pdfx` is pdfnative's **structural validator,
 not a certified preflight** — it checks the output intent, the page boxes,
 font embedding and forbidden annotations, not colour appearance or rendering;
 the printer's preflight still runs. Only PDF/X-4 is exposed: no PDF/X-1a, no
-PDF/X-3, no spot colours. `metadata` rewrites the XMP without the PDF/X
-identification, so re-check any file you edit afterwards. The claim is
-exclusive with PDF/A (`--tagged`) and with encryption — the pre-check exits 2
-before the build. And no press profile ships: the `synthetic-cmyk.icc` under
+PDF/X-3, and no spot colours through the CLI yet — the engine's
+`print.spotColours` (1.9.0) waits for a CLI release. `metadata` rewrites the
+XMP without the PDF/X identification, so re-check any file you edit afterwards.
+In CLI 1.5.0 the claim is exclusive with PDF/A (`--tagged`) and with
+encryption — the pre-check exits 2 before the build — although the engine
+writes the dual PDF/A-2 + PDF/X-4 claim since 1.9.0. And no press profile ships: the `synthetic-cmyk.icc` under
 the CLI's samples is structurally valid and colourimetrically meaningless —
 ask the printer for theirs.
 

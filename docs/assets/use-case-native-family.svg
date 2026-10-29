@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 560" role="img" aria-labelledby="unf-title unf-desc" font-family="Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif">
   <title id="unf-title">The native family: sign, pack, verify</title>
-  <desc id="unf-desc">Architecture: three columns, one per engine. On the left, pkinative holds the keys and the trust: a PKCS#12 store opened into a non-extractable key or an external signer, certificate-chain validation against trust anchors with CRL and OCSP, and the verifier that checks a CMS signature over the PDF's /ByteRange digest and its RFC 3161 timestamp. In the middle, pdfnative builds the document as PDF/A-2b with a pinned creationDate, signs it to PAdES B-T through a signature placeholder and a crypto provider, and writes the CMS into /Contents. On the right, zipnative packs the signed PDF with its evidence into a deterministic ZIP whose SHA-256 is the same for the same inputs, and reads it back lazily years later. Arrows: the key signs the PDF, the signed PDF is bundled into the archive, and a dashed path from the archive back to pkinative shows the later verification: open the ZIP, verify the signed data.</desc>
+  <desc id="unf-desc">Architecture: three columns, one per engine. In the middle, pdfnative builds the document as PDF/A-2b with a pinned creationDate, signs it to PAdES B-T through a signature placeholder, the caller's synchronous crypto provider and an injected RFC 3161 timestamp provider, and writes the CMS into /Contents. On the left, pkinative holds the trust: trust anchors decoded from PEM with CRL and OCSP material, certificate-chain validation at the time the timestamp token proves, and the verifier that checks the CMS signature over the digest of the PDF's /ByteRange. On the right, zipnative packs the signed PDF with its evidence into a deterministic ZIP whose SHA-256 is the same for the same inputs, and reads it back lazily years later. Arrows: the signed PDF is proven by pkinative (its /ByteRange digest and CMS go to verifySignedData), the signed PDF is packed into the archive, and a dashed path from the archive back to the verifier shows the later verification: open the ZIP, read the signatures back with pdfnative, verify the signed data with pkinative.</desc>
 
   <defs>
     <marker id="unf-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
@@ -13,33 +13,33 @@
 
   <rect width="960" height="560" fill="#F8FAFC"/>
   <text x="480" y="42" text-anchor="middle" font-size="21" font-weight="700" fill="#0F172A">The native family: sign, pack, verify</text>
-  <text x="480" y="66" text-anchor="middle" font-size="13" fill="#64748B">Keys and trust in pkinative, the document in pdfnative, the archive in zipnative — zero runtime dependencies at every step</text>
+  <text x="480" y="66" text-anchor="middle" font-size="13" fill="#64748B">The document in pdfnative, the trust in pkinative, the archive in zipnative — zero runtime dependencies at every step</text>
 
-  <!-- pkinative -->
+  <!-- pkinative: the trust -->
   <rect x="40" y="96" width="250" height="340" rx="14" fill="#FFFFFF" stroke="#FCD34D" stroke-width="1.5"/>
-  <text x="165" y="126" text-anchor="middle" font-size="15" font-weight="700" fill="#92400E">pkinative — keys and trust</text>
+  <text x="165" y="126" text-anchor="middle" font-size="15" font-weight="700" fill="#92400E">pkinative — the trust</text>
   <text x="165" y="145" text-anchor="middle" font-size="11.5" fill="#B45309">X.509 · CMS · RFC 3161 · PKCS#12</text>
 
   <rect x="56" y="166" width="218" height="60" rx="10" fill="#FFFBEB" stroke="#FCD34D" stroke-width="1.25"/>
-  <text x="165" y="190" text-anchor="middle" font-size="13" font-weight="700" fill="#92400E">verifyCertificateChain</text>
-  <text x="165" y="210" text-anchor="middle" font-size="11.5" fill="#B45309">trust anchors · CRL · OCSP</text>
+  <text x="165" y="190" text-anchor="middle" font-size="13" font-weight="700" fill="#92400E">decodePem · trust anchors</text>
+  <text x="165" y="210" text-anchor="middle" font-size="11.5" fill="#B45309">roots.pem · CRL · OCSP material</text>
 
   <line x1="165" y1="226" x2="165" y2="252" stroke="#475569" stroke-width="1.75" marker-end="url(#unf-ah)"/>
 
   <rect x="56" y="254" width="218" height="60" rx="10" fill="#FFFBEB" stroke="#FCD34D" stroke-width="1.25"/>
-  <text x="165" y="278" text-anchor="middle" font-size="13" font-weight="700" fill="#92400E">openPkcs12 · ExternalSigner</text>
-  <text x="165" y="298" text-anchor="middle" font-size="11.5" fill="#B45309">a non-extractable Web Crypto key</text>
+  <text x="165" y="278" text-anchor="middle" font-size="13" font-weight="700" fill="#92400E">verifyCertificateChain</text>
+  <text x="165" y="298" text-anchor="middle" font-size="11.5" fill="#B45309">RFC 5280 path, at the token's time</text>
 
   <line x1="165" y1="314" x2="165" y2="340" stroke="#475569" stroke-width="1.75" marker-end="url(#unf-ah)"/>
 
   <rect x="56" y="342" width="218" height="60" rx="10" fill="#FFFBEB" stroke="#FCD34D" stroke-width="1.25"/>
   <text x="165" y="366" text-anchor="middle" font-size="13" font-weight="700" fill="#92400E">verifySignedData</text>
-  <text x="165" y="386" text-anchor="middle" font-size="11.5" fill="#B45309">allowTrailingData · atTimeStamp</text>
+  <text x="165" y="386" text-anchor="middle" font-size="11.5" fill="#B45309">contentDigest · atTimeStamp: true</text>
 
-  <!-- pdfnative -->
+  <!-- pdfnative: the document -->
   <rect x="355" y="96" width="250" height="340" rx="14" fill="#FFFFFF" stroke="#93C5FD" stroke-width="1.5"/>
   <text x="480" y="126" text-anchor="middle" font-size="15" font-weight="700" fill="#1E40AF">pdfnative — the document</text>
-  <text x="480" y="145" text-anchor="middle" font-size="11.5" fill="#3B82F6">ISO 32000-1 · ISO 19005 · PAdES</text>
+  <text x="480" y="145" text-anchor="middle" font-size="11.5" fill="#3B82F6">ISO 32000-1 · ISO 19005 · PAdES B-T</text>
 
   <rect x="371" y="166" width="218" height="60" rx="10" fill="#EFF6FF" stroke="#93C5FD" stroke-width="1.25"/>
   <text x="480" y="190" text-anchor="middle" font-size="13" font-weight="700" fill="#1E40AF">buildDocumentPDFBytes</text>
@@ -48,16 +48,16 @@
   <line x1="480" y1="226" x2="480" y2="252" stroke="#475569" stroke-width="1.75" marker-end="url(#unf-ah)"/>
 
   <rect x="371" y="254" width="218" height="60" rx="10" fill="#EFF6FF" stroke="#93C5FD" stroke-width="1.25"/>
-  <text x="480" y="278" text-anchor="middle" font-size="13" font-weight="700" fill="#1E40AF">signPdfBytes</text>
-  <text x="480" y="298" text-anchor="middle" font-size="11.5" fill="#3B82F6">setCryptoProvider({ sign }) · B-T</text>
+  <text x="480" y="278" text-anchor="middle" font-size="13" font-weight="700" fill="#1E40AF">signPdfBytesWithTimestamp</text>
+  <text x="480" y="298" text-anchor="middle" font-size="11.5" fill="#3B82F6">sign provider · RFC 3161 timestamp</text>
 
   <line x1="480" y1="314" x2="480" y2="340" stroke="#475569" stroke-width="1.75" marker-end="url(#unf-ah)"/>
 
   <rect x="371" y="342" width="218" height="60" rx="10" fill="#EFF6FF" stroke="#93C5FD" stroke-width="1.25"/>
   <text x="480" y="366" text-anchor="middle" font-size="13" font-weight="700" fill="#1E40AF">signed.pdf</text>
-  <text x="480" y="386" text-anchor="middle" font-size="11.5" fill="#3B82F6">CMS over the /ByteRange digest</text>
+  <text x="480" y="386" text-anchor="middle" font-size="11.5" fill="#3B82F6">CMS in /Contents over the /ByteRange</text>
 
-  <!-- zipnative -->
+  <!-- zipnative: the archive -->
   <rect x="670" y="96" width="250" height="340" rx="14" fill="#FFFFFF" stroke="#86EFAC" stroke-width="1.5"/>
   <text x="795" y="126" text-anchor="middle" font-size="15" font-weight="700" fill="#166534">zipnative — the archive</text>
   <text x="795" y="145" text-anchor="middle" font-size="11.5" fill="#16A34A">ZIP APPNOTE · DEFLATE · Zip64</text>
@@ -69,31 +69,31 @@
   <line x1="795" y1="226" x2="795" y2="252" stroke="#475569" stroke-width="1.75" marker-end="url(#unf-ah)"/>
 
   <rect x="686" y="254" width="218" height="60" rx="10" fill="#F0FDF4" stroke="#86EFAC" stroke-width="1.25"/>
-  <text x="795" y="278" text-anchor="middle" font-size="13" font-weight="700" fill="#166534">openZip · readEntry</text>
-  <text x="795" y="298" text-anchor="middle" font-size="11.5" fill="#16A34A">lazy reader, bounded memory</text>
+  <text x="795" y="278" text-anchor="middle" font-size="13" font-weight="700" fill="#166534">dossier.zip</text>
+  <text x="795" y="298" text-anchor="middle" font-size="11.5" fill="#16A34A">same inputs → same SHA-256</text>
 
   <line x1="795" y1="314" x2="795" y2="340" stroke="#475569" stroke-width="1.75" marker-end="url(#unf-ah)"/>
 
   <rect x="686" y="342" width="218" height="60" rx="10" fill="#F0FDF4" stroke="#86EFAC" stroke-width="1.25"/>
-  <text x="795" y="366" text-anchor="middle" font-size="13" font-weight="700" fill="#166534">dossier.zip</text>
-  <text x="795" y="386" text-anchor="middle" font-size="11.5" fill="#16A34A">same inputs → same SHA-256</text>
+  <text x="795" y="366" text-anchor="middle" font-size="13" font-weight="700" fill="#166534">openZip · readEntry</text>
+  <text x="795" y="386" text-anchor="middle" font-size="11.5" fill="#16A34A">lazy reader, bounded memory</text>
 
-  <!-- the key signs the PDF -->
-  <line x1="274" y1="284" x2="369" y2="284" stroke="#D97706" stroke-width="2.25" marker-end="url(#unf-ah-amber)"/>
-  <rect x="292" y="273" width="60" height="22" rx="4" fill="#F8FAFC"/>
-  <text x="322" y="288" text-anchor="middle" font-size="11" font-weight="600" fill="#D97706">sign</text>
+  <!-- the signed PDF is proven: its /ByteRange digest and CMS go to the verifier -->
+  <line x1="369" y1="372" x2="276" y2="372" stroke="#D97706" stroke-width="2.25" marker-end="url(#unf-ah-amber)"/>
+  <rect x="300" y="361" width="44" height="22" rx="4" fill="#F8FAFC"/>
+  <text x="322" y="376" text-anchor="middle" font-size="11" font-weight="600" fill="#D97706">prove</text>
 
-  <!-- the signed PDF is bundled -->
-  <line x1="589" y1="372" x2="684" y2="372" stroke="#475569" stroke-width="2.25" marker-end="url(#unf-ah)"/>
-  <rect x="607" y="361" width="60" height="22" rx="4" fill="#F8FAFC"/>
-  <text x="637" y="376" text-anchor="middle" font-size="11" font-weight="600" fill="#475569">bundle</text>
+  <!-- the signed PDF is packed into a new archive -->
+  <path d="M589,372 H637 V196 H684" fill="none" stroke="#475569" stroke-width="2.25" marker-end="url(#unf-ah)"/>
+  <rect x="607" y="273" width="60" height="22" rx="4" fill="#F8FAFC"/>
+  <text x="637" y="288" text-anchor="middle" font-size="11" font-weight="600" fill="#475569">pack</text>
 
-  <!-- verify later: from the archive back to the trust -->
-  <path d="M795,452 H165 V406" fill="none" stroke="#D97706" stroke-width="2" stroke-dasharray="8 6" marker-end="url(#unf-ah-amber)"/>
-  <rect x="325" y="441" width="310" height="22" rx="4" fill="#F8FAFC"/>
-  <text x="480" y="456" text-anchor="middle" font-size="11.5" font-weight="600" fill="#D97706">verify later: openZip → verifySignedData</text>
+  <!-- verify later: from the archive, through pdfnative's reader, back to the trust -->
+  <path d="M795,402 V452 H165 V406" fill="none" stroke="#D97706" stroke-width="2" stroke-dasharray="8 6" marker-end="url(#unf-ah-amber)"/>
+  <rect x="300" y="441" width="360" height="22" rx="4" fill="#F8FAFC"/>
+  <text x="480" y="456" text-anchor="middle" font-size="11.5" font-weight="600" fill="#D97706">verify later: openZip → listSignatures → verifySignedData</text>
 
   <!-- Footer -->
   <rect x="40" y="476" width="880" height="52" rx="12" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="1"/>
-  <text x="480" y="508" text-anchor="middle" font-size="12.5" fill="#475569">Every arrow is a shipped API. Three packages, each with an empty runtime dependency tree — nothing beneath them to audit.</text>
+  <text x="480" y="508" text-anchor="middle" font-size="12.5" fill="#475569">Every arrow is a shipped API. Three packages, three empty runtime dependency trees — the supply-chain review is three repositories.</text>
 </svg>

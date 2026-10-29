@@ -243,11 +243,11 @@ house typeface needs the CLI (`render --font-file`) or the library. Every
 script passes PDF/A-2**u** since pdfnative 1.9.0 (every shaper's glyph is named
 in `ToUnicode`, and `PDFA_GLYPH_WITHOUT_UNICODE` names any glyph that still is
 not). Text extraction from an **untagged** PDF returns
-the logical string since pdfnative 1.9.0 (every reordered run carries its text
-as `/ActualText`); right-to-left lines still come back in visual order unless a
-`pdfA` claim makes the output tagged. And `annotate_pdf` has no `link` annotation
-type yet (the engine's markup union lacks it); the `link` block of
-`generate_basic_pdf` covers new documents.
+the logical string since pdfnative 1.9.0 (every reordered run, right-to-left
+runs included, carries its text as `/ActualText`, tagged or not). And
+`annotate_pdf` in pdfnative-mcp 1.7.0 has no `link` annotation type yet — the
+engine added `{ type: 'link' }` to its markup union in 1.9.0; the `link` block
+of `generate_basic_pdf` covers new documents.
 
 ## See also
 
