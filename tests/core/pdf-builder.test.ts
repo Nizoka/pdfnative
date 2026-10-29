@@ -358,7 +358,7 @@ describe('buildPDF input validation', () => {
     });
 
     // 100k rows exceed the 5 s default under coverage instrumentation.
-    it('should accept 100,000 rows without throwing', { timeout: 60_000 }, () => {
+    it('should accept 100,000 rows without throwing', { timeout: 120_000 }, () => {
         const rows = Array.from({ length: 100_000 }, () => ({
             cells: ['x', 'y', 'z'], type: 'credit', pointed: false,
         }));

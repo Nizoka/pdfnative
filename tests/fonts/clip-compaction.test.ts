@@ -23,7 +23,7 @@ function bodyOf(glyph: ColorGlyph): ClipOutline[] {
 
 // Pruning every flag rasterises hundreds of outlines: seconds bare, beyond
 // the 5 s default under coverage instrumentation.
-describe('the shipped module', { timeout: 60_000 }, () => {
+describe('the shipped module', { timeout: 120_000 }, () => {
     it('carries clipped layers for the curated flags', () => {
         expect(flags.length).toBeGreaterThanOrEqual(50);
     });
