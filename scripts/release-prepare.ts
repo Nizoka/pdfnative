@@ -243,10 +243,27 @@ export function bumpJsonLdVersion(html: string, id: string, version: string): Re
     return { text: head + tail.text, matched: tail.matched };
 }
 
-/** The prose form `pdfnative 1.7.0` (SVG `<desc>`, `<img alt>`), word-bounded. */
+/**
+ * The prose form `pdfnative 1.7.0` (SVG `<desc>`, `<img alt>`), word-bounded.
+ * A line that carries a `verify-docs:allow` marker, or that directly follows
+ * one, is historical prose ("built on pdfnative 1.8.0") and is left alone —
+ * the 1.9.0 run rewrote the companion sections of the homepage before this guard.
+ */
 export function replaceProductVersion(text: string, from: string, to: string): Rewrite {
     const re = new RegExp(`(\\bpdfnative )${escapeRe(from)}(?!\\d|\\.\\d)`, 'g');
-    return replaceCounting(text, re, (_m, a) => `${a}${to}`);
+    const lines = text.split('\n');
+    let matched = 0;
+    let previousAllows = false;
+    for (let i = 0; i < lines.length; i++) {
+        const allows = lines[i].includes('verify-docs:allow');
+        if (!allows && !previousAllows) {
+            const r = replaceCounting(lines[i], re, (_m, a) => `${a}${to}`);
+            lines[i] = r.text;
+            matched += r.matched;
+        }
+        previousAllows = allows;
+    }
+    return { text: lines.join('\n'), matched };
 }
 
 // ── 8. Sitemap ──────────────────────────────────────────────────────

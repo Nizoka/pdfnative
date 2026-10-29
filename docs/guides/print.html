@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Print production — pdfnative</title>
-  <meta name="description" content="Print-ready PDFs in pdfnative — bleed, trim, art and crop boxes, crop and registration marks, /Trapped, CMYK colours and OutputIntents, PDF/X-4 with validatePdfX, and large-format /UserUnit.">
+  <meta name="description" content="Print-ready PDFs in pdfnative — bleed, trim, art and crop boxes, crop and registration marks, /Trapped, CMYK and spot colours (Separation and DeviceN), OutputIntents, PDF/X-4 with validatePdfX, PDF/A-2 and PDF/X-4 claimed in one file, and large-format /UserUnit.">
   <link rel="canonical" href="https://pdfnative.dev/guides/print.html">
   <link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/print.html">
   <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/print.html">
@@ -17,18 +17,19 @@
   <meta property="og:title" content="Print production — pdfnative">
   <meta property="og:description" content="Print-ready PDFs in pdfnative — bleed, trim, art and crop boxes, crop and registration marks, /Trapped, CMYK colours and OutputIntents, PDF/X-4 with validatePdfX, and large-format /UserUnit.">
   <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
+  <meta property="og:image:alt" content="pdfnative — pure native PDF generation, zero dependencies">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Print production — pdfnative">
-  <meta name="twitter:description" content="Bleed, trim & printer's marks — print-ready PDFs with zero dependencies.">
+  <meta name="twitter:description" content="Bleed, trim, printer's marks, spot colours and the PDF/A + PDF/X-4 dual claim — print-ready PDFs with zero dependencies.">
   <meta name="twitter:image" content="https://pdfnative.dev/assets/og-image.png">
   <link rel="icon" type="image/svg+xml" href="../favicon.svg">
   <link rel="stylesheet" href="../style.css">
   <link rel="stylesheet" href="guide.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
   <!-- guide:ld:start -->
-  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://pdfnative.dev/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://pdfnative.dev/guides/"},{"@type":"ListItem","position":3,"name":"Print production — bleed, trim & printer's marks","item":"https://pdfnative.dev/guides/print.html"}]},{"@type":"TechArticle","headline":"Print production — bleed, trim & printer's marks","description":"Print-ready PDFs in pdfnative — bleed, trim, art and crop boxes, crop and registration marks, /Trapped, CMYK colours and OutputIntents, PDF/X-4 with validatePdfX, and large-format /UserUnit.","inLanguage":"en","author":{"@type":"Organization","name":"Nizoka","url":"https://github.com/Nizoka"},"publisher":{"@type":"Organization","name":"pdfnative","url":"https://pdfnative.dev","logo":{"@type":"ImageObject","url":"https://pdfnative.dev/assets/logo.svg"}},"mainEntityOfPage":{"@type":"WebPage","@id":"https://pdfnative.dev/guides/print.html"},"isPartOf":{"@type":"WebSite","name":"pdfnative","url":"https://pdfnative.dev"}}]}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://pdfnative.dev/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://pdfnative.dev/guides/"},{"@type":"ListItem","position":3,"name":"Print production — bleed, trim & printer's marks","item":"https://pdfnative.dev/guides/print.html"}]},{"@type":"TechArticle","headline":"Print production — bleed, trim & printer's marks","description":"Print-ready PDFs in pdfnative — bleed, trim, art and crop boxes, crop and registration marks, /Trapped, CMYK and spot colours (Separation and DeviceN), OutputIntents, PDF/X-4 with validatePdfX, PDF/A-2 and PDF/X-4 claimed in one file, and large-format /UserUnit.","inLanguage":"en","author":{"@type":"Organization","name":"Nizoka","url":"https://github.com/Nizoka"},"publisher":{"@type":"Organization","name":"pdfnative","url":"https://pdfnative.dev","logo":{"@type":"ImageObject","url":"https://pdfnative.dev/assets/logo.svg"}},"mainEntityOfPage":{"@type":"WebPage","@id":"https://pdfnative.dev/guides/print.html"},"isPartOf":{"@type":"WebSite","name":"pdfnative","url":"https://pdfnative.dev"}}]}</script>
   <!-- guide:ld:end -->
 </head>
 <body>
