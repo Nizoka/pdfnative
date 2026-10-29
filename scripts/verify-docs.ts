@@ -1386,13 +1386,24 @@ if (existsSync(SITEMAP)) {
         process.platform === 'win32' ? a.toLowerCase() === b.toLowerCase() : a === b;
     if (toplevel !== undefined && samePath(toplevel, ROOT.replace(/\\/g, '/')) && shallow === 'false') {
         const tracked = new Set((git('ls-files', '--', 'docs') ?? '').split(/\r?\n/).filter(Boolean));
+        // Commits listed in .git-blame-ignore-revs (the 1.9.0 line-ending
+        // normalisation) touched every line of a page without changing one:
+        // they date a page no more than they attribute it in blame.
+        const ignoredRevs = (existsSync(join(ROOT, '.git-blame-ignore-revs')) ? read(join(ROOT, '.git-blame-ignore-revs')) : '').split(/\r?\n/)
+            .map((l) => l.replace(/#.*/, '').trim()).filter((l) => /^[0-9a-f]{7,40}$/.test(l));
         const lastCommit = new Map<string, string>();
-        const log = git('log', '--format=%x01%cs', '--name-only', '--', 'docs') ?? '';
+        const log = git('log', '--format=%x01%H %cs', '--name-only', '--', 'docs') ?? '';
         let date = '';
+        let ignored = false;
         for (const raw of log.split(/\r?\n/)) {
-            if (raw.startsWith('')) { date = raw.slice(1).trim(); continue; }
+            if (raw.startsWith('')) {
+                const [hash, cs] = raw.slice(1).trim().split(' ');
+                ignored = ignoredRevs.some((rev) => hash.startsWith(rev));
+                date = cs ?? '';
+                continue;
+            }
             const file = raw.trim();
-            if (file && !lastCommit.has(file)) lastCommit.set(file, date);
+            if (file && !ignored && !lastCommit.has(file)) lastCommit.set(file, date);
         }
         const sourcesOf = (loc: string): string[] => {
             let path = loc.replace(/^https?:\/\/[^/]+/, '').replace(/^\//, '');
@@ -2306,7 +2317,7 @@ const OFFLINE_RULES = [
     'internal-links', // every href/src and Markdown link resolves on disk
     'seo-head', // lang, canonical, hreflang self-references, og:locale, description
     'sitemap-parity', // sitemap lists every indexable page; lastmod inside the audit window
-    'sitemap-lastmod-vs-git', // (full clones only) lastmod ≥ last commit of the page's sources and ≤ verifiedOn
+    'sitemap-lastmod-vs-git', // (full clones only) lastmod ≥ last commit of the page's sources (commits in .git-blame-ignore-revs excepted) and ≤ verifiedOn
     'cdn-sri', // third-party scripts carry integrity+crossorigin; pdfnative CDN imports are pinned
     'playgrounds-manifest', // docs/data/playgrounds.json lists every live playground with real control ids; count equals derived.playgrounds
     'release-coverage', // every export added since the previous release is exercised by a playground, imported by a recipe, or exempted with a reason
