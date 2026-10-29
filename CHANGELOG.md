@@ -28,7 +28,7 @@ registry serves. Zero runtime dependencies; 39 exports
 added, none removed; every new behaviour opt-in; existing inputs render
 byte-identically except where the previous output was wrong — the
 twenty-eight entries of the release note's compatibility ledger (two of them
-the behaviour changes), each with the samples it re-anchors. 4316+ tests across 177 files; veraPDF-validated.
+the behaviour changes), each with the samples it re-anchors. 4320+ tests across 178 files; veraPDF-validated.
 
 ### Added
 
@@ -77,6 +77,7 @@ the behaviour changes), each with the samples it re-anchors. 4316+ tests across 
 - **`verify:bundle`** — the `parseColor` probe budget moves from 4 to 6 KB (4.2 KB measured: spot colours and ink mixes in the `PdfColor` union); the other probes are unchanged.
 - **`setup-verapdf`** hands its install directory back as an output instead of writing `GITHUB_ENV`; `ci.yml`, `codeql.yml` and the publish workflow lost their path filters; every audit-mode `harden-runner` carries a dated reason.
 - **SECURITY.md** states the supported runtimes (Node 22 and 24 LTS required, 26 advisory; Deno, Bun and browsers smoke-tested) and the compatibility promise; the FAQ and the pipeline say SLSA Build L2 (the "L3-equivalent" claim is gone).
+- **Repository:** line endings normalised to LF — the 276 CRLF blobs `.gitattributes` had declared `eol=lf` over since 1.8.0 are rewritten in one dedicated commit (listed in `.git-blame-ignore-revs`; nothing but carriage returns changed), and the `verify:docs` rule `eol-lf` now fails on a CRLF blob instead of warning. The generated Unicode data modules and `use-engine.ts` carry a `/*! @license */` block so the Unicode, Microsoft and HarfBuzz notices reach `dist/` (a plain comment never did); `verify:bundle` probes measure code without legal comments.
 
 ### Fixed
 
@@ -118,6 +119,7 @@ the behaviour changes), each with the samples it re-anchors. 4316+ tests across 
 - The guide *The native family* ([native-family.md](docs/guides/native-family.md)) — pdfnative, zipnative and pkinative composed through public APIs, with a diagram — and the pkinative sibling links beside zipnative's (README, llms.txt, the homepage, the guide index). The *Images* playground; nine 1.9.0 presets across the print, charts, typography, authoring, extreme-scripts, all-scripts, toolkit, images and inspect playgrounds, and the `release-coverage` rule of `verify:docs` (every export added since the previous release is shown by a playground, imported by a recipe or exempted with a reason); seven recipes; `docs/data/errors.json` with every new code and message; `docs/assets/api.json` regenerated.
 - Samples: `shaping/shaping-malayalam` (legacy and atomic chillus, split vowel signs, a justified paragraph — 311 in all); `financial/sample-multi` registers the ten fonts its rows use and is tagged (25 PDF/A-claiming samples); `print/print-spot-colours` paints each plate in its ink. The Images playground's three format paragraphs no longer set an arrow Helvetica cannot encode (a silent `?` until `TEXT_GLYPH_NOT_COVERED` named it). The debugging guide documents `TEXT_GLYPH_NOT_COVERED`; the charts guide `ChartSeries.colors`; the text-extraction guide the untagged `/ActualText` rule.
 - SECURITY.md §Supported runtimes and §Compatibility promise; CONTRIBUTING §Compatibility with the previous release and the required-checks list; `.github/instructions/testing` (fuzz targets, compat replay) and `font-engineering` (lean embeds, copyright header).
+- Final pass (2026-10-29): the native-family diagram tells the guide's truth (pkinative proves the signature, pdfnative signs with `signPdfBytesWithTimestamp`, zipnative packs then reads back; no Web Crypto key "signs" through `signPdfBytes()`); the architecture map names the 1.9.0 modules and draws the parser ⇄ core pair instead of an inflate edge that never existed; the OG and GitHub social images are re-rendered at 32 scripts; the learn path and the playgrounds index carry the 1.9.0 counts and links; two homepage live examples (right-to-left paragraphs, spot colours); the companion use-case guides and diagrams say which limits are the companions' and which the engine lifted; THIRD-PARTY-NOTICES.md reproduces the Unicode v3, MIT (Microsoft USE override tables) and Old MIT (HarfBuzz — the transcribed USE cluster grammar) texts and names every generated module and CDN load; `docs/data/surfaces.json` and the choose guide gain spot-colour, JPEG 2000 and right-to-left rows; `verify:docs` gains `jsonld-item-count`, `social-image-fresh`, a page-backed `release-coverage` and a wider `count-tokens` (41 rules), `release-prepare` spares historical prose and `sitemap-lastmod-vs-git` honours `.git-blame-ignore-revs`.
 
 [#80]: https://github.com/Nizoka/pdfnative/issues/80
 [#81]: https://github.com/Nizoka/pdfnative/issues/81
