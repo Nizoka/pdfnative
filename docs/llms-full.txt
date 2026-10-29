@@ -4527,9 +4527,12 @@ The CLI needs a COLRv1/CPAL colour font — the canonical one is
 **NotoColorEmoji-Regular.ttf** (OFL-1.1). Two ways to provide it:
 
 - **`--download`** fetches it from the official Google Fonts repository and
-  verifies its SHA-256 against the build pdfnative was tested with. A mismatch is
-  a transparent **warning** (Google periodically ships newer Unicode revisions),
-  not a hard failure — the download is still used.
+  verifies its SHA-256 against the build pdfnative was tested with. Since
+  pdfnative 1.9.0 a mismatch is **fatal** — the tool prints both digests and
+  writes nothing — unless you pass **`--allow-unverified`** (Google
+  periodically ships newer Unicode revisions; the flag records that you accept
+  the unverified bytes), or hand the tool a file you checked yourself with
+  `--ttf`.
 - **`--ttf <path>`** uses a font already on disk (fully offline, no network).
 
 > Only the pinned official Google Fonts URL is ever contacted; the CLI never
@@ -4601,7 +4604,8 @@ pdfnative-build-emoji-font — colour-emoji font data module generator
 
 Source font (one of):
   --ttf <path>            Path to a COLRv1/CPAL colour font.
-  --download              Fetch the official Noto Color Emoji (OFL-1.1) and verify checksum.
+  --download              Fetch the official Noto Color Emoji (OFL-1.1) and verify its SHA-256.
+  --allow-unverified      Keep a download whose SHA-256 differs from the tested build.
 
 Glyph selection (combine freely; default: --preset curated):
   --all                   Every colour glyph in the font.

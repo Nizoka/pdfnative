@@ -40,8 +40,12 @@ function serveFile(url) {
     const path = normalize(decodeURIComponent(url.split('?')[0])).replace(/^[\\/]+/, '');
     const allowed = [`dist${sep}`, `fonts${sep}`, `.github${sep}runtime-smoke${sep}`];
     if (!allowed.some((prefix) => path.startsWith(prefix))) return undefined;
+    // A prefix check alone lets "dist/../x" through: the resolved path must stay under ROOT.
+    const rootWithSep = ROOT.endsWith(sep) ? ROOT : `${ROOT}${sep}`;
+    const resolvedPath = resolve(ROOT, path);
+    if (!(resolvedPath === ROOT || resolvedPath.startsWith(rootWithSep))) return undefined;
     try {
-        return readFileSync(join(ROOT, path));
+        return readFileSync(resolvedPath);
     } catch {
         return undefined;
     }

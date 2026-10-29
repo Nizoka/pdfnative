@@ -225,7 +225,8 @@ export function subsetTTF(ttfInput: Uint8Array | string, usedGids: Set<number>, 
         const numTables = view.getUint16(4);
         const dirEnd = 12 + numTables * 16;
         if (dirEnd > len) return ttfInput instanceof Uint8Array ? uint8ToBinaryString(u8) : ttfInput; // Table directory exceeds buffer
-        const tables: Record<string, { offset: number; length: number }> = {};
+        // A tag is four bytes of the font — a null-prototype map keeps "__proto__" and friends inert.
+        const tables: Record<string, { offset: number; length: number }> = Object.create(null) as Record<string, { offset: number; length: number }>;
         for (let i = 0; i < numTables; i++) {
             const off = 12 + i * 16;
             const tag = String.fromCharCode(u8[off], u8[off + 1], u8[off + 2], u8[off + 3]);

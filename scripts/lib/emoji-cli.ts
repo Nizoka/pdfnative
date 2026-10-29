@@ -12,6 +12,8 @@ import { CURATED_FLAGS, CURATED_ZWJ, CURATED_SEQUENCES, flagSequence, CURATED_SK
 export interface CliOptions {
     ttf?: string;
     download: boolean;
+    /** Accept a `--download` whose SHA-256 differs from the tested build (v1.9.0; a mismatch is fatal by default). */
+    allowUnverified: boolean;
     all: boolean;
     preset?: string;
     codepoints?: string;
@@ -32,6 +34,7 @@ export const DEFAULT_TYPES = 'pdfnative';
 export function parseArgs(argv: readonly string[]): CliOptions {
     const opts: CliOptions = {
         download: false,
+        allowUnverified: false,
         all: false,
         out: DEFAULT_OUT,
         types: DEFAULT_TYPES,
@@ -48,6 +51,8 @@ export function parseArgs(argv: readonly string[]): CliOptions {
             case '-h': case '--help': opts.help = true; break;
             case '--ttf': opts.ttf = next(); break;
             case '--download': opts.download = true; break;
+            case '--allow-unverified': opts.allowUnverified = true; break;
+            case '--allow-unverified': opts.allowUnverified = true; break;
             case '--all': opts.all = true; break;
             case '--preset': opts.preset = next(); break;
             case '--codepoints': opts.codepoints = next(); break;

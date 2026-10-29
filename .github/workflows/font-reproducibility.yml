@@ -99,7 +99,7 @@ jobs:
             echo 'A bundled font module no longer matches what the generator produces'
             echo 'from the source font it declares, or a source font no longer matches'
             echo 'fonts/SOURCES.json. Regenerate it, then confirm nothing rendered'
-            echo 'differently with `npm run verify:samples`.'
+            echo 'differently with npm run verify:samples.'
             echo
             echo '```json'
             npx tsx scripts/verify-fonts.ts --json || true

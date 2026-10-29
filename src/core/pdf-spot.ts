@@ -43,7 +43,7 @@ export interface SpotColourResources {
 /** Format a 0–1 component the way content operands are written. */
 const fmt = (n: number): string => {
     const r = Math.round(n * 1000) / 1000;
-    return Number.isInteger(r) ? String(r) : String(r).replace(/^0\./, '0.');
+    return String(r);
 };
 
 /** A declared ink's alternate as 0–1 components and its device space. */

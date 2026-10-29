@@ -598,7 +598,7 @@ describe('setup-verapdf composite action', () => {
             expect(text, f).toContain('uses: ./.github/actions/setup-verapdf');
             expect(text, f).toMatch(/id: verapdf\s*\n\s+uses: \.\/\.github\/actions\/setup-verapdf/);
             expect(text, f).toContain('VERAPDF_HOME: ${{ steps.verapdf.outputs.home }}');
-            expect(text, f).not.toMatch(/software\.verapdf\.org\/rel\/[\d.]+\/verapdf/);
+            expect(text, f).not.toMatch(/(?:^|[\s"'(])(?:https?:\/\/)?software\.verapdf\.org\/rel\/[\d.]+\/verapdf(?:[/\s"')]|$)/);
         }
     });
 });

@@ -19,9 +19,9 @@
     {
       "url": "https://pdfnative.dev/llms-full.txt",
       "description": "Full corpus: index + README + every guide, one request.",
-      "bytes": 783782,
-      "approxTokens": 195946,
-      "sha256": "3c6fa5589207ce83c4b35571820ac89effe9f002837e98af5cb678c53a35e6be"
+      "bytes": 784044,
+      "approxTokens": 196011,
+      "sha256": "af8fc02c08eb2876306ab3c3333111c2c5889252d878f7968002c87ffb26a433"
     },
     {
       "url": "https://pdfnative.dev/llms-recipes.txt",
@@ -234,9 +234,9 @@
         "licensing",
         "see-also"
       ],
-      "bytes": 7727,
-      "approxTokens": 1932,
-      "sha256": "5d7cb8ab06fc92012280c6717c7503c301b3541186c008a4bd6daba3db72c6ef"
+      "bytes": 7989,
+      "approxTokens": 1997,
+      "sha256": "7fec773da13f87a49b24dfa20c6ca0f6073007e992d17e825377cb979de668e2"
     },
     {
       "title": "Colour emoji (COLRv1)",

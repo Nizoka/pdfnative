@@ -28,6 +28,8 @@ describe('emoji CLI — parseArgs', () => {
 
     it('parses boolean flags and presets', () => {
         const o = parseArgs(['--download', '--all', '--preset', 'curated']);
+        expect(o.allowUnverified).toBe(false);
+        expect(parseArgs(['--download', '--allow-unverified']).allowUnverified).toBe(true);
         expect(o.download).toBe(true);
         expect(o.all).toBe(true);
         expect(o.preset).toBe('curated');

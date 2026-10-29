@@ -168,7 +168,7 @@ function parseSubset(binary: string): { numGlyphs: number; locaFormat: number; g
     const view = new DataView(buf);
 
     const numTables = view.getUint16(4);
-    const tables: Record<string, { offset: number; length: number }> = {};
+    const tables: Record<string, { offset: number; length: number }> = Object.create(null) as Record<string, { offset: number; length: number }>;
     for (let i = 0; i < numTables; i++) {
         const off = 12 + i * 16;
         const tag = String.fromCharCode(u8[off], u8[off + 1], u8[off + 2], u8[off + 3]);
@@ -202,7 +202,7 @@ function parseTableDirectory(u8: Uint8Array): { entries: TableEntry[]; tables: R
     const view = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
     const numTables = view.getUint16(4);
     const entries: TableEntry[] = [];
-    const tables: Record<string, Uint8Array> = {};
+    const tables: Record<string, Uint8Array> = Object.create(null) as Record<string, Uint8Array>;
     for (let i = 0; i < numTables; i++) {
         const off = 12 + i * 16;
         const tag = String.fromCharCode(u8[off], u8[off + 1], u8[off + 2], u8[off + 3]);
