@@ -2299,7 +2299,7 @@ const OFFLINE_RULES = [
     'claude-rules-sync', // .claude/rules/ equals a fresh render of .github/instructions/ (npm run agents:rules)
     'claude-rules-budget', // CLAUDE.md + its @imports + unscoped rules ≤ 16 KiB; a scoped rule > 32 KiB warns
     'pr-template-parity', // every PR-template checklist item is verbatim in CONTRIBUTING.md; the template mentions npm run gate
-    'eol-lf', // (git checkouts only) tracked text blobs are LF — warn until the renormalisation commit flips EOL_LF_MODE
+    'eol-lf', // (git checkouts only) tracked text blobs are LF — a failure since the 1.9.0 renormalisation commit (EOL_LF_MODE)
     'skills-shape', // every .claude/skills/*/SKILL.md names its directory, has a description, and its referenced templates exist
     'api-exists', // no phantom API identifier anywhere in docs or src
     'jsonld-version', // JSON-LD softwareVersion equals the manifest
@@ -2328,8 +2328,8 @@ const OFFLINE_RULES = [
 
 if (errors.length === 0) {
     // Warnings never fail the run and are summarised per rule rather than
-    // listed — the `eol-lf` rule alone names every CRLF-stored file until the
-    // renormalisation commit, and a gate log is not the place for that list.
+    // listed — a per-file warning rule (as `eol-lf` was before the 1.9.0
+    // renormalisation) would otherwise fill a gate log with its list.
     const perRule = new Map<string, number>();
     for (const w of warnings) perRule.set(w.rule, (perRule.get(w.rule) ?? 0) + 1);
     const suffix = warnings.length === 0
