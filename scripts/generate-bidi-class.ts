@@ -110,6 +110,7 @@ const moduleSource = `/**
  * one per maximal range of code points sharing a class, L ranges omitted:
  * a code point no triple covers is L. \`class\` indexes BIDI_CLASS_NAMES.
  */
+/*! @license Unicode-3.0 — © 1991-2026 Unicode, Inc. — https://www.unicode.org/license.txt — full text in THIRD-PARTY-NOTICES.md of the pdfnative package. */
 
 /** Unicode version of the Bidi_Class table. */
 export const BIDI_CLASS_UNICODE_VERSION = '${unicodeVersion}';

@@ -786,6 +786,20 @@ describe('fonts/SOURCES.json', () => {
         expect(readText('scripts', 'data', 'README.md')).toContain(USE_UNICODE_VERSION);
         expect(notices).toMatch(/HarfBuzz.*cdbe72ca8bf2c077e91ae10c4e428e1183d7d5ec/is);
         expect(readText('scripts', 'data', 'README.md')).toContain('cdbe72ca8bf2c077e91ae10c4e428e1183d7d5ec');
+        // Every generated module is named, and the licence texts are reproduced
+        // (Unicode-3.0 condition (b), MIT and Old MIT "in all copies").
+        for (const mod of ['use-data.ts', 'bidi-mirroring-data.ts', 'bidi-brackets-data.ts', 'bidi-class-data.ts']) {
+            expect(notices).toContain(`src/shaping/${mod}`);
+            expect(readText('src', 'shaping', mod)).toMatch(/@license Unicode-3\.0/);
+        }
+        expect(notices).toContain('Permission is hereby granted, free of charge, to any person obtaining a\ncopy of data files');
+        expect(notices).toContain('Copyright (c) Microsoft Corporation.');
+        expect(notices).toContain('Permission is hereby granted, without written agreement and without\nlicense or royalty fees');
+        expect(notices).toContain('hb-ot-shaper-use-machine.rl');
+        expect(readText('src', 'shaping', 'use-engine.ts')).toContain('hb-ot-shaper-use-machine.rl');
+        expect(readText('src', 'shaping', 'use-engine.ts')).toMatch(/@license Old MIT/);
+        // The site's CDN loads are listed by name.
+        for (const cdn of ['Prism.js', 'marked', 'DOMPurify', '@babel/standalone', 'pdfnative-react']) expect(notices).toContain(cdn);
         expect(notices).toContain('Helvetica.afm');
         expect(notices).toContain('Helvetica-Bold.afm');
         expect(readText('src', 'fonts', 'base14-metrics.ts')).toContain('Helvetica.afm');

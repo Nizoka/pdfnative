@@ -70,6 +70,7 @@ const moduleSource = `/**
  * both directions stored verbatim from the file (the UCD lists each
  * direction explicitly, including asymmetric "BEST FIT" mappings).
  */
+/*! @license Unicode-3.0 — © 1991-2026 Unicode, Inc. — https://www.unicode.org/license.txt — full text in THIRD-PARTY-NOTICES.md of the pdfnative package. */
 
 /** Number of Bidi_Mirroring_Glyph mappings (${unicodeVersion}). */
 export const BIDI_MIRRORING_COUNT = ${mappings.length};

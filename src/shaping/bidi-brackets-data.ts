@@ -12,6 +12,7 @@
  * canonical equivalences BD16 names (U+2329/U+232A ≡ U+3008/U+3009) are
  * applied by the resolver, not stored here.
  */
+/*! @license Unicode-3.0 — © 1991-2026 Unicode, Inc. — https://www.unicode.org/license.txt — full text in THIRD-PARTY-NOTICES.md of the pdfnative package. */
 
 /** Number of bracket pairs (17.0.0). */
 export const BIDI_BRACKET_PAIR_COUNT = 64;

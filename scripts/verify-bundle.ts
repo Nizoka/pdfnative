@@ -117,6 +117,12 @@ async function main(): Promise<void> {
             await esbuild.build({
                 entryPoints: [entry], bundle: true, format: 'esm', minify: true,
                 outfile: out, logLevel: 'silent', platform: 'neutral', target: 'es2020',
+                // The probe measures retained code. esbuild keeps every `/*!` /
+                // `@license` comment of an input file whatever it tree-shakes, and
+                // dist/index.js carries the Unicode and HarfBuzz notices of the
+                // shaping data (THIRD-PARTY-NOTICES.md) — those are not "code the
+                // export does not use".
+                legalComments: 'none',
             });
             const code = readFileSync(out, 'utf8');
             const retained = probe.mustNotContain.filter(([, marker]) => code.includes(marker)).map(([label]) => label);

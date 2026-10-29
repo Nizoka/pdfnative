@@ -76,33 +76,166 @@ the license's terms.
 ## Unicode Character Database — Unicode License v3
 
 Dev-time generators consume checked-in Unicode® Character Database source
-files (`scripts/data/`, Unicode 17.0.0 — `BidiMirroring.txt`,
-`IndicSyllabicCategory.txt`, `IndicPositionalCategory.txt` and their
-companions) to build the TypeScript data modules `src/shaping/use-data.ts`
-and `src/shaping/bidi-mirroring-data.ts`. The source files are **not**
+files (`scripts/data/`, Unicode 17.0.0 — `IndicSyllabicCategory.txt`,
+`IndicPositionalCategory.txt`, `ArabicShaping.txt`, `DerivedCoreProperties.txt`,
+`DerivedGeneralCategory.txt`, `Scripts.txt`, `BidiMirroring.txt`,
+`BidiBrackets.txt` and `DerivedBidiClass.txt`) to build four TypeScript data
+modules: `src/shaping/use-data.ts`, `src/shaping/bidi-mirroring-data.ts`,
+`src/shaping/bidi-brackets-data.ts` and `src/shaping/bidi-class-data.ts`. A
+sample of `BidiCharacterTest.txt` (`BidiCharacterTest-subset.txt`) drives the
+UAX #9 conformance test and builds nothing. The source files are **not**
 shipped in the npm package; the generated modules are, compiled into `dist/`,
-and keep the copyright line.
+where each keeps its `@license` header naming Unicode, Inc. and this notice
+(a bundler drops ordinary comments; the `@license` form survives). The full
+license text below is the documentation copy the license's condition (b)
+asks for.
 
-- License: [Unicode License v3](https://www.unicode.org/license.txt) —
-  permissive, OSI-approved; each file retains its original copyright header.
-- Copyright: © Unicode, Inc.
+- License: [Unicode License v3](https://www.unicode.org/license.txt)
+  (SPDX `Unicode-3.0`) — permissive, OSI-approved; each source file retains
+  its original copyright header.
+- Copyright: © 1991-2026 Unicode, Inc.
 - Provenance and regeneration: [scripts/data/README.md](scripts/data/README.md);
-  `USE_UNICODE_VERSION` in `src/shaping/use-data.ts` names the release.
+  `USE_UNICODE_VERSION` in `src/shaping/use-data.ts` and
+  `BIDI_CLASS_UNICODE_VERSION` in `src/shaping/bidi-class-data.ts` name the release.
 
-## Universal Shaping Engine override tables — Old MIT License
+<details>
+<summary>Unicode License v3 — full text</summary>
+
+```text
+UNICODE LICENSE V3
+
+COPYRIGHT AND PERMISSION NOTICE
+
+Copyright © 1991-2026 Unicode, Inc.
+
+NOTICE TO USER: Carefully read the following legal agreement. BY
+DOWNLOADING, INSTALLING, COPYING OR OTHERWISE USING DATA FILES, AND/OR
+SOFTWARE, YOU UNEQUIVOCALLY ACCEPT, AND AGREE TO BE BOUND BY, ALL OF THE
+TERMS AND CONDITIONS OF THIS AGREEMENT. IF YOU DO NOT AGREE, DO NOT
+DOWNLOAD, INSTALL, COPY, DISTRIBUTE OR USE THE DATA FILES OR SOFTWARE.
+
+Permission is hereby granted, free of charge, to any person obtaining a
+copy of data files and any associated documentation (the "Data Files") or
+software and any associated documentation (the "Software") to deal in the
+Data Files or Software without restriction, including without limitation
+the rights to use, copy, modify, merge, publish, distribute, and/or sell
+copies of the Data Files or Software, and to permit persons to whom the
+Data Files or Software are furnished to do so, provided that either (a)
+this copyright and permission notice appear with all copies of the Data
+Files or Software, or (b) this copyright and permission notice appear in
+associated Documentation.
+
+THE DATA FILES AND SOFTWARE ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY
+KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT OF
+THIRD PARTY RIGHTS.
+
+IN NO EVENT SHALL THE COPYRIGHT HOLDER OR HOLDERS INCLUDED IN THIS NOTICE
+BE LIABLE FOR ANY CLAIM, OR ANY SPECIAL INDIRECT OR CONSEQUENTIAL DAMAGES,
+OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS,
+WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
+ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THE DATA
+FILES OR SOFTWARE.
+
+Except as contained in this notice, the name of a copyright holder shall
+not be used in advertising or otherwise to promote the sale, use or other
+dealings in these Data Files or Software without prior written
+authorization of the copyright holder.
+```
+
+</details>
+
+## Microsoft Universal Shaping Engine override tables — MIT License
 
 The Universal Shaping Engine needs `Indic_Syllabic_Category` and
 `Indic_Positional_Category` values the Unicode Character Database does not
-carry. Microsoft publishes those overrides, and two of their files
-(`IndicSyllabicCategory-Additional.txt`, `IndicPositionalCategory-Additional.txt`)
-are checked in under `scripts/data/`, taken from HarfBuzz's `src/ms-use/`
-directory at commit `cdbe72ca8bf2c077e91ae10c4e428e1183d7d5ec`. They are
-consumed only by the dev-time generator and are **not** shipped in the npm
-package.
+carry. Microsoft publishes those overrides (author Andrew Glass), and two of
+their files (`IndicSyllabicCategory-Additional.txt`,
+`IndicPositionalCategory-Additional.txt`) are checked in under
+`scripts/data/`, taken from HarfBuzz's `src/ms-use/` directory at commit
+`cdbe72ca8bf2c077e91ae10c4e428e1183d7d5ec`. The files themselves are consumed
+only by the dev-time generator and are **not** shipped; the category values
+they assign are compiled into `src/shaping/use-data.ts` and do ship, which is
+why that module's `@license` header names Microsoft and this notice carries
+the license text.
+
+- License: [MIT](https://github.com/harfbuzz/harfbuzz/blob/main/src/ms-use/COPYING)
+  (SPDX `MIT`), as distributed in HarfBuzz's `src/ms-use/COPYING`.
+- Copyright: © Microsoft Corporation.
+
+<details>
+<summary>MIT License (Microsoft USE override tables) — full text</summary>
+
+```text
+MIT License
+
+Copyright (c) Microsoft Corporation.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE
+```
+
+</details>
+
+## HarfBuzz — Old MIT License (the USE cluster grammar)
+
+`src/shaping/use-engine.ts` builds its cluster grammar — the productions
+`standard_cluster`, `virama_terminated_cluster`, `sakot_terminated_cluster`,
+`numeral_cluster`, `symbol_cluster`, `hieroglyph_cluster`, `broken_cluster`
+and their tails — as a transcription of the Ragel state machine in HarfBuzz's
+`src/hb-ot-shaper-use-machine.rl` (commit
+`cdbe72ca8bf2c077e91ae10c4e428e1183d7d5ec`), which is HarfBuzz's reading of
+the Universal Shaping Engine specification. No HarfBuzz code is copied; the
+grammar is re-expressed as pure TypeScript matchers, and the module ships in
+`dist/` with a `@license` header carrying the notice below, as the license
+asks of every copy.
 
 - License: [Old MIT](https://github.com/harfbuzz/harfbuzz/blob/main/COPYING),
-  as distributed by HarfBuzz; each file retains its original header.
-- Author: Andrew Glass (Microsoft), via the HarfBuzz project.
+  HarfBuzz's license.
+- Copyright: © 2015 Google, Inc. (the machine file); HarfBuzz © its
+  contributors as listed in its `COPYING`.
+
+<details>
+<summary>Old MIT License (HarfBuzz) — full text</summary>
+
+```text
+Copyright © 2015  Google, Inc.
+
+Permission is hereby granted, without written agreement and without
+license or royalty fees, to use, copy, modify, and distribute this
+software and its documentation for any purpose, provided that the
+above copyright notice and the following two paragraphs appear in
+all copies of this software.
+
+IN NO EVENT SHALL THE COPYRIGHT HOLDER BE LIABLE TO ANY PARTY FOR
+DIRECT, INDIRECT, SPECIAL, INCIDENTAL, OR CONSEQUENTIAL DAMAGES
+ARISING OUT OF THE USE OF THIS SOFTWARE AND ITS DOCUMENTATION, EVEN
+IF THE COPYRIGHT HOLDER HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH
+DAMAGE.
+
+THE COPYRIGHT HOLDER SPECIFICALLY DISCLAIMS ANY WARRANTIES, INCLUDING,
+BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+FITNESS FOR A PARTICULAR PURPOSE.  THE SOFTWARE PROVIDED HEREUNDER IS
+ON AN "AS IS" BASIS, AND THE COPYRIGHT HOLDER HAS NO OBLIGATION TO
+PROVIDE MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
+```
+
+</details>
 
 ## Adobe Core 14 font metrics
 
@@ -120,8 +253,9 @@ redistributed; only the numbers are, compiled into `dist/`.
 ## Not included
 
 The pdfnative.dev site pages load Prism.js, marked and DOMPurify from jsDelivr
-with integrity hashes; the playgrounds load pdfnative and React from esm.sh
-and jsDelivr. None of these is part of the repository or the npm package.
+with integrity hashes; the playgrounds load pdfnative, React, `@babel/standalone`
+(the React playground compiles JSX in the browser) and `pdfnative-react` from
+esm.sh and jsDelivr. None of these is part of the repository or the npm package.
 `docs/assets/synthetic-cmyk.icc` is generated by
 `scripts/lib/synthetic-cmyk-profile.ts`. No hyphenation patterns, emoji data
 files, ICC profiles or third-party images are bundled.

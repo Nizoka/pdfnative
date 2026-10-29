@@ -59,10 +59,11 @@ mirrors the treatment of the Noto fonts (SIL OFL 1.1, see `fonts/LICENSE` and
 and downloaded rather than committed. The engine's UCD release is
 `USE_UNICODE_VERSION` in `src/shaping/use-data.ts` (17.0.0).
 
-The two `-Additional` files are distributed by HarfBuzz under the
-[Old MIT license](https://github.com/harfbuzz/harfbuzz/blob/main/COPYING),
-likewise permissive and redistributable with attribution. Both keep their
-original headers naming Andrew Glass as author.
+The two `-Additional` files are © Microsoft Corporation under the
+[MIT License](https://github.com/harfbuzz/harfbuzz/blob/main/src/ms-use/COPYING)
+(HarfBuzz's `src/ms-use/COPYING`), likewise permissive and redistributable with
+attribution. Both keep their original headers naming Andrew Glass as author;
+the license text is reproduced in `THIRD-PARTY-NOTICES.md`.
 
 ## Upgrading
 
