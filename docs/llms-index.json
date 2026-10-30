@@ -7,21 +7,21 @@
       "description": "Documentation index (llmstxt.org convention).",
       "bytes": 28145,
       "approxTokens": 7036,
-      "sha256": "19975bb03d653c3bb279f040eba7f639664093c0ced7d38da1f6177958a58643"
+      "sha256": "8bb92222a5877d414a31627c08ecf906a22782a9da46694614490174269fbf9b"
     },
     {
       "url": "https://pdfnative.dev/agent-brief.md",
       "description": "Compact paste-into-context briefing for coding agents: core API, verified pitfalls, surface decision tree, self-verification loop.",
       "bytes": 19951,
       "approxTokens": 4988,
-      "sha256": "43279287d7899004d02cb597ec64d4fdfee7456a13773d66d59202e391f2142f"
+      "sha256": "7570b122d4911ed33cc8d7fd02d7cbc1087da28642cc14d9abaf203f1c8ed4a6"
     },
     {
       "url": "https://pdfnative.dev/llms-full.txt",
       "description": "Full corpus: index + README + every guide, one request.",
       "bytes": 784044,
       "approxTokens": 196011,
-      "sha256": "af8fc02c08eb2876306ab3c3333111c2c5889252d878f7968002c87ffb26a433"
+      "sha256": "5682245477bc842a9c7303ef8afb7d1a2fce3f8fe96776f204f7409aa50987dd"
     },
     {
       "url": "https://pdfnative.dev/llms-recipes.txt",
@@ -42,21 +42,21 @@
       "description": "The capability × surface matrix (library / CLI / MCP / React) behind the choose guide, with an honest note on every unsupported cell.",
       "bytes": 23134,
       "approxTokens": 5784,
-      "sha256": "a4a1e4a93da76361d5340635d5266a188ea96f368b7f7932e9532176b2835e54"
+      "sha256": "9ef3137363df43d679a0272515693506bd38f872ccd5ee29ae294f9cf4b04bc8"
     },
     {
       "url": "https://pdfnative.dev/data/errors.json",
       "description": "The engine error registry: every diagnostic code of the PdfDiagnosticCode union and every build-time error message (PDF/X, print, OutputIntent), two-way checked against src/ by the error-parity rule.",
       "bytes": 23011,
       "approxTokens": 5753,
-      "sha256": "331ebdfe57c12b965e3edca494069ca1bb10211c2409a0b9eb811af0d9fc76ce"
+      "sha256": "e1ec021bd120d9b4116c2958543a1ec191ec313f4f01013031d957cc6317c33b"
     },
     {
       "url": "https://pdfnative.dev/data/playgrounds.json",
       "description": "Inventory of the live playgrounds — URL, purpose, DOM controls, options exercised, preconditions — so an agent can drive or reproduce one without scraping the page.",
       "bytes": 39255,
       "approxTokens": 9814,
-      "sha256": "5e22e840efd8194150df185334cae516c3067c65779c690d215f8a1e6439f2ca"
+      "sha256": "1abec3d675bea2e6a372be58c4b192f9c835138447c83c79d1089c82984a455e"
     },
     {
       "url": "https://github.com/Nizoka/pdfnative/blob/main/README.md",
