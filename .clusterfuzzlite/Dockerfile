@@ -14,7 +14,7 @@
 #     https://gcr.io/v2/oss-fuzz-base/base-builder-javascript/manifests/ubuntu-24-04 \
 #     | grep -i docker-content-digest
 # The ubuntu-24-04 variant, matching `base_os_version` in project.yaml.
-FROM gcr.io/oss-fuzz-base/base-builder-javascript:ubuntu-24-04@sha256:b577e8a8d3623194cebaddd95ab01d7121d38bb699515a9de9ee685e88d6786b
+FROM gcr.io/oss-fuzz-base/base-builder-javascript:ubuntu-24-04@sha256:c864b45fd1d0daf0a6716939fcb847dac41859e326f059b4f0ffc6e727fe6556
 
 # ClusterFuzzLite validates SANITIZER against address, memory, undefined and
 # coverage, and OSS-Fuzz's `compile` refuses every sanitizer but none and
