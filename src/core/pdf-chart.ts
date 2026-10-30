@@ -82,12 +82,26 @@ function resolveLegend(block: ChartBlock): boolean {
     return block.series.length > 1 || block.chartType === 'pie' || block.chartType === 'donut';
 }
 
+/**
+ * The legend text of a series: its `label`, or `Series N` (1-based) when
+ * the author gave none (#82 — an unlabelled series used to crash the legend
+ * layout with a TypeError inside the width measurement).
+ */
+function seriesLabel(s: ChartSeries, index: number): string {
+    return s.label ?? `Series ${index + 1}`;
+}
+
 // ── Validation ───────────────────────────────────────────────────────
 
 function validate(block: ChartBlock): void {
     if (!Array.isArray(block.series) || block.series.length === 0) {
         throw new Error('chart: at least one data series is required');
     }
+    block.series.forEach((s, i) => {
+        if (s.label !== undefined && typeof s.label !== 'string') {
+            throw new Error(`chart: series ${i + 1} has a non-string label`);
+        }
+    });
     const isPie = block.chartType === 'pie' || block.chartType === 'donut';
     if (isPie && block.series.length !== 1) {
         throw new Error('chart: pie/donut charts take exactly one series');
@@ -123,38 +137,45 @@ function validate(block: ChartBlock): void {
         if ((yMin !== undefined && yMin <= 0) || (yMax !== undefined && yMax <= 0)) {
             throw new Error('chart: log-scale axis bounds must be > 0');
         }
-        for (const s of block.series) {
-            if ((s.yAxis ?? 'left') !== axis) continue;
+        block.series.forEach((s, si) => {
+            if ((s.yAxis ?? 'left') !== axis) return;
             for (const v of s.values) {
-                if (v <= 0) throw new Error(`chart: series "${s.label}" has non-positive values on a log axis`);
+                if (v <= 0) throw new Error(`chart: series "${seriesLabel(s, si)}" has non-positive values on a log axis`);
             }
-        }
+        });
     };
     checkLogPositive('left', block.axis?.scale, block.axis?.yMin, block.axis?.yMax);
     checkLogPositive('right', block.axis2?.scale, block.axis2?.yMin, block.axis2?.yMax);
     const catCount = block.categories?.length;
     let total = 0;
-    for (const s of block.series) {
+    for (const [si, s] of block.series.entries()) {
+        const name = seriesLabel(s, si);
         if (!Array.isArray(s.values) || s.values.length === 0) {
-            throw new Error(`chart: series "${s.label}" has no values`);
+            throw new Error(`chart: series "${name}" has no values`);
         }
         for (const v of s.values) {
             if (typeof v !== 'number' || !Number.isFinite(v)) {
-                throw new Error(`chart: series "${s.label}" contains a non-finite value`);
+                throw new Error(`chart: series "${name}" contains a non-finite value`);
             }
             if (isPie && v < 0) throw new Error('chart: pie/donut values must be non-negative');
         }
         if (catCount !== undefined && !positional && s.values.length !== catCount) {
-            throw new Error(`chart: series "${s.label}" length (${s.values.length}) does not match categories (${catCount})`);
+            throw new Error(`chart: series "${name}" length (${s.values.length}) does not match categories (${catCount})`);
+        }
+        if (s.colors !== undefined) {
+            if (!Array.isArray(s.colors) || s.colors.length !== s.values.length) {
+                throw new Error(`chart: series "${name}" colors length (${Array.isArray(s.colors) ? s.colors.length : 0}) does not match values (${s.values.length})`);
+            }
+            for (const c of s.colors) parseColor(c);
         }
         if (positional) {
             if (!s.xValues) {
-                throw new Error(`chart: series "${s.label}" needs xValues for xAxis.type '${xType}'`);
+                throw new Error(`chart: series "${name}" needs xValues for xAxis.type '${xType}'`);
             }
             if (s.xValues.length !== s.values.length) {
-                throw new Error(`chart: series "${s.label}" xValues length (${s.xValues.length}) does not match values (${s.values.length})`);
+                throw new Error(`chart: series "${name}" xValues length (${s.xValues.length}) does not match values (${s.values.length})`);
             }
-            for (const x of s.xValues) parseXValue(x, xType, s.label);
+            for (const x of s.xValues) parseXValue(x, xType, name);
         }
         total += s.values.length;
     }
@@ -164,9 +185,9 @@ function validate(block: ChartBlock): void {
 }
 
 /** Parse an x position: numbers pass through, strings must be ISO-8601 dates. */
-function parseXValue(x: number | string, xType: string, seriesLabel: string): number {
+function parseXValue(x: number | string, xType: string, label: string): number {
     if (typeof x === 'number') {
-        if (!Number.isFinite(x)) throw new Error(`chart: series "${seriesLabel}" contains a non-finite x value`);
+        if (!Number.isFinite(x)) throw new Error(`chart: series "${label}" contains a non-finite x value`);
         return x;
     }
     // Determinism: ECMA-262 parses an offset-less date-TIME form in the host
@@ -176,10 +197,10 @@ function parseXValue(x: number | string, xType: string, seriesLabel: string): nu
     const normalized = /T\d{2}/.test(x) && !/(?:Z|[+-]\d{2}:?\d{2})$/.test(x) ? `${x}Z` : x;
     const t = Date.parse(normalized);
     if (Number.isNaN(t)) {
-        throw new Error(`chart: series "${seriesLabel}" x value "${x}" is not a parseable ISO-8601 date`);
+        throw new Error(`chart: series "${label}" x value "${x}" is not a parseable ISO-8601 date`);
     }
     if (xType !== 'time') {
-        throw new Error(`chart: series "${seriesLabel}" uses date strings — set xAxis.type to 'time'`);
+        throw new Error(`chart: series "${label}" uses date strings — set xAxis.type to 'time'`);
     }
     return t;
 }
@@ -420,6 +441,12 @@ function seriesColor(block: ChartBlock, index: number, s?: ChartSeries): string 
     return parseColor(explicit ?? (PALETTE[index % PALETTE.length] as PdfColor));
 }
 
+/** The fill of one bar: the series' colour for that value when given, else the series colour (1.9.0). */
+function barColor(block: ChartBlock, index: number, s: ChartSeries, valueIndex: number): string {
+    const own = s.colors?.[valueIndex];
+    return own !== undefined ? parseColor(own) : seriesColor(block, index, s);
+}
+
 // ── Rendering entry point ────────────────────────────────────────────
 
 /**
@@ -594,13 +621,13 @@ function renderCartesian(
     let xScale: XScale | null = null;
     if (positional) {
         let xMin = Infinity, xMax = -Infinity;
-        for (const s of block.series) {
+        block.series.forEach((s, si) => {
             for (const x of s.xValues ?? []) {
-                const t = parseXValue(x, xType, s.label);
+                const t = parseXValue(x, xType, seriesLabel(s, si));
                 xMin = Math.min(xMin, t);
                 xMax = Math.max(xMax, t);
             }
-        }
+        });
         if (block.xAxis?.min !== undefined) xMin = parseXValue(block.xAxis.min, xType, 'xAxis.min');
         if (block.xAxis?.max !== undefined) xMax = parseXValue(block.xAxis.max, xType, 'xAxis.max');
         const target = block.xAxis?.ticks ?? 5;
@@ -668,7 +695,7 @@ function renderCartesian(
             const sc = scaleFor(s);
             ops.push(`${fillOp(seriesColor(block, si, s))}`);
             s.values.forEach((v, ci) => {
-                const xv = parseXValue((s.xValues ?? [])[ci], xType, s.label);
+                const xv = parseXValue((s.xValues ?? [])[ci], xType, seriesLabel(s, si));
                 const x = plotX + (xScale as XScale).frac01(xv) * plotW;
                 const yv = plotBottom + sc.frac01(v) * plotH;
                 ops.push(circleFill(x, yv, 2.2));
@@ -676,7 +703,7 @@ function renderCartesian(
             if (dataLabels) {
                 ops.push(fillOp('0 0 0'));
                 s.values.forEach((v, ci) => {
-                    const xv = parseXValue((s.xValues ?? [])[ci], xType, s.label);
+                    const xv = parseXValue((s.xValues ?? [])[ci], xType, seriesLabel(s, si));
                     const x = plotX + (xScale as XScale).frac01(xv) * plotW;
                     const yv = plotBottom + sc.frac01(v) * plotH;
                     ops.push(pointLabel(v, x, yv));
@@ -686,8 +713,8 @@ function renderCartesian(
     } else if (kind === 'line' || kind === 'area') {
         // Category positions centred in equal slots (or xValues positions).
         const slot = plotW / catCount;
-        const xAt = (s: ChartSeries, ci: number): number => {
-            if (xScale && s.xValues) return plotX + xScale.frac01(parseXValue(s.xValues[ci], xType, s.label)) * plotW;
+        const xAt = (s: ChartSeries, si: number, ci: number): number => {
+            if (xScale && s.xValues) return plotX + xScale.frac01(parseXValue(s.xValues[ci], xType, seriesLabel(s, si))) * plotW;
             return plotX + slot * (ci + 0.5);
         };
         block.series.forEach((s, si) => {
@@ -701,19 +728,19 @@ function renderCartesian(
                 const zeroY = plotBottom + sc.frac01(0) * plotH;
                 let poly = '';
                 s.values.forEach((v, ci) => {
-                    const x = xAt(s, ci);
+                    const x = xAt(s, si, ci);
                     const yv = plotBottom + sFrac(v) * plotH;
                     poly += `${ci === 0 ? '' : ' '}${fmtNum(x)} ${fmtNum(yv)} ${ci === 0 ? 'm' : 'l'}`;
                 });
-                const xLast = xAt(s, s.values.length - 1);
-                const xFirst = xAt(s, 0);
+                const xLast = xAt(s, si, s.values.length - 1);
+                const xFirst = xAt(s, si, 0);
                 ops.push(`${fillOp(mixTowardWhite(color, 0.35))}`);
                 ops.push(`${poly} ${fmtNum(xLast)} ${fmtNum(zeroY)} l ${fmtNum(xFirst)} ${fmtNum(zeroY)} l h f`);
             }
             ops.push(`${strokeOp(color)}`, '1.5 w');
             let path = '';
             s.values.forEach((v, ci) => {
-                const x = xAt(s, ci);
+                const x = xAt(s, si, ci);
                 const yv = plotBottom + sFrac(v) * plotH;
                 path += `${ci === 0 ? '' : ' '}${fmtNum(x)} ${fmtNum(yv)} ${ci === 0 ? 'm' : 'l'}`;
             });
@@ -721,7 +748,7 @@ function renderCartesian(
             if (block.markers) {
                 ops.push(`${fillOp(color)}`);
                 s.values.forEach((v, ci) => {
-                    const x = xAt(s, ci);
+                    const x = xAt(s, si, ci);
                     const yv = plotBottom + sFrac(v) * plotH;
                     ops.push(circleFill(x, yv, 2.2));
                 });
@@ -729,7 +756,7 @@ function renderCartesian(
             if (dataLabels) {
                 ops.push(fillOp('0 0 0'));
                 s.values.forEach((v, ci) => {
-                    const x = xAt(s, ci);
+                    const x = xAt(s, si, ci);
                     const yv = plotBottom + sFrac(v) * plotH;
                     ops.push(pointLabel(v, x, yv));
                 });
@@ -756,7 +783,7 @@ function renderCartesian(
                 if (v >= 0) pos = to; else neg = to;
                 const x0 = plotX + frac01(from) * plotW;
                 const x1 = plotX + frac01(to) * plotW;
-                ops.push(`${fillOp(seriesColor(block, si, s))}`);
+                ops.push(`${fillOp(barColor(block, si, s, ci))}`);
                 ops.push(`${fmtNum(Math.min(x0, x1))} ${fmtNum(yb - barH)} ${fmtNum(Math.abs(x1 - x0))} ${fmtNum(barH)} re f`);
                 if (dataLabels && Math.abs(x1 - x0) >= helveticaWidth(fmtDataLabel(v, dataLabels), LABEL_SIZE) + 4) {
                     ops.push(fillOp('1 1 1'), txtCentered(fmtDataLabel(v, dataLabels), (x0 + x1) / 2, yb - barH / 2 - LABEL_SIZE / 2 + 1, LABEL_SIZE, enc));
@@ -776,7 +803,7 @@ function renderCartesian(
                 const x0 = plotX + zeroFrac * plotW;
                 const x1 = plotX + frac01(v) * plotW;
                 const yb = slotTop - slot * 0.15 - barH * si;
-                ops.push(`${fillOp(seriesColor(block, si, s))}`);
+                ops.push(`${fillOp(barColor(block, si, s, ci))}`);
                 ops.push(`${fmtNum(Math.min(x0, x1))} ${fmtNum(yb - barH)} ${fmtNum(Math.abs(x1 - x0))} ${fmtNum(barH)} re f`);
                 if (dataLabels) {
                     const lx = Math.max(x0, x1) + 3 + helveticaWidth(fmtDataLabel(v, dataLabels), LABEL_SIZE) / 2;
@@ -800,7 +827,7 @@ function renderCartesian(
                 if (v >= 0) pos = to; else neg = to;
                 const y0 = plotBottom + frac01(from) * plotH;
                 const y1 = plotBottom + frac01(to) * plotH;
-                ops.push(`${fillOp(seriesColor(block, si, s))}`);
+                ops.push(`${fillOp(barColor(block, si, s, ci))}`);
                 ops.push(`${fmtNum(xb)} ${fmtNum(Math.min(y0, y1))} ${fmtNum(barW)} ${fmtNum(Math.abs(y1 - y0))} re f`);
                 if (dataLabels && Math.abs(y1 - y0) >= LABEL_SIZE + 2) {
                     ops.push(fillOp('1 1 1'), txtCentered(fmtDataLabel(v, dataLabels), xb + barW / 2, (y0 + y1) / 2 - LABEL_SIZE / 2 + 1, LABEL_SIZE, enc));
@@ -825,7 +852,7 @@ function renderCartesian(
                 const yv = plotBottom + sc.frac01(v) * plotH;
                 const base = sc === scale ? zeroY : plotBottom + sc.frac01(0) * plotH;
                 const xb = slotX + slot * 0.15 + barW * si;
-                ops.push(`${fillOp(seriesColor(block, si, s))}`);
+                ops.push(`${fillOp(barColor(block, si, s, ci))}`);
                 ops.push(`${fmtNum(xb)} ${fmtNum(Math.min(base, yv))} ${fmtNum(barW)} ${fmtNum(Math.abs(yv - base))} re f`);
                 if (dataLabels) {
                     ops.push(fillOp('0 0 0'), pointLabel(v, xb + barW / 2, yv));
@@ -953,7 +980,7 @@ function renderLegend(
     const isPie = block.chartType === 'pie' || block.chartType === 'donut';
     const entries = isPie
         ? (block.categories ?? block.series[0].values.map((_, i) => String(i + 1)))
-        : block.series.map(s => s.label);
+        : block.series.map((s, i) => seriesLabel(s, i));
 
     // Lay out left-to-right, wrapping is not needed for the common case.
     const sw = 9; // swatch size
@@ -964,7 +991,7 @@ function renderLegend(
         ops.push(`${fillOp(color)}`, `${fmtNum(x)} ${fmtNum(y)} ${sw} ${sw} re f`);
         x += sw + 3;
         ops.push(fillOp('0 0 0'), txt(label, x, y, '/F1', LEGEND_SIZE, enc));
-        x += helveticaWidth(label, LEGEND_SIZE) + gap * 2;
+        x += (enc.isUnicode ? enc.tw(label, LEGEND_SIZE) : helveticaWidth(label, LEGEND_SIZE)) + gap * 2;
         if (x > bx + width - 40 && i < entries.length - 1) { x = bx; y -= LEGEND_SIZE + 4; }
     });
     return ops;

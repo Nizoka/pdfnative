@@ -5,10 +5,44 @@
 import { describe, it, expect } from 'vitest';
 import {
     decodeASCIIHex, decodeASCII85, decodeLZW, decodeRunLength,
-    applyDecodeFilter, KNOWN_DECODE_FILTERS,
+    applyDecodeFilter, KNOWN_DECODE_FILTERS, checkOutputSize, MAX_DECODE_OUTPUT,
 } from '../../src/parser/pdf-decode-filters.js';
+import { PdfStreamLimitError } from '../../src/parser/pdf-inflate.js';
 
 const enc = (s: string): Uint8Array => new TextEncoder().encode(s);
+
+// 1.9.0 hardening: the output cap of the non-Flate decoders (a RunLength
+// run expands 128×, an LZW code up to 4 096×). The guard is exercised
+// directly — a 256 MiB decoded stream would not fit a unit test — and the
+// decoders are shown to call it on every write below.
+describe('decode output cap (PdfStreamLimitError, PDF_STREAM_LIMIT)', () => {
+    it('is a fixed 256 MiB, separate from the adjustable FlateDecode cap', () => {
+        expect(MAX_DECODE_OUTPUT).toBe(256 * 1024 * 1024);
+    });
+
+    it('lets output up to the cap through and refuses the byte after it', () => {
+        expect(() => checkOutputSize(MAX_DECODE_OUTPUT, 'RunLengthDecode')).not.toThrow();
+        expect(() => checkOutputSize(MAX_DECODE_OUTPUT + 1, 'RunLengthDecode')).toThrow(PdfStreamLimitError);
+    });
+
+    it('names the filter, the cap, the code and the remedy that applies to a fixed cap', () => {
+        let err: unknown;
+        try { checkOutputSize(MAX_DECODE_OUTPUT + 1, 'LZWDecode'); } catch (e) { err = e; }
+        expect(err).toBeInstanceOf(PdfStreamLimitError);
+        const e = err as PdfStreamLimitError;
+        expect(e.code).toBe('PDF_STREAM_LIMIT');
+        expect(e.filter).toBe('LZWDecode');
+        expect(e.limit).toBe(MAX_DECODE_OUTPUT);
+        expect(e.message).toContain('LZWDecode output exceeds the 268435456-byte limit');
+        // The FlateDecode knob does not move this cap, so the message must not point at it.
+        expect(e.message).not.toContain('setMaxInflateOutputSize');
+        expect(e.message).toContain("onStreamError: 'skip'");
+    });
+
+    it('points FlateDecode at setMaxInflateOutputSize()', () => {
+        expect(new PdfStreamLimitError('FlateDecode', 100).message).toContain('raise setMaxInflateOutputSize()');
+    });
+});
 
 describe('decodeASCIIHex (ISO 32000-1 §7.4.2)', () => {
     it('decodes simple hex pairs', () => {

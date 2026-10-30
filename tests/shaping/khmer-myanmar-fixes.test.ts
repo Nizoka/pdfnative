@@ -142,6 +142,60 @@ describe('Myanmar subjoined stacks use the font\'s composed form', () => {
     });
 });
 
+describe('Khmer two-part vowels draw their own right piece (1.9.0, C24)', () => {
+    const KM = notoKhmer as unknown as FontData;
+    const shape = (s: string): ShapedGlyph[] => shapeKhmerText(s, KM);
+    const gids = (s: string): number[] => shape(s).map(g => g.gid);
+
+    it('ើ is េ before the base and the anchored above mark ី after it (the font\'s abvf single of its presentation form)', () => {
+        const shaped = shape('ដើ');
+        expect(shaped.map(g => g.gid)).toEqual([131, 60, 109]);     // uni17C1, da, uni17B8 (via gsub 121 → 109)
+        expect(shaped[2].isZeroAdvance).toBe(true);
+        expect(shaped[2].dy).not.toBe(0);
+        expect(shaped[2].cps).toEqual([0x17BE]);
+        expect(gids('តើ')).toEqual([131, 65, 109]);
+        expect(gids('ដើម្បី')).toEqual([131, 60, 109, 76, 210, 109]);
+    });
+
+    it('ៅ ឿ ៀ take the hooks of their own right pieces, ោ keeps ា', () => {
+        expect(gids('ទៅ')).toEqual([131, 67, 136]);                 // uni17C5.right, not ា
+        expect(gids('ក្តៅ')).toEqual([131, 49, 204, 136]);
+        expect(gids('ឿ')).toEqual([131, 123]);                     // uni17BF.right1
+        expect(gids('រៀន')).toEqual([131, 78, 127, 69]);            // uni17C0.right1
+        expect(gids('ដោយ')).toEqual([131, 60, 104, 77]);            // ោ → ា, unchanged
+        expect(gids('ខ្មោច')).toEqual([131, 50, 216, 104, 54]);
+        for (const word of ['ទៅ', 'រៀន', 'សៀវភៅ', 'ដើម្បី']) {
+            const reported = shape(word).flatMap(g => [...(g.cps ?? [])]);
+            expect(reported.every(cp => cp !== 0)).toBe(true);
+            expect(shape(word).every(g => g.gid !== 0)).toBe(true);
+        }
+    });
+});
+
+describe('Myanmar pre-base order and the medial ra inside a medial stack (1.9.0, C23)', () => {
+    const MY = notoMyanmar as unknown as FontData;
+    const gids = (s: string): number[] => shapeMyanmarText(s, MY).map(g => g.gid);
+
+    it('ကြေ and မြေ — the e-vowel is drawn first, then the medial ra, then the base (HarfBuzz VPre before PRE_C)', () => {
+        expect(gids('ကြေ')).toEqual([372, 47, 4]);   // _e, medial_ra, ka
+        expect(gids('မြေ')).toEqual([372, 47, 29]);
+    });
+
+    it('ကြွေ and မြွေ — medial ra followed by medial wa stays one cluster, the wa on the base', () => {
+        expect(buildMyanmarClusters('ကြွေ').map(c => c.codepoints.length)).toEqual([4]);
+        expect(gids('ကြွေ')).toEqual([372, 47, 4, 48]);
+        expect(gids('ကြွေး')).toEqual([372, 47, 4, 48, 379]);
+        const shaped = shapeMyanmarText('မြွေ', MY);
+        expect(shaped.map(g => g.gid)).toEqual([372, 47, 29, 48]);
+        expect(shaped[3].isZeroAdvance).toBe(true);
+    });
+
+    it('ကျေး and မြန်မာ — a cluster without the ra, and the sample word, are unchanged', () => {
+        expect(gids('ကျေး')).toEqual([372, 4, 382, 379]);
+        expect(gids('မြန်မာ')).toEqual([47, 29, 24, 381, 29, 368]);
+    });
+});
+
 describe('what the fixes deliberately leave alone', () => {
     it('keeps a plain consonant untouched', () => {
         expect(shapeKhmerText('ក', khmer)).toHaveLength(1);

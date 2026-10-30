@@ -17,10 +17,10 @@ word; keep the two in step when you change either.
 - [ ] New code has tests
 - [ ] No `any` types introduced
 - [ ] No new runtime dependencies added
-- [ ] If samples or PDF/A behaviour changed: `npm run test:generate && npm run verify:samples && npm run validate:pdfa` passes locally (veraPDF installed — see [PDF/A validation](../CONTRIBUTING.md#pdfa-validation-verapdf); new PDF/A-claiming samples bump `declared.pdfaSamples`; an intended output change is rebaselined with `npx tsx scripts/verify-samples.ts --update` and explained in the commit)
+- [ ] If samples or PDF/A behaviour changed: `npm run test:generate && npm run verify:samples && npm run validate:pdfa` passes locally (veraPDF installed — see [PDF/A and PDF/X validation](../CONTRIBUTING.md#pdfa-and-pdfx-validation-verapdf-validatepdfx); new PDF/A-claiming samples bump `declared.pdfaSamples`; an intended output change is rebaselined with `npx tsx scripts/verify-samples.ts --update` and explained in the commit)
 - [ ] If docs/, playgrounds, README or llms files changed: `npm run verify:docs` passes
 - [ ] CHANGELOG.md updated if user-facing changes
-- [ ] For releases: follow [Release](#release) — `release-notes/vX.Y.Z.md` written, and `npm run gate -- --publish` passes locally, which runs every individual gate: `typecheck:all`, `lint`, `verify:unicode`, `test:coverage`, `build`, `verify:bundle`, `test:generate`, `verify:samples`, `verify:fonts`, `validate:pdfa` (all PDF/A-claiming samples compliant), `verify:docs`, `verify:diagrams` (documentation diagrams render without overflow or overlap)
+- [ ] For releases: follow [Release](#release) — `release-notes/vX.Y.Z.md` written, and `npm run gate -- --publish` passes locally, which runs every individual gate: `typecheck:all`, `lint`, `verify:unicode`, `test:coverage`, `build`, `verify:bundle`, `test:generate`, `verify:samples`, `verify:fonts`, `validate:pdfa` (all PDF/A-claiming samples compliant), `compat:previous` (the previous release's suite against the current sources), `verify:docs`, `verify:diagrams` (documentation diagrams render without overflow or overlap)
 
 <!--
 Runtime changes also need a ROADMAP.md entry and a line in the next

@@ -341,11 +341,11 @@ export function checkPrTemplateParity(template: string | null, contributing: str
 // ── eol-lf ───────────────────────────────────────────────────────────
 
 /**
- * `'warn'` while the tree still carries CRLF blobs; flip to `'fail'` in the
- * renormalisation commit (`git add --renormalize .`, run by the maintainer
- * after `.gitattributes` gained `eol=lf`).
+ * `'fail'` since the 1.9.0 renormalisation commit rewrote the last CRLF blobs
+ * (`.gitattributes` had declared `eol=lf` at 1.8.0 while the tree still
+ * carried 276 of them, and the rule only warned until then).
  */
-export const EOL_LF_MODE: 'warn' | 'fail' = 'warn';
+export const EOL_LF_MODE: 'warn' | 'fail' = 'fail';
 
 export interface EolEntry {
     readonly index: string;
@@ -374,7 +374,7 @@ export function checkEol(lsFilesEol: string, mode: 'warn' | 'fail' = EOL_LF_MODE
     if (offenders.length === 0) return [];
     const make = mode === 'fail' ? error : warning;
     return offenders.map((e) =>
-        make(e.path, `blob is ${e.index.slice(2).toUpperCase()} — .gitattributes says eol=lf; the maintainer's renormalisation commit (\`git add --renormalize .\`) rewrites it`),
+        make(e.path, `blob is ${e.index.slice(2).toUpperCase()} — .gitattributes says eol=lf; convert the file to LF and stage it again (the tree has been LF since the 1.9.0 renormalisation commit)`),
     );
 }
 

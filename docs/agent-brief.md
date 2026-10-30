@@ -6,32 +6,33 @@
 > Longer forms: [llms.txt](https://pdfnative.dev/llms.txt) (index),
 > [llms-full.txt](https://pdfnative.dev/llms-full.txt) (full corpus),
 > [llms-index.json](https://pdfnative.dev/llms-index.json) (per-page sizes and anchors).
-> _Verified on 2026-09-27 against the source tree by `npm run verify:docs`._
+> _Verified on 2026-10-30 against the source tree by `npm run verify:docs`._
 
 ## What it is
 
 pdfnative is a zero-runtime-dependency TypeScript library that generates and
 parses ISO 32000-1 (PDF 1.7) and ISO 19005 (PDF/A) conformant PDFs on-device —
 Node ≥ 22, browsers, Deno, Bun, Web Workers. No SaaS round-trip, no telemetry,
-no sockets. Current version: 1.8.0. It writes (documents, tables, charts,
+no sockets. Current version: 1.9.0. It writes (documents, tables, charts,
 barcodes, SVG, forms, watermarks, signatures with long-term validation,
 typeset paragraphs, CMYK and PDF/X-4 print production) and reads (parse,
 decrypt, extract text, read/fill/flatten forms, merge/split/extract pages,
-verify PDF/UA and PDF/X-4 structure) — 27 Unicode scripts, with
+verify PDF/UA and PDF/X-4 structure) — 32 Unicode scripts, with
 OpenType GSUB/GPOS shaping for the complex ones (Thai, Arabic, Devanagari,
 Bengali, Tamil, Telugu, Sinhala, Tibetan, Khmer, Myanmar, Lao, Tai Tham,
-New Tai Lue, Tai Le, Cham; the five Indic scripts on one OpenType engine
-since 1.8.0), Latin combining marks (Yoruba, Igbo, NFD text) on the
+New Tai Lue, Tai Le, Cham, Gujarati, Gurmukhi, Kannada, Malayalam, Odia;
+ten Indic scripts on one OpenType engine — five since 1.8.0, five more in
+1.9.0), Latin combining marks (Yoruba, Igbo, NFD text) on the
 bundled `latin` module, and full UAX #9 BiDi.
 
 ## Choose your surface
 
 - **Writing application code** → the library: `npm install pdfnative`, `import { … } from 'pdfnative'`.
 - **Driving a shell, CI, or Makefile** → `pdfnative-cli` (21 commands, JSON-in/JSON-out agent contract with stable `E_*` error codes). New in v1.5.0: typography flags (`--split-paragraphs`, `--keep-headings-with-next`, `--kerning`, `--font-features`), PDF/X-4 output (`--pdfx pdfx4`, `--output-intent-icc`, `--trapped`) checked by `inspect --check pdfx`, your own fonts via `--font-file`, and byte-reproducible builds (global `--creation-date` or `SOURCE_DATE_EPOCH`; global flags may precede the command). Since v1.4.0: the complete PAdES ladder — `sign --timestamp <tsa-url>` (B-T), `ltv collect`/`embed` (B-LT, air-gap-friendly: evidence travels as replayable JSON), `doc-timestamp` (B-LTA) — plus signature-safe `metadata` edits and `compare` (text + structure diff with CI exit codes).
-- **You are a conversational assistant with tool access** → `pdfnative-mcp` (28 tools, seven prompts, MCP 2026-07-28 spec; config: `npx -y pdfnative-mcp`). New in v1.7.0: a `typography` object on every document tool and `inspect_layout`, CMYK colours, `pdfx: 'pdfx4'` with `validate_pdf` `standard: 'pdf-x-4'`, 27 scripts in `add_international_text`, and `PDFNATIVE_MCP_CREATION_DATE` / `SOURCE_DATE_EPOCH` for reproducible bytes.
+- **You are a conversational assistant with tool access** → `pdfnative-mcp` (28 tools, seven prompts, MCP 2026-07-28 spec; config: `npx -y pdfnative-mcp`). New in v1.7.0: a `typography` object on every document tool and `inspect_layout`, CMYK colours, `pdfx: 'pdfx4'` with `validate_pdf` `standard: 'pdf-x-4'`, 27 scripts in `add_international_text`, and `PDFNATIVE_MCP_CREATION_DATE` / `SOURCE_DATE_EPOCH` for reproducible bytes. <!-- verify-docs:allow stale-token (historical: this companion release was built on pdfnative 1.8.0 (27 scripts)) -->
 - **The host app is React 19** → `pdfnative-react` (declarative JSX compiled on-device to pdfnative blocks). New in v1.3.0: `<Document typography pdfx outputIntent creationDate>`, `<Paragraph align="justify" keepWithNext splittable>`, CMYK `Color` values, 37 lint rules (`lintDocument` / `lintSpec`). Since v1.2.0: charts v2 (9 kinds, secondary axis), print production via `<Document print>`, and HTTP caching (`etag`/`cacheControl`) on `renderToResponse`.
 - Still undecided? The capability × surface matrix decides for you, cell by cell: [choose your surface](https://pdfnative.dev/guides/choose.md).
-- Worked architectures combining the surfaces (store-the-spec, air-gapped B-LTA, CI compare gate, edge caching, zipnative as the DEFLATE codec): [use cases](https://pdfnative.dev/guides/use-cases.md); per-surface cases: [CLI](https://pdfnative.dev/guides/use-cases-cli.md), [MCP](https://pdfnative.dev/guides/use-cases-mcp.md), [React](https://pdfnative.dev/guides/use-cases-react.md).
+- Worked architectures combining the surfaces (store-the-spec, air-gapped B-LTA, CI compare gate, edge caching, zipnative as the DEFLATE codec): [use cases](https://pdfnative.dev/guides/use-cases.md); per-surface cases: [CLI](https://pdfnative.dev/guides/use-cases-cli.md), [MCP](https://pdfnative.dev/guides/use-cases-mcp.md), [React](https://pdfnative.dev/guides/use-cases-react.md). The three native engines together — sign with pdfnative, prove it with pkinative, archive it with zipnative: [the native family](https://pdfnative.dev/guides/native-family.md).
 
 All four produce the same PDFs from the same engine. Details: [onboarding](https://pdfnative.dev/guides/onboarding.md).
 
@@ -79,6 +80,32 @@ Functions an agent reaches for most, all exported from `'pdfnative'`:
 | `setDefaultCreationDate(date)` | Pin every date the writer emits (and so the trailer `/ID`) for reproducible bytes; or pass `layout.creationDate` per build (v1.8.0). |
 | `setHyphenationProvider(fn)` | Install a `(word, lang?) => number[]` break-point provider for `typography` (v1.8.0). |
 
+## What 1.9.0 adds (opt-in unless noted; bytes move only where 1.8.0 was wrong — see the compatibility ledger in the release note)
+
+```ts
+const bytes = buildDocumentPDFBytes({
+  title: 'تقرير',
+  fontEntries: [{ fontData: notoArabic, fontRef: '/F3', lang: 'arabic' }],
+  blocks: [
+    { type: 'paragraph', text: 'بلغت الإيرادات 1,250 مليون ريال.' },               // UAX #9 in full: punctuation, numbers, brackets
+    { type: 'paragraph', text: 'pdfnative CLI', direction: 'rtl' },                 // per-paragraph override
+    { type: 'heading', text: 'Brand', level: 1, color: { spot: 'PANTONE 300 C' } }, // a declared ink
+    { type: 'image', data: jp2Bytes, width: 200, alt: 'Scan' },                    // JPEG 2000: /JPXDecode pass-through, PDF 1.5
+  ],
+}, {
+  direction: 'auto',                                                        // detected base direction → right alignment, visual-order justification
+  print: { spotColours: [{ name: 'PANTONE 300 C', alternate: [100, 44, 0, 0] }] },
+  tagged: 'pdfa2b', pdfx: 'pdfx4', outputIntent,                            // one file, two claims (not with pdfa1b / pdfa3b)
+});
+```
+
+- Five more scripts on the Indic engine: `gu`, `pa`, `kn`, `ml`, `or` (`noto-gujarati`, `noto-gurmukhi`, `noto-kannada`, `noto-malayalam`, `noto-oriya`) — 32 scripts, 36 modules.
+- Every shaper's glyphs are named in `/ToUnicode`; `tagged: 'pdfa2u'` raises `PDFA_GLYPH_WITHOUT_UNICODE` for a glyph that still has none; in every mode `TEXT_GLYPH_NOT_COVERED` names the characters no registered font covers (a `.notdef` box, or `?` on the base-14 path).
+- `extractText()` throws `PdfStreamLimitError` (`PDF_STREAM_LIMIT`) on an over-cap stream — `onStreamError: 'skip'` for the old lenience.
+- `decodePdfTextString()`, `composeLtvData()` (offline LTV material, `match: 'chain'`, `ocspResponseMatchesCertificate()`), `{ type: 'link' }` markup annotations, `ecdsaSignHash` / `ecdsaVerifyHash` and the DER signature codecs, `ChartSeries.label` optional and `ChartSeries.colors` (one colour per bar), `buildSyntheticGrayProfile()` / `buildSyntheticCmykProfile()` on `pdfnative/tools`.
+- Embedded subsets are lean and compact: a cmap over the used glyphs, no gasp, the kept glyphs renumbered into the document's CID space (glyph i is CID i, `EncodingContext.getCidMaps()`, `TextRun.cids`), the subset name carrying the §9.6.4 tag (`ABCDEF+…`, bare under PDF/A-1). A line is one text object (`TJ` arrays, relative `Td`), and untagged reordered or right-to-left runs carry `/Span /ActualText` (`layout.actualText: false` opts out). Every CIDFont document is far smaller and its bytes differ from 1.8.0 — rebaseline a downstream byte manifest once; a tool that resolved a code through the font module's tables must read the embedded program or `getCidMaps()` instead.
+- Pitfall: `direction` unset keeps the 1.8.0 left alignment; `direction: 'auto'` is what a browser does. Pitfall: a spot colour needs its `spotColours` declaration or the build refuses.
+
 ## What 1.8.0 adds (all opt-in, byte-identical when absent)
 
 ```ts
@@ -104,7 +131,7 @@ const bytes = buildDocumentPDFBytes({
     // pressProfileBytes: your printer's .icc (an output / prtr profile). For tests, the synthetic
     // profile at https://pdfnative.dev/assets/synthetic-cmyk.icc validates but characterises no press.
     outputIntent: { iccProfile: pressProfileBytes, outputConditionIdentifier: 'FOGRA39' },
-    pdfx: 'pdfx4',                                            // exclusive with tagged and encryption
+    pdfx: 'pdfx4',                                            // exclusive with encryption; tagged: 'pdfa2b' | 'pdfa2u' combines with it since 1.9.0
   },
 });
 const report = validatePdfX(bytes);                           // { valid, errors, warnings }
@@ -114,8 +141,8 @@ Option types are exported: `TypographyOptions`, `PrintOptions`,
 `PrinterMarksOptions`, `ColourBarOptions`, `CustomOutputIntent`,
 `PdfXConformanceTarget`. Every option's default and diagnostic is in the
 [typography guide](https://pdfnative.dev/guides/typography.md) and the
-[print guide](https://pdfnative.dev/guides/print.md); the eight diagnostic
-codes (`PDFA_*`, `PDFX_*`, `TYPOGRAPHY_FEATURE_INEFFECTIVE`) and the
+[print guide](https://pdfnative.dev/guides/print.md); the thirteen diagnostic
+codes (`PDFA_*`, `PDFX_*`, `TYPOGRAPHY_FEATURE_INEFFECTIVE`, `TEXT_GLYPH_NOT_COVERED`) and the
 build-time error messages (`buildErrors`: PDF/X coherence, print geometry,
 OutputIntent profile) are in
 [errors.json](https://pdfnative.dev/data/errors.json), each with its remedy.
@@ -162,7 +189,11 @@ OutputIntent profile) are in
 10. **`extractText()` returns `/ActualText`, not the shown glyphs.** Since
     1.8.0 a tagged span extracts as the characters the writer declared — what
     a RAG pipeline receives from tagged pdfnative output (or any tagged PDF)
-    can differ from 1.7.0, and now matches the source text.
+    can differ from 1.7.0, and now matches the source text. Since 1.9.0 the
+    same holds for untagged output: a reordered Indic, Khmer, Myanmar, Thai or
+    Lao run and every right-to-left run carry the span, so an untagged Arabic
+    line extracts as typed; a line mixing directions extracts its runs in
+    geometric order, each run logical.
 11. **`{date}` in a header or footer follows `layout.creationDate`** (or the
     pinned default) since 1.8.0, not the wall clock; a pinned build renders
     the pinned date. Every date is written in UTC (`+00'00'`), so a pinned
@@ -191,7 +222,7 @@ const pages = extractText(bytes);          // → ExtractedPageText[], one per p
 if (!pages[0].text.includes('Report')) throw new Error('content missing');
 const ua = validatePdfUA(bytes);
 if (!ua.valid) console.warn(ua.errors);
-// For a print file built with layout.pdfx: 'pdfx4' (never tagged — PDF/X and tagged are exclusive):
+// For a print file built with layout.pdfx: 'pdfx4' (alone, or with tagged: 'pdfa2b' | 'pdfa2u' since 1.9.0):
 const x = validatePdfX(bytes);             // structural PDF/X-4 prerequisites, not a certified preflight
 if (!x.valid) console.warn(x.errors);
 ```
@@ -204,7 +235,7 @@ compare on every build (`npm run verify:samples` in the pdfnative tree).
 
 ## Try it without installing
 
-Fourteen zero-install playgrounds run the engine in the browser from a CDN;
+Fifteen zero-install playgrounds run the engine in the browser from a CDN;
 each is described for agents — URL, purpose, DOM control ids, the options it
 exercises, preconditions — in
 [playgrounds.json](https://pdfnative.dev/data/playgrounds.json). The

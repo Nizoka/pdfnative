@@ -15,6 +15,9 @@ limits. Three companion pages take one surface each and go deeper on the
 releases of September 2026: [CLI use cases](use-cases-cli.html)
 (pdfnative-cli v1.5.0), [MCP use cases](use-cases-mcp.html) (pdfnative-mcp
 v1.7.0) and [React use cases](use-cases-react.html) (pdfnative-react v1.3.0).
+A fourth steps outside this engine: [the native family](native-family.html)
+composes pdfnative with its siblings zipnative and pkinative — sign, pack,
+verify.
 
 ## Case 1 — Store the spec, not the PDF
 
@@ -249,6 +252,7 @@ What you gain, concretely:
 Honest limits: zipnative is one more package to install and, in Case 1, one
 more module to deliver to the device. `setDeflateRawImpl` is process-global
 state — set it once at start-up, and use it rather than `setDeflateImpl`,
+<!-- verify-docs:allow version-token (historical: this companion release was built on pdfnative 1.8.0) -->
 which since pdfnative 1.8.0 rejects raw DEFLATE output. A zipnative build and
 a `node:zlib` build of the same document differ in bytes (different encoder,
 identical content), so choose one compressor per pipeline and rebaseline
@@ -285,6 +289,9 @@ from the others as they become relevant.
 - [CLI use cases](use-cases-cli.html) · [MCP use cases](use-cases-mcp.html) ·
   [React use cases](use-cases-react.html) — one surface each, on
   pdfnative-cli v1.5.0, pdfnative-mcp v1.7.0 and pdfnative-react v1.3.0.
+- [The native family](native-family.html) — pdfnative, zipnative and
+  pkinative composed: sign with pdfnative, prove it with pkinative, archive
+  it with zipnative.
 - [zipnative use cases](https://zipnative.dev/guides/use-cases.html) — the
   sibling ZIP engine's architectures, including the encrypt-then-archive
   pipeline — the opposite direction of Case 5.

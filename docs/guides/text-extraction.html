@@ -15,8 +15,9 @@
   <meta property="og:locale" content="en_US">
   <meta property="og:url" content="https://pdfnative.dev/guides/text-extraction.html">
   <meta property="og:title" content="Text extraction — pdfnative">
-  <meta property="og:description" content="extractText() — reading-order text and positioned runs from any PDF, including encrypted ones. Zero dependencies. New in v1.6.0.">
+  <meta property="og:description" content="extractText() — reading-order text and positioned runs from any PDF, including encrypted ones; since 1.9.0 every shaped glyph has a ToUnicode entry and reordered or right-to-left runs come back in logical order. Zero dependencies.">
   <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
+  <meta property="og:image:alt" content="pdfnative — pure native PDF generation, zero dependencies">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
@@ -97,6 +98,7 @@ for (const run of first.runs ?? []) {
   pages?: number[];         // 0-based page indices; default: all pages
   includeRuns?: boolean;    // also return positioned runs (default false)
   maxTextLength?: number;   // hard cap on total characters (default 16 000 000)
+  onStreamError?: &#39;limit&#39; | &#39;throw&#39; | &#39;skip&#39;; // v1.9.0 — what an undecodable stream does (see Safety bounds)
 }
 
 interface ExtractedPageText {
@@ -185,6 +187,8 @@ operands, CMap entries, Form-XObject depth) and never throws on
 malformed content streams — unknown operators are skipped, unbalanced
 <code>BT</code>/<code>q</code> tolerated, inline images (<code>BI…EI</code>) byte-skipped.</li>
 </ul>
+<h3 id="undecodable-streams-v190">Undecodable streams (v1.9.0)<a class="heading-anchor" href="#undecodable-streams-v190" aria-label="Link to this section">#</a></h3>
+<p>A content stream that cannot be decoded is reported, not silently dropped: a stream whose inflated size would exceed the cap (<code>setMaxInflateOutputSize</code>) throws <code>PdfStreamLimitError</code> (<code>code: &#39;PDF_STREAM_LIMIT&#39;</code>) from <code>extractText()</code> — the default, <code>onStreamError: &#39;limit&#39;</code>, since an over-cap stream is the one case where a page without its text would hide an attack rather than a defect. <code>&#39;throw&#39;</code> reports any stream that fails to decode (a corrupt Flate stream, an unsupported filter); <code>&#39;skip&#39;</code> restores the pre-1.9.0 lenience and returns the page without that stream&#39;s text. The same error class is thrown by <code>inflateSync()</code> and the other decode filters, and by the native zlib wrapper when Node&#39;s buffer limit is hit.</p>
 <h2 id="limitations">Limitations<a class="heading-anchor" href="#limitations" aria-label="Link to this section">#</a></h2>
 <p>By design (documented, not bugs):</p>
 <ul>
@@ -203,19 +207,38 @@ v1.8.0 the Indic engine (Devanagari, Bengali, Tamil, Telugu, Sinhala)
 and the Latin combining-mark shaper report the code points behind every
 glyph they emit, and pdfnative writes them into <code>/ToUnicode</code> as
 multi-code-point entries, so a conjunct such as क्ष or a composed ẹ́
-extracts as its letters even in an untagged document. The <strong>other
-shaped scripts</strong> (Thai, Lao, Khmer, Myanmar, Tibetan, Tai Tham, Cham,
-Arabic presentation forms) still extract with U+FFFD for a ligature or
-contextual glyph that has no single-code-point mapping in an untagged
-document — the PDF <em>renders</em> correctly; only extraction of those
-clusters is lossy. Build with <code>tagged: &#39;pdfa2u&#39;</code> (or any tagged level)
-and the spans carry the source text. Latin, CJK and emoji round-trip
-cleanly. One decomposition extracts as <em>text</em> rather than U+FFFD: Thai
-and Lao sara am (ำ U+0E33, ຳ U+0EB3) is set as nikhahit + sara aa, so
-an untagged document yields two code points where the author wrote one
-— น้ำ extracts as no nu, its two stacked marks in geometric order, sara
-aa. Under any tagged level the span&#39;s <code>/ActualText</code> carries ำ and
-extraction is exact.</li>
+extracts as its letters even in an untagged document. Since v1.9.0
+<strong>every shaper</strong> reports the code points behind every glyph it emits —
+Thai, Lao, Khmer, Myanmar, Tibetan, Tai Tham, Cham, the Arabic
+positional forms and lam-alef ligatures — and the code point that was
+actually encoded has priority over the font&#39;s inverted cmap, so a CJK
+glyph reachable from U+2E80 and U+4E00 is named by the one typed and
+Persian digits stay Persian. A run whose glyphs are not in the order of
+its text — an Indic pre-base vowel sign drawn before its consonant, a
+reph moved after the base, a split vowel sign set as its two parts, a
+Khmer or Myanmar pre-base vowel, Thai and Lao sara am (ำ U+0E33, ຳ U+0EB3)
+set as nikhahit + sara aa, a Thai tone mark set before a below vowel —
+carries its text as <code>/Span /ActualText</code> even in untagged output (opt out
+with <code>layout.actualText: false</code>), which is what Chrome and Skia write,
+so extraction of an untagged Hindi, Tamil or Khmer document returns the
+words as typed rather than in drawing order. Every right-to-left run
+carries its logical text the same way (what Skia writes for every
+reversed cluster), so an untagged Arabic or Hebrew line comes back as
+typed from <code>extractText()</code>, Acrobat Reader and Chrome alike; a line
+mixing directions returns its runs in geometric order, each one
+logical. Every such span wraps a single text
+object: since v1.9.0 a line or cell is one <code>BT … ET</code> and a shaped run one
+<code>TJ</code> array, because Acrobat applies <code>/ActualText</code> once per text object
+— a cell drawn as one text object per glyph pasted its text once per
+glyph in Acrobat Reader, while pdfnative&#39;s own extractor and Chrome,
+which apply the span once, never showed it. Under <code>tagged: &#39;pdfa2u&#39;</code>
+the <code>PDFA_GLYPH_WITHOUT_UNICODE</code> diagnostic names any glyph that still
+has no mapping (a character the font does not cover) — see the
+<a href="pdfa.html">PDF/A guide</a>. What remains geometric is the <strong>order of the
+runs</strong>: they are sorted by position, so a line that mixes a Latin
+island with Arabic comes back island and runs in visual order, each
+run logical, and a tagged document returns the whole line as its
+structure span wrote it — see the <a href="rtl.html">right-to-left guide</a>.</li>
 </ul>
 <h2 id="samples">Samples<a class="heading-anchor" href="#samples" aria-label="Link to this section">#</a></h2>
 <p>Generated by <code>npm run test:generate</code>:</p>

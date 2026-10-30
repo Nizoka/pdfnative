@@ -22,6 +22,7 @@
     "exactOptionalPropertyTypes": false,
     "paths": {
       "pdfnative": ["./src/index.ts"],
+      "pdfnative/tools": ["./src/tools/index.ts"],
       "pdfnative/fonts/*": ["./fonts/*"]
     }
   },

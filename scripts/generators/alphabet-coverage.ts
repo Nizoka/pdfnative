@@ -15,7 +15,7 @@ import { ALPHABET_SAMPLES } from '../data/alphabet-data.js';
  * (`type: 'debit'` in red, `'credit'` in green). On these plates column 3
  * is a glyph category (Ligature, Subjoined, Pre-base, Tone…) and every
  * label must be legible in a regression report, so the columns are sized
- * to the widest content across all 27 scripts and the amount colours are
+ * to the widest content across all 32 scripts and the amount colours are
  * neutralised. Red stays reserved for real test failures.
  */
 const PLATE_COLUMNS: readonly ColumnDef[] = [

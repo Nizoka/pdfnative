@@ -1,0 +1,75 @@
+name: Node Current
+
+# The Current Node.js line, TESTED and NOT PROMISED. SECURITY.md §Supported
+# runtimes supports every line in Active or Maintenance LTS; a line that is
+# still Current (Node 26 until 2026-10-28) is run here, on every push and pull
+# request, so that the day it enters LTS it joins ci.yml with a history of
+# green runs behind it, and nothing is discovered on that day.
+#
+# Never a required check — `.github/rulesets/main.json` names the contexts
+# that block a merge, and this is not one of them: a Current line breaks for
+# reasons that are its own, and a red here must never block a change to the
+# library.
+#
+# There is deliberately no `continue-on-error: true`: it blocks nothing
+# already, and a green square over a red run would hide the one thing this
+# workflow exists to show.
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: node-current-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  node-current:
+    name: node 26 (current, advisory)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      # A Current line is not in the runner's tool cache: setup-node downloads
+      # it from the actions/node-versions release (served from
+      # release-assets.githubusercontent.com) and falls back to nodejs.org.
+      - name: Harden the runner
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        with:
+          egress-policy: block
+          allowed-endpoints: >
+            github.com:443
+            api.github.com:443
+            release-assets.githubusercontent.com:443
+            nodejs.org:443
+            registry.npmjs.org:443
+
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js 26
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: 26
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Run the quality gate (CI profile)
+        run: npx tsx scripts/gate.ts --ci --require-all
+
+      - name: Upload the gate logs on failure
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: gate-logs-linux-node26
+          path: test-output/.gate/
+          retention-days: 7
+          if-no-files-found: ignore

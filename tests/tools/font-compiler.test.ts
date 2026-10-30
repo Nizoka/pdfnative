@@ -97,6 +97,50 @@ describe('parseFontData / compileFontData from committed subset (#60)', () => {
         expect(typeof data.pdfWidthArray).toBe('string');
     });
 
+    // 1.9.0 hardening (CWE-125, found by fuzz/font-data.js): a table offset
+    // or a count past the end of the font is refused as a malformed font —
+    // a plain Error naming the read — never a RangeError from the DataView.
+    it('refuses a truncated font and a table offset past the end with a named error, not a RangeError', () => {
+        // Cut inside the table directory: the header announces more records than the bytes hold.
+        const truncated = bytes.slice(0, 12 + 16 * 2);
+        expect(() => parseFontData(truncated, { fontName: 'Cut' })).toThrow(/runs past the end of the font/);
+        expect(() => parseFontData(truncated, { fontName: 'Cut' })).not.toThrow(RangeError);
+        // Every table record's offset (table directory: 12-byte header, then 16-byte records, offset at +8) sent past the end.
+        const poisoned = bytes.slice();
+        const view = new DataView(poisoned.buffer, poisoned.byteOffset);
+        const numTables = view.getUint16(4);
+        expect(numTables).toBeGreaterThan(2);
+        for (let i = 0; i < numTables; i++) view.setUint32(12 + 16 * i + 8, 0xFFFFFFF0);
+        expect(() => parseFontData(poisoned, { fontName: 'Cut' })).toThrow(/runs past the end of the font/);
+        expect(() => parseFontData(poisoned, { fontName: 'Cut' })).not.toThrow(RangeError);
+        for (const bad of [bytes.slice(0, 11), bytes.slice(0, 12 + 16 * 3)]) {
+            expect(() => parseFontData(bad, { fontName: 'Cut' })).toThrow(Error);
+            expect(() => parseFontData(bad, { fontName: 'Cut' })).not.toThrow(RangeError);
+        }
+    });
+
+    it('is refused the same way by the reference CLI (tools/build-font-data.cjs mirrors the bounds check)', async () => {
+        const os = (await import('node:' + 'os')) as { tmpdir(): string };
+        const path = (await import('node:' + 'path')) as { join(...p: string[]): string };
+        const cp = (await import('node:' + 'child_process')) as { spawnSync(cmd: string, args: string[], o: object): { status: number | null; stderr: string } };
+        const nfs = (await import('node:' + 'fs')) as {
+            mkdtempSync(p: string): string; writeFileSync(p: string, d: Uint8Array): void; existsSync(p: string): boolean; rmSync(p: string, o: object): void;
+        };
+        const dir = nfs.mkdtempSync(path.join(os.tmpdir(), 'pdfnative-truncated-'));
+        try {
+            const ttf = path.join(dir, 'Cut.ttf');
+            const out = path.join(dir, 'cut-data.js');
+            nfs.writeFileSync(ttf, bytes.slice(0, 12 + 16 * 2));
+            const run = cp.spawnSync(process.execPath, ['tools/build-font-data.cjs', ttf, out], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+            expect(run.status).not.toBe(0);
+            expect(run.stderr).toContain('runs past the end of the font');
+            expect(run.stderr).not.toContain('RangeError');
+            expect(nfs.existsSync(out)).toBe(false);
+        } finally {
+            nfs.rmSync(dir, { recursive: true, force: true });
+        }
+    });
+
     it('exposes the full registerable runtime shape', () => {
         const data = parseFontData(bytes, { fontName: 'NotoSansMath-Regular' });
         expect(data.metrics.ascent).toBeGreaterThan(0);

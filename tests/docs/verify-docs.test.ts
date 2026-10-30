@@ -15,6 +15,8 @@ import { tmpdir } from 'node:os';
  */
 
 const ROOT = resolve(import.meta.dirname, '..', '..');
+/** The engine version the manifest declares — the perturbation tests must not pin a release number. */
+const CURRENT = (JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')) as { version: string }).version;
 const SCRIPT = join(ROOT, 'scripts', 'verify-docs.ts');
 
 interface Run {
@@ -199,8 +201,8 @@ describe('verify-docs', () => {
 
         it('version-token sees a linked package name in a Markdown table row and the homepage badge', () => {
             withSandbox((dir) => {
-                patch(dir, 'README.md', '[`pdfnative`](https://www.npmjs.com/package/pdfnative) | **v1.8.0**', '[`pdfnative`](https://www.npmjs.com/package/pdfnative) | **v1.7.0**');
-                patch(dir, 'docs/index.html', 'data-pn-badge="pdfnative">v1.8.0<', 'data-pn-badge="pdfnative">v1.7.0<');
+                patch(dir, 'README.md', `[\`pdfnative\`](https://www.npmjs.com/package/pdfnative) | **v${CURRENT}**`, '[`pdfnative`](https://www.npmjs.com/package/pdfnative) | **v1.7.0**');
+                patch(dir, 'docs/index.html', `data-pn-badge="pdfnative">v${CURRENT}<`, 'data-pn-badge="pdfnative">v1.7.0<');
                 const run = runVerifier(dir);
                 expect(run.output).toContain('version-token');
                 expect(run.output).toContain('README.md');
@@ -217,6 +219,43 @@ describe('verify-docs', () => {
                 expect(run.output).toContain('count-tokens');
                 expect(run.output).toContain('derived.playgrounds');
                 expect(run.output).toContain('declared.scripts');
+                expect(run.status).toBe(1);
+            });
+        }, 120_000);
+
+        it('count-tokens sees "writing systems", "reference guides" and a link tag between numeral and noun', () => {
+            withSandbox((dir) => {
+                const p = join(dir, 'docs', 'guides', 'faq.md');
+                writeFileSync(p, readFileSync(p, 'utf8') + '\nFourteen <a href="../playgrounds/">playgrounds</a> cover 27 writing systems; the <a href="../guides/">35 reference guides</a> are the shelf.\n');
+                const run = runVerifier(dir);
+                expect(run.output).toContain('count-tokens');
+                expect(run.output).toContain('derived.playgrounds');
+                expect(run.output).toContain('declared.scripts');
+                expect(run.output).toContain('derived.guides');
+                expect(run.status).toBe(1);
+            });
+        }, 120_000);
+
+        it('jsonld-item-count rejects an ItemList whose numberOfItems disagrees with the manifest', () => {
+            withSandbox((dir) => {
+                const p = join(dir, 'docs', 'playgrounds', 'index.html');
+                writeFileSync(p, readFileSync(p, 'utf8').replace(/"numberOfItems":\s*\d+/, '"numberOfItems": 14'));
+                const run = runVerifier(dir);
+                expect(run.output).toContain('jsonld-item-count');
+                expect(run.output).toContain('derived.playgrounds');
+                expect(run.status).toBe(1);
+            });
+        }, 120_000);
+
+        it('release-coverage rejects an exercises claim the playground page does not back', () => {
+            withSandbox((dir) => {
+                // parseJPX is a 1.9.0 export the images page runs; claiming it from the
+                // extreme-scripts entry, whose page never names it, is prose only.
+                patch(dir, 'docs/data/playgrounds.json', '"shaping.bidi",', '"shaping.bidi", "the JPEG 2000 header read by parseJPX",');
+                const run = runVerifier(dir);
+                expect(run.output).toContain('release-coverage');
+                expect(run.output).toContain('does not contain it');
+                expect(run.output).toContain('parseJPX');
                 expect(run.status).toBe(1);
             });
         }, 120_000);
@@ -238,13 +277,25 @@ describe('verify-docs', () => {
             });
         }, 240_000);
 
+        it('release-coverage requires every export added since the previous release to be shown or exempted', () => {
+            withSandbox((dir) => {
+                // Renaming an exemption leaves its export uncovered and names an export that does not exist.
+                patch(dir, 'docs/data/playgrounds.json', '"name": "ecdsaSignHash"', '"name": "ecdsaSignHashRenamed"');
+                const run = runVerifier(dir);
+                expect(run.output).toContain('release-coverage');
+                expect(run.output).toContain('"ecdsaSignHash" is new since');
+                expect(run.output).toContain('"ecdsaSignHashRenamed", which docs/assets/api.json does not export');
+                expect(run.status).toBe(1);
+            });
+        }, 240_000);
+
         it('llms-sync requires the current release note to be indexed', () => {
             withSandbox((dir) => {
-                patch(dir, 'llms.txt', 'release-notes/v1.8.0.md', 'release-notes/v1.8.1.md');
-                patch(dir, 'docs/llms.txt', 'release-notes/v1.8.0.md', 'release-notes/v1.8.1.md');
+                patch(dir, 'llms.txt', `release-notes/v${CURRENT}.md`, 'release-notes/v0.0.1.md');
+                patch(dir, 'docs/llms.txt', `release-notes/v${CURRENT}.md`, 'release-notes/v0.0.1.md');
                 const run = runVerifier(dir);
                 expect(run.output).toContain('llms-sync');
-                expect(run.output).toContain('does not link release-notes/v1.8.0.md');
+                expect(run.output).toContain(`does not link release-notes/v${CURRENT}.md`);
                 expect(run.status).toBe(1);
             });
         }, 120_000);

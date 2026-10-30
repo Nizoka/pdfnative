@@ -9,6 +9,7 @@
  */
 
 import { fillOp, strokeOp } from './pdf-color.js';
+import { encodePdfTextString } from './pdf-text.js';
 
 // ── P
 /** Supported AcroForm field types (ISO 32000-1 §12.7.3–12.7.4). */
@@ -412,7 +413,7 @@ export function buildFormWidget(field: FormField, apObjNum: number, radioCtx?: R
         parts.push(field.checked ? `/AS /${ev}` : '/AS /Off');
         parts.push(`/AP << /N << /${ev} ${apObjNum} 0 R /Off ${apObjNum + 1} 0 R >> >>`);
     } else {
-        parts.push(`/T (${pdfStr(field.name)})`);
+        parts.push(`/T ${encodePdfTextString(field.name)}`);
         parts.push('/Border [0 0 0.5]');
 
         switch (field.fieldType) {
@@ -420,7 +421,7 @@ export function buildFormWidget(field: FormField, apObjNum: number, radioCtx?: R
             case 'multilineText':
                 parts.push('/FT /Tx');
                 if (field.fieldType === 'multilineText') ff |= FF_MULTILINE;
-                if (field.value) parts.push(`/V (${pdfStr(field.value)})`);
+                if (field.value) parts.push(`/V ${encodePdfTextString(field.value)}`);
                 parts.push(`/DA (/Helv ${fmtNum(field.fontSize)} Tf ${fillOp('0 0 0')})`);
                 if (field.maxLength !== null) parts.push(`/MaxLen ${field.maxLength}`);
                 break;
@@ -442,20 +443,20 @@ export function buildFormWidget(field: FormField, apObjNum: number, radioCtx?: R
             case 'dropdown':
                 parts.push('/FT /Ch');
                 ff |= FF_COMBO;
-                if (field.value) parts.push(`/V (${pdfStr(field.value)})`);
+                if (field.value) parts.push(`/V ${encodePdfTextString(field.value)}`);
                 parts.push(`/DA (/Helv ${fmtNum(field.fontSize)} Tf ${fillOp('0 0 0')})`);
                 if (field.options.length > 0) {
-                    const optArr = field.options.map(o => `(${pdfStr(o)})`).join(' ');
+                    const optArr = field.options.map(o => encodePdfTextString(o)).join(' ');
                     parts.push(`/Opt [${optArr}]`);
                 }
                 break;
 
             case 'listbox':
                 parts.push('/FT /Ch');
-                if (field.value) parts.push(`/V (${pdfStr(field.value)})`);
+                if (field.value) parts.push(`/V ${encodePdfTextString(field.value)}`);
                 parts.push(`/DA (/Helv ${fmtNum(field.fontSize)} Tf ${fillOp('0 0 0')})`);
                 if (field.options.length > 0) {
-                    const optArr = field.options.map(o => `(${pdfStr(o)})`).join(' ');
+                    const optArr = field.options.map(o => encodePdfTextString(o)).join(' ');
                     parts.push(`/Opt [${optArr}]`);
                 }
                 break;
@@ -532,5 +533,5 @@ export function buildRadioGroupParent(
     if (required) ff |= FF_REQUIRED;
     const kids = childObjNums.map(n => `${n} 0 R`).join(' ');
     const v = selectedValue ? `/${selectedValue}` : '/Off';
-    return `<< /FT /Btn /Ff ${ff} /T (${pdfStr(name)}) /V ${v} /Kids [${kids}] >>`;
+    return `<< /FT /Btn /Ff ${ff} /T ${encodePdfTextString(name)} /V ${v} /Kids [${kids}] >>`;
 }

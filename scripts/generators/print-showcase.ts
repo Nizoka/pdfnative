@@ -3,7 +3,9 @@
  * /Trapped, print viewer preferences and large-format /UserUnit; since
  * v1.8.0 also CMYK colour under a CMYK OutputIntent, as PDF/X-4 and as
  * PDF/A-2b, with marks in the registration colour and, on the PDF/X-4
- * sheet, a colour control bar in a 5 mm bleed.
+ * sheet, a colour control bar in a 5 mm bleed; since v1.9.0 spot colours
+ * (Separation and DeviceN inks), one file claiming both PDF/A-2b and
+ * PDF/X-4, and a monochrome job under a Gray OutputIntent.
  *
  * The main sample is an A4 flyer designed at trim size + 3 mm bleed
  * (8.5 pt): the page is enlarged by the bleed on every side, a background
@@ -20,7 +22,7 @@ import type { DocumentParams } from '../../src/index.js';
 import { buildMinimalSRGBProfile } from '../../src/core/pdf-tags.js';
 import type { GenerateContext } from '../helpers/io.js';
 import { loadSelectedFontEntries } from '../helpers/fonts.js';
-import { buildSyntheticCmykProfile } from '../lib/synthetic-cmyk-profile.js';
+import { buildSyntheticCmykProfile, buildSyntheticGrayProfile } from '../lib/synthetic-cmyk-profile.js';
 
 const BLEED = 8.5; // 3 mm
 const BLEED_5MM = 14.17; // 5 mm — room for a colour control bar
@@ -180,5 +182,89 @@ export async function generate(ctx: GenerateContext): Promise<void> {
             fontEntries,
         }, { ...pressLayout(BLEED), print: { bleed: BLEED, marks: true }, tagged: 'pdfa2b' });
         ctx.writeSafe(resolve(ctx.outputDir, 'print', 'print-cmyk-pdfa2b.pdf'), 'print/print-cmyk-pdfa2b.pdf', pdfaCmyk);
+
+        // ── 7. Spot colours: Separation inks and a DeviceN mix (v1.9.0) ──
+        // The inks are declared once with their CMYK alternates; the content
+        // paints with { spot } and { inks } values. Each ink becomes a
+        // /Separation colour space (its own plate on the RIP), the mix a
+        // /DeviceN space with a type-4 tint transform over both alternates.
+        const spotColours = [
+            { name: 'PANTONE 300 C', alternate: [100, 44, 0, 0] as const },
+            { name: 'PANTONE 1235 C', alternate: [0, 31, 98, 0] as const },
+            { name: 'Spot Varnish', alternate: [0, 0, 0, 8] as const },
+        ];
+        const spot = buildDocumentPDFBytes({
+            title: 'Print Production — Spot Colours',
+            blocks: [
+                { type: 'heading', text: 'Brand blue on its own plate', level: 1, color: { spot: 'PANTONE 300 C' } },
+                { type: 'paragraph', text: 'This heading is PANTONE 300 C at 100 %: a /Separation colour space named after the ink, with [100, 44, 0, 0] as the CMYK alternate a composite proof uses. A RIP that knows the ink puts it on a fifth plate.', color: { spot: 'PANTONE 300 C' } },
+                { type: 'paragraph', text: 'The same ink at a 40 % tint — one number in the content stream, the tint transform does the rest.', color: { spot: 'PANTONE 300 C', tint: 0.4 } },
+                { type: 'paragraph', text: 'PANTONE 1235 C, the brand yellow, as a second separation.', color: { spot: 'PANTONE 1235 C' } },
+                { type: 'paragraph', text: 'Blue over a spot varnish: a /DeviceN space over both inks whose PostScript tint transform adds the two alternates and leaves the clipping of each channel at 100 % to the /Range of the function.', color: { inks: { 'PANTONE 300 C': 1, 'Spot Varnish': 1 } } },
+                { type: 'paragraph', text: 'Process black for the running text; the colour bar and the marks stay in the registration colour.' },
+                {
+                    type: 'chart', chartType: 'bar', title: 'Ink coverage per plate', categories: ['C', 'M', 'Y', 'K', '300 C'],
+                    series: [{
+                        label: 'Coverage (%)', values: [38, 22, 41, 64, 17],
+                        // Each plate's bar in its own ink: the four process inks, then the spot plate (1.9.0).
+                        colors: [[100, 0, 0, 0], [0, 100, 0, 0], [0, 0, 100, 0], [0, 0, 0, 100], { spot: 'PANTONE 300 C' }],
+                    }],
+                },
+            ],
+            footerText: 'pdfnative - spot colours',
+            fontEntries,
+        }, {
+            ...pressLayout(BLEED_5MM),
+            print: { bleed: BLEED_5MM, marks: { colourBars: true }, spotColours },
+            pdfx: 'pdfx4',
+        });
+        ctx.writeSafe(resolve(ctx.outputDir, 'print', 'print-spot-colours.pdf'), 'print/print-spot-colours.pdf', spot);
+
+        // ── 8. One file, two claims: PDF/A-2b and PDF/X-4 (v1.9.0) ───────
+        // The archival and the press requirements in the same file: the XMP
+        // packet carries pdfaid and pdfxid (the PDF/X ID schema declared
+        // through a PDF/A extension schema), the catalog two OutputIntents on
+        // the same CMYK profile, the header PDF 1.6, /Trapped /False.
+        const dual = buildDocumentPDFBytes({
+            title: 'Print Production — PDF/A-2b and PDF/X-4',
+            blocks: [
+                { type: 'heading', text: 'Archival and press-ready in one file', level: 1 },
+                { type: 'paragraph', text: 'This document claims PDF/A-2b (ISO 19005-2) and PDF/X-4 (ISO 15930-7) at once. Both claims rest on the same embedded CMYK OutputIntent; the tagged structure tree serves the archive, the TrimBox, bleed and marks serve the press.' },
+                { type: 'paragraph', text: 'Process cyan, written with the k operator under the CMYK intent.', color: [100, 0, 0, 0] },
+                { type: 'paragraph', text: 'Validate the PDF/A side with veraPDF and the PDF/X side with validatePdfX(); each ignores the other claim.' },
+            ],
+            metadata: { trapped: 'False' },
+            footerText: 'pdfnative - PDF/A-2b + PDF/X-4',
+            fontEntries,
+        }, { ...pressLayout(BLEED), print: { bleed: BLEED, marks: true }, tagged: 'pdfa2b', pdfx: 'pdfx4' });
+        ctx.writeSafe(resolve(ctx.outputDir, 'print', 'print-dual-pdfa2b-pdfx4.pdf'), 'print/print-dual-pdfa2b-pdfx4.pdf', dual);
+
+        // ── 9. Monochrome job under a Gray OutputIntent (v1.9.0) ─────────
+        // A single-ink job: the OutputIntent profile is a synthetic Gray
+        // output profile (buildSyntheticGrayProfile from pdfnative/tools), the
+        // text colours are RGB greys routed through the calibrated /DefaultRGB
+        // the page resources carry under a non-RGB intent.
+        const gray = buildDocumentPDFBytes({
+            title: 'Print Production — Monochrome PDF/X-4',
+            blocks: [
+                { type: 'heading', text: 'One plate: black', level: 1, color: '#000000' },
+                { type: 'paragraph', text: 'A monochrome press job claimed as PDF/X-4 with a Gray OutputIntent (/N 1). RGB greys in the content are remapped through the calibrated /DefaultRGB in the page resources; a CMYK colour here would raise PDFX_DEVICE_CMYK.', color: '#333333' },
+                { type: 'paragraph', text: 'Mid grey paragraph.', color: '#777777' },
+                { type: 'paragraph', text: 'The synthetic Gray profile stands in for the press profile a real job embeds.', color: '#000000' },
+            ],
+            footerText: 'pdfnative - monochrome PDF/X-4',
+            fontEntries,
+        }, {
+            ...pressLayout(BLEED),
+            outputIntent: {
+                iccProfile: buildSyntheticGrayProfile(),
+                outputConditionIdentifier: 'Synthetic Gray',
+                outputCondition: 'Naive grey conversion (sample stand-in, not a press condition)',
+                registryName: 'http://www.color.org',
+            },
+            print: { bleed: BLEED, marks: true },
+            pdfx: 'pdfx4',
+        });
+        ctx.writeSafe(resolve(ctx.outputDir, 'print', 'print-gray-pdfx4.pdf'), 'print/print-gray-pdfx4.pdf', gray);
     }
 }

@@ -17,6 +17,7 @@
   <meta property="og:title" content="Long-term validation (LTV) — pdfnative">
   <meta property="og:description" content="PAdES B-B to B-LTA in pdfnative — RFC 3161 signature timestamps, /DSS + /VRI validation material, document timestamps, injected providers, zero network in the engine.">
   <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
+  <meta property="og:image:alt" content="pdfnative — pure native PDF generation, zero dependencies">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
@@ -179,6 +180,14 @@ const ltv  = embedValidationInfo(signed, data);     // sync, offline, determinis
 <pre><code class="language-ts">const archive = await addDocumentTimestamp(ltv);
 </code></pre>
 <p>Appends a signature field whose dictionary is <code>/Type /DocTimeStamp /SubFilter /ETSI.RFC3161</code> with a <strong>bare</strong> TimeStampToken as <code>/Contents</code> (ISO 32000-2 §12.8.5 — no <code>/M</code>: the token&#39;s genTime is the time assertion). Field names auto-suffix (<code>DocTimeStamp1</code>, <code>DocTimeStamp2</code>, …) so periodic re-timestamping chains naturally.</p>
+<h3 id="offline-material--composeltvdata-v190">Offline material — <code>composeLtvData()</code> (v1.9.0)<a class="heading-anchor" href="#offline-material--composeltvdata-v190" aria-label="Link to this section">#</a></h3>
+<p>When the certificates, OCSP responses and CRLs were fetched by another system — an archive, a CA hand-over, a batch job without network — compose the <code>LtvData</code> from flat lists instead of a provider:</p>
+<pre><code class="language-ts">import { composeLtvData, embedValidationInfo } from &#39;pdfnative&#39;;
+
+const data = composeLtvData(signed, { certificates, ocspResponses, crls }, { match: &#39;chain&#39; });
+const ltv = embedValidationInfo(signed, data);
+</code></pre>
+<p><code>match: &#39;all&#39;</code> (the default) references everything from every <code>/VRI</code>; <code>match: &#39;chain&#39;</code> keeps only what validates each signature — issuers found by verifying the signatures along the chain, OCSP responses by their <code>CertID</code> (<code>parseOcspResponse()</code> exposes it, <code>ocspResponseMatchesCertificate()</code> compares it), CRLs by issuer name — so unrelated material never lands in the file (<a href="https://github.com/Nizoka/pdfnative/issues/90" target="_blank" rel="noopener">#90</a>). <code>extraCertificates</code> passed to <code>collectValidationInfo</code> are referenced from every <code>/VRI</code> entry since 1.9.0. The <a href="https://github.com/Nizoka/pdfnative/blob/main/recipes/ltv-compose-offline.ts" target="_blank" rel="noopener">ltv-compose-offline recipe</a> runs this against a mock PKI in CI.</p>
 <h2 id="multiple-signatures">Multiple signatures<a class="heading-anchor" href="#multiple-signatures" aria-label="Link to this section">#</a></h2>
 <pre><code class="language-ts">const a = signPdfBytes(addSignaturePlaceholder(pdf, { fieldName: &#39;Author&#39; }), opts);
 const b = signPdfBytes(
@@ -196,10 +205,10 @@ const b = signPdfBytes(
 <li><code>openssl ts -reply -in token.der -text</code> inspects extracted timestamp tokens.</li>
 <li>pdfnative itself ships <strong>no signature verifier</strong> — validation belongs to dedicated tooling (veraPDF for PDF/A, Adobe/DSS for signatures, <code>pdfnative-cli verify</code> for full cryptographic verification: CMS signature values, certificate chain and trust, RFC 3161 timestamps, OCSP/CRL revocation).</li>
 </ul>
-<h2 id="limits--scope-v170">Limits &amp; scope (v1.7.0)<a class="heading-anchor" href="#limits--scope-v170" aria-label="Link to this section">#</a></h2>
+<h2 id="limits--scope-v190">Limits &amp; scope (v1.9.0)<a class="heading-anchor" href="#limits--scope-v190" aria-label="Link to this section">#</a></h2>
 <ul>
 <li>ECDSA stays P-256 with SHA-256; RSA supports SHA-256/384/512.</li>
-<li>Chain building uses exact issuer-name matching over the embedded pool; cross-certification and bridge PKIs are out of scope.</li>
+<li>Chain building uses exact issuer-name matching over the embedded pool (<code>composeLtvData</code>&#39;s <code>&#39;chain&#39;</code> mode verifies issuer signatures as well); cross-certification and bridge PKIs are out of scope.</li>
 <li><code>collectValidationInfo</code> fetches from the <strong>first</strong> advertised OCSP/CRL URL; provider-side failover is your transport&#39;s business.</li>
 <li>Encrypted documents cannot take signature placeholders (unchanged from v1.2).</li>
 <li>PDF 2.0 <code>/Extensions</code> declarations are not emitted; the ISO 32000-2 constructs used here are accepted by all mainstream validators.</li>

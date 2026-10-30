@@ -30,6 +30,7 @@ applyTo: "src/core/**"
 
 ## Content Streams
 - Text blocks: `BT ... ET` — never nest, never leave unclosed
+- **One text object per line or cell** (v1.9.0, C25): `txt()`, `txtJustified()` and the tagged emitters in `pdf-text.ts` write a line as a single `BT … ET` through the `TextObject` writer — `Tf` only when the font or size changes, each run after the first placed by a `Td` relative to the line origin (tracked in hundredths of a point, so a chain of moves lands on the rounded absolute), a shaped run as one `TJ` array whose numbers are the viewer's `/W` pen minus the layout's pen (GPOS `dx`, a zero-advance mark, the justification gap after a space; rounded as written and fed back, so nothing drifts), a mark with a vertical offset as its own `Td` + `Tj` inside the same object. A `/Span /ActualText` therefore never wraps more than one text object — Acrobat applies the span's text once per text object, and the former one `BT … ET` per shaped glyph pasted a cell once per glyph. A single-run line keeps the historical bytes (`BT /F3 9 Tf x y Td <…> Tj ET`); only a colour-emoji run (a Form XObject) closes the object. Never emit a per-glyph `BT` again; `tests/helpers/text-objects.ts` replays the operators for a test that needs a glyph's origin
 - Font selection: `/<ref> <size> Tf` must precede any text operator
 - Text positioning: `Td` for relative, `Tm` for absolute matrix
 - String encoding: `(WinAnsi)` for Helvetica, `<hex>` for CIDFont glyphs
@@ -72,6 +73,8 @@ applyTo: "src/core/**"
 - `EMC` closes marked content — never leave unclosed
 - `/ActualText` carries the original Unicode string for shaped/repositioned glyphs
 - UTF-16BE encoding with `FEFF` BOM for /ActualText values
+- A span holds at most one text object (C25): the tagged structure span wraps the line's `BT … ET`, the untagged C20 span sits inside it around the run's `TJ` — a reader that applies the text once per text object (Acrobat) then pastes it once; `tests/core/actual-text-untagged.test.ts` holds every span to that
+- Every untagged right-to-left run carries its logical text as a `/Span /ActualText` inside the line's text object (v1.9.0, C27): `runsOf()` sets `TextRun.bidi` (`{ run, logical }`, `logical = reverseAndMirror(visual)`) on every run cut from an odd-level bidi run, and `txt()` / `justifiedLine` open the span at the first run of an index and close it after the last (a colour-emoji run closes it early and it is not reopened); a run inside such a span never gets a C20 span of its own; `layout.actualText: false` switches both off; `ps()` (watermark, form labels) carries no span — what Skia writes for reversed clusters, and what makes an untagged Arabic line paste as typed in Acrobat Reader
 - MCID allocation: sequential per page via `createMCIDAllocator()`
 
 ## PDF/A Compliance (ISO 19005-1 / ISO 19005-2)
@@ -95,6 +98,7 @@ applyTo: "src/core/**"
 - Image XObjects: `/Type /XObject /Subtype /Image` indirect objects
 - JPEG images: `/Filter /DCTDecode` — raw JPEG bytes injected as stream
 - PNG images: `/Filter /FlateDecode` with `/DecodeParms << /Predictor 15 /Colors N /BitsPerComponent 8 /Columns W >>`
+- JPEG 2000 (v1.9.0): `/Filter /JPXDecode`, the JP2 container or raw codestream injected as written; `/ColorSpace` and `/BitsPerComponent` omitted when the codestream declares them, `/SMaskInData 1` for an opacity channel; the header rises to 1.5; PDF/A-1 refuses it (`PDFA1_JPX_IMAGE`), PDF/A-2+ holds it to one, three or four channels and no opacity (`PDFA_JPX_IMAGE`)
 - PNG alpha: separated into `/SMask` XObject (DeviceGray) when alpha decompression available
 - Color spaces: `/DeviceRGB`, `/DeviceGray`, `/DeviceCMYK` (JPEG only)
 - Image operators: `q W 0 0 H X Y cm /ImN Do Q` — save state, transform, paint, restore
@@ -120,10 +124,11 @@ applyTo: "src/core/**"
 - `annotsByPage` grouping ensures each page references only its own annotations
 
 ## BiDi Text Support (UAX #9)
-- BiDi resolution integrated at encoding level — `textRuns()` and `ps()` in encoding.ts check `containsRTL()` first
-- When RTL detected: `resolveBidiRuns()` produces visual-order runs with embedding levels
+- BiDi resolution integrated at encoding level — `textRuns()` and `ps()` in `encoding-context.ts` check `containsRTL()` first; since 1.9.0 the full UAX #9 algorithm (see text-shaping instructions), resolved once per paragraph through `EncodingContext.withParagraph()` and reordered per line
+- When RTL detected: `resolveBidiRuns()` (or the paragraph's levels) produces visual-order runs with embedding levels; `layout.direction` / `ParagraphBlock.direction` set the base direction and the default alignment
 - RTL Arabic runs: un-reverse to logical order → `shapeArabicText()` → reverse shaped glyphs for visual order
 - RTL Hebrew runs: already reversed by BiDi — encode directly (no positional shaping needed)
+- Every run of an odd-level bidi run carries `TextRun.bidi` (its index and logical text) and the emitters wrap them in one untagged `/ActualText` span (C27, see Marked Content Operators)
 - LTR runs: standard encoding path (no BiDi processing)
 - Arabic shaping (`shapeArabicText()`) returns glyphs in logical order — must reverse for RTL visual rendering
 - Hebrew text detected by `containsHebrew()` — uses RTL ordering without shaping
@@ -180,7 +185,14 @@ applyTo: "src/core/**"
   WinAnsi high-band table is a documented local copy
 - `/ActualText` on marked content is honoured since v1.8.0: a span's declared
   text replaces the glyphs shown inside it, outermost span first — so tagged
-  pdfnative output extracts as written
+  pdfnative output extracts as written; since v1.9.0 the writers put the same
+  span on untagged reordered runs and on every untagged right-to-left run
+  (`layout.actualText: false` opts out), so logical text comes back tagged or not
+- An over-cap stream throws `PdfStreamLimitError` (`code: 'PDF_STREAM_LIMIT'`)
+  since v1.9.0 instead of returning the page without its text;
+  `extractText({ onStreamError })` takes `'limit'` (default), `'skip'` (the 1.8.0
+  lenience) or `'throw'`; the message names the remedy per filter — classify
+  by `code`, never by the text
 
 ## FlateDecode Compression (ISO 32000-1 §7.3.8.1)
 - Activated by `compress: true` in `PdfLayoutOptions` — backward compatible (default `false`)
@@ -204,14 +216,16 @@ applyTo: "src/core/**"
 - `pdf-pagination.ts` is the ONE planner (`paginateDocument`) shared by the document builder and `inspectDocumentLayout()`: `splitParagraphs` / `orphans` / `widows` / `keepHeadingsWithNext` (`true` or `{ minLines }`, never below `orphans`) and block-level `keepWithNext` / `splittable` live there, never in a builder. A page-count disagreement between build and inspection is a bug in this module
 - Justified lines are one `TJ` array per line with the space glyphs kept (never `Tw`); a paragraph split across pages remains one `/P` under `tagged`
 - `TYPOGRAPHY_FEATURE_INEFFECTIVE` fires (through `pdf-diagnostics.ts`) for a `fontFeatures` tag no registered font declares or that substitutes nothing
+- `TEXT_GLYPH_NOT_COVERED` (v1.9.0) fires once per font after layout (`reportUncoveredGlyphs`) for every character drawn as `.notdef` in a CID run or written as `?` by `toWinAnsi` — the encoding context records them (`getUncoveredCodepoints()`, the base-14 path under `/F1`); the bytes never change, the message names the code points and the remedy
 
 ## Print & PDF/X (pdf-print.ts, pdf-tags.ts, parser/pdf-x-validator.ts — v1.7.0 / v1.8.0)
 - `pdf-print.ts`: `validatePrintOptions`, `resolvePrintBoxes` (bleed shorthand → TrimBox/BleedBox), `pdfxBoxes` (the TrimBox a PDF/X claim synthesises: BleedBox when only `bleedBox` is set, MediaBox otherwise; TrimBox and ArtBox never both), `buildPrinterMarksOps` (crop + registration marks, ≥ `max(weight, 0.5)` pt clear of trim line and sheet edge; colour bars as DeviceCMYK `re f` patches in the bottom bleed strip; registration colour `/Separation /All` under a CMYK intent; the whole block `/Artifact << /Type /Page >> BDC … EMC` under `tagged`)
-- `resolvePdfXConfig({ pdfx, tagged, encrypted, outputIntent, trapped })` in `pdf-tags.ts` is the PDF/X counterpart of `resolvePdfAConfig`: `PDF_X_CONFORMANCE_TARGETS` (`['pdfx4']`) is the source of truth, and the coherence errors it throws (with `tagged`, with `encryption`, without `outputIntent`, non-`prtr` profile, `trapped: 'Unknown'`) are quoted verbatim in `docs/data/errors.json` `buildErrors` — change the message and the JSON together. PDF/X writes `%PDF-1.6`, `pdfxid:GTS_PDFXVersion`, `xmpMM:DocumentID/VersionID/RenditionClass`, a `/GTS_PDFX` OutputIntent and `/Trapped` in `/Info` and XMP
+- `resolvePdfXConfig({ pdfx, tagged, encrypted, outputIntent, trapped })` in `pdf-tags.ts` is the PDF/X counterpart of `resolvePdfAConfig`: `PDF_X_CONFORMANCE_TARGETS` (`['pdfx4']`) is the source of truth, and the coherence errors it throws (with `tagged: 'pdfa1b' | 'pdfa3b'` — `'pdfa2b'` and `'pdfa2u'` combine with it since v1.9.0 into the dual claim, with `encryption`, without `outputIntent`, non-`prtr` profile, `trapped: 'Unknown'`) are quoted verbatim in `docs/data/errors.json` `buildErrors` — change the message and the JSON together. PDF/X writes `%PDF-1.6`, `pdfxid:GTS_PDFXVersion`, `xmpMM:DocumentID/VersionID/RenditionClass`, a `/GTS_PDFX` OutputIntent and `/Trapped` in `/Info` and XMP
 - `parser/pdf-x-validator.ts` (`validatePdfX`) is read-only and never renders; its module header lists what is and is not checked — keep that header, the print guide and `docs/data/surfaces.json` in step. veraPDF does not cover PDF/X
 - OutputIntent profiles (`resolveOutputIntent`): ≥ 128 bytes, `acsp` at byte 36, size field within the buffer, data colour space RGB / CMYK / Gray; the ICC version is not checked. Under a CMYK or Gray intent, RGB content is covered by a calibrated `/DefaultRGB` in every painting resource dictionary
 
-## Colour (pdf-color.ts, pdf-content-colour.ts — v1.8.0)
+## Colour (pdf-color.ts, pdf-content-colour.ts — v1.8.0; pdf-spot.ts — v1.9.0)
+- `pdf-spot.ts` (v1.9.0): `layout.print.spotColours` declares inks (`SpotColourDef`: name + CMYK or RGB alternate); `{ spot, tint? }` paints through a `/Separation` resource and `{ inks }` through a `/DeviceN` one, each with a type-4 tint transform over ISO 32000-1 Table 42 operators only (Acrobat refuses anything else), the `/DeviceN` array carrying a `/Colorants` attributes dictionary (ISO 19005-2 §6.2.4.4); an ink the content names without a declaration is refused before a byte is written; `validatePdfX()` reads every tint transform the content selects
 - `pdf-color.ts` is the one colour-operator choke point: `parseColor` (hex, RGB tuple, CMYK percent tuple, `'r g b'` / `'c m y k'` operand strings) → `resolveColor` (`{ space, operands }`) → `fillOp` / `strokeOp`, which pick `rg`/`RG` or `k`/`K` by component count. Every call site (101 at the 1.8.0 refactor) emits colour through these; never format a colour operator inline
 - CMYK never leaves its space silently: chart tints remove ink instead of mixing toward white, and an outline `/C` (DeviceRGB by definition) gets a device-formula approximation
 - `pdf-content-colour.ts` (`scanDeviceColour`) is a content-stream **tokenizer** (strings, comments, names and inline-image data skipped as ISO 32000-1 §7.2 defines them), used by the builders to check content against the OutputIntent before writing (`PDFA_DEVICE_CMYK_CONTENT`, `PDFX_DEVICE_CMYK`) and by `validatePdfX` afterwards. Never replace it with a regular expression over the stream

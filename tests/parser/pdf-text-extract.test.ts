@@ -7,14 +7,22 @@
  * /Differences, WinAnsi fallback, no-mapping U+FFFD).
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll, afterEach } from 'vitest';
 import { buildDocumentPDFBytes } from '../../src/core/pdf-document.js';
+import { initNodeCompression } from '../../src/core/pdf-compress.js';
 import { extractText } from '../../src/parser/pdf-text-extract.js';
 import { PdfPasswordError } from '../../src/parser/pdf-decrypt.js';
+import { initNodeDecompression, setMaxInflateOutputSize, DEFAULT_MAX_INFLATE_OUTPUT, PdfStreamLimitError } from '../../src/parser/pdf-inflate.js';
 import type { DocumentParams } from '../../src/types/pdf-document-types.js';
 import type { FontData, FontEntry } from '../../src/types/pdf-types.js';
 import * as notoThai from '../../fonts/noto-thai-data.js';
 import * as notoLao from '../../fonts/noto-lao-data.js';
+import * as notoSc from '../../fonts/noto-sc-data.js';
+import * as notoKhmer from '../../fonts/noto-khmer-data.js';
+import * as notoMyanmar from '../../fonts/noto-myanmar-data.js';
+import * as notoTaiTham from '../../fonts/noto-taitham-data.js';
+import * as notoTibetan from '../../fonts/noto-tibetan-data.js';
+import * as notoArabic from '../../fonts/noto-arabic-data.js';
 
 // ── Mini-PDF assembly helpers ────────────────────────────────────────
 
@@ -466,11 +474,13 @@ describe('extractText on Thai and Lao sara am', () => {
         return extractText(buildDocumentPDFBytes(params, tagged ? { tagged: true } : {}))[0].text;
     };
 
-    it('extracts untagged น้ำ as no nu, its two stacked marks, sara aa — decomposed, never U+FFFD', () => {
+    it('extracts untagged น้ำ exactly: the shaped run carries /ActualText (1.9.0)', () => {
+        // Drawn as no nu + nikhahit + mai tho + sara aa, which no per-glyph
+        // ToUnicode mapping can turn back into ำ; before 1.9.0 the untagged
+        // document extracted the four code points.
         const text = build('น้ำ', thaiEntries, false);
-        expect(text).toMatch(/น[้ํ]{2}า/);
-        expect(text).toContain('ํ');
-        expect(text).not.toContain('ำ');
+        expect(text).toContain('น้ำ');
+        expect(text).not.toContain('ํ');
         expect(text).not.toContain('�');
     });
 
@@ -480,11 +490,127 @@ describe('extractText on Thai and Lao sara am', () => {
         expect(text).not.toContain('ํ');
     });
 
-    it('extracts untagged ນ້ຳ decomposed and tagged ນ້ຳ exactly', () => {
+    it('extracts untagged and tagged ນ້ຳ exactly', () => {
         const plain = build('ນ້ຳ', laoEntries, false);
-        expect(plain).toMatch(/ນ[້ໍ]{2}າ/);
-        expect(plain).not.toContain('ຳ');
+        expect(plain).toContain('ນ້ຳ');
         expect(plain).not.toContain('�');
         expect(build('ນ້ຳ', laoEntries, true)).toContain('ນ້ຳ');
+    });
+
+    it('wraps only runs that hold a sara am; other Thai runs keep their 1.8.0 operators', () => {
+        const params: DocumentParams = { title: 'sara am', blocks: [{ type: 'paragraph', text: 'สวัสดี' }], fontEntries: thaiEntries };
+        const s = new TextDecoder('latin1').decode(buildDocumentPDFBytes(params));
+        expect(s).not.toContain('/ActualText');
+        const withAm: DocumentParams = { ...params, blocks: [{ type: 'paragraph', text: 'น้ำ' }] };
+        expect(new TextDecoder('latin1').decode(buildDocumentPDFBytes(withAm))).toMatch(/\/Span << \/ActualText <FEFF0E190E490E33> >> BDC/);
+    });
+});
+
+// ── Stream-error policy (v1.9.0, #89) ────────────────────────────────
+// A content stream over the decompression cap used to be skipped silently,
+// so a capped page extracted as an empty page. The cap now surfaces as a
+// PdfStreamLimitError by default; 'skip' restores the old lenience.
+
+describe('extractText stream-error policy (#89)', () => {
+    const long: DocumentParams = {
+        title: 'Cap',
+        blocks: Array.from({ length: 12 }, (_, i) => ({ type: 'paragraph' as const, text: `Lorem ipsum dolor sit amet ${i} `.repeat(30) })),
+    };
+    let compressed: Uint8Array;
+
+    beforeAll(async () => {
+        await initNodeCompression();
+        await initNodeDecompression();
+        compressed = buildDocumentPDFBytes(long, { compress: true });
+    });
+
+    afterEach(() => {
+        setMaxInflateOutputSize(DEFAULT_MAX_INFLATE_OUTPUT);
+    });
+
+    it('extracts the compressed page under the default cap', () => {
+        expect(extractText(compressed)[0].text).toContain('Lorem');
+    });
+
+    it('throws PdfStreamLimitError when a page stream exceeds the cap (default policy)', () => {
+        setMaxInflateOutputSize(1024);
+        let caught: unknown;
+        try { extractText(compressed); } catch (err) { caught = err; }
+        expect(caught).toBeInstanceOf(PdfStreamLimitError);
+        expect((caught as PdfStreamLimitError).code).toBe('PDF_STREAM_LIMIT');
+        expect((caught as PdfStreamLimitError).filter).toBe('FlateDecode');
+        expect((caught as PdfStreamLimitError).limit).toBe(1024);
+        expect((caught as Error).message).toContain('setMaxInflateOutputSize');
+    });
+
+    it("'skip' restores the pre-1.9.0 behaviour (empty pages, no throw)", () => {
+        setMaxInflateOutputSize(1024);
+        const pages = extractText(compressed, { onStreamError: 'skip' });
+        expect(pages.length).toBeGreaterThanOrEqual(1);
+        expect(pages.every(p => p.text === '')).toBe(true);
+    });
+
+    it("'throw' also reports a corrupt stream, which the default still skips", () => {
+        // A content stream declaring FlateDecode over bytes that are not a zlib stream.
+        const broken = assemblePdf([
+            '<< /Type /Catalog /Pages 2 0 R >>',
+            '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+            '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>',
+            streamObj('/Filter /FlateDecode', 'this is not deflate data at all'),
+            HELVETICA,
+        ]);
+        expect(extractText(broken)[0].text).toBe('');
+        expect(() => extractText(broken, { onStreamError: 'throw' })).toThrow();
+    });
+});
+
+// ── ToUnicode coverage for every shaper (1.9.0, #84, #87) ────────────
+// Untagged documents extracted Kangxi radicals for CJK ideographs and U+FFFD
+// for Khmer, Myanmar and Tai Tham stacks: the CMap named shared glyphs by
+// the lowest code point and the shapers that compose glyphs reported no
+// source code points. Every shaper fills `cps` now, and the glyph a text
+// actually encoded names itself.
+
+describe('extractText round-trips untagged text through the ToUnicode CMap (#84, #87)', () => {
+    const entry = (m: unknown, lang: string): FontEntry[] => [{ fontData: m as FontData, fontRef: '/F3', lang }];
+    const roundTrip = (text: string, fontEntries: FontEntry[]): string =>
+        extractText(buildDocumentPDFBytes({ title: 'rt', blocks: [{ type: 'paragraph', text }], fontEntries }))[0].text
+            .split('\n').filter(l => l !== 'rt' && l !== '1/1').join('\n');
+
+    it('CJK ideographs extract as ideographs, not as the Kangxi radicals sharing their glyphs', () => {
+        const text = roundTrip('月度账户对账单', entry(notoSc, 'zh'));
+        expect(text).toBe('月度账户对账单');
+        expect(text.codePointAt(0)).toBe(0x6708);
+    });
+
+    it('Khmer coeng stacks and Myanmar kinzi extract as their source code points, never U+FFFD', () => {
+        for (const [text, entries] of [
+            ['ស្ត្រី ក្រុម ខ្មែរ', entry(notoKhmer, 'km')],
+            ['အင်္ဂလိပ်', entry(notoMyanmar, 'my')],
+        ] as const) {
+            const out = roundTrip(text, entries);
+            expect(out, text).not.toContain('�');
+            // Geometric reading order may permute marks within a cluster: compare as code-point multisets.
+            expect([...out.replace(/\s/g, '')].sort().join(''), text).toBe([...text.replace(/\s/g, '')].sort().join(''));
+        }
+    });
+
+    it('Tai Tham ligatures (the #87 glyph) extract as their letters', () => {
+        const text = 'ᨣᩤᩴᨾᩮᩬᩥᨦ';
+        const out = roundTrip(text, entry(notoTaiTham, 'nod'));
+        expect(out).not.toContain('�');
+        expect([...out].sort().join('')).toBe([...text].sort().join(''));
+    });
+
+    it('Tibetan stacks extract as their letters', () => {
+        const text = 'བསྒྲུབས';
+        const out = roundTrip(text, entry(notoTibetan, 'bo'));
+        expect(out).not.toContain('�');
+        expect([...out].sort().join('')).toBe([...text].sort().join(''));
+    });
+
+    it('Extended Arabic-Indic digits extract as typed, not as the Arabic-Indic twins sharing the glyphs', () => {
+        const out = roundTrip('۱۲۳۸۹', entry(notoArabic, 'ar'));
+        expect([...out].sort().join('')).toBe([...'۱۲۳۸۹'].sort().join(''));
     });
 });

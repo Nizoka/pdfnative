@@ -79,7 +79,8 @@ describe('applyFeaturesToRuns', () => {
 
     it('substitutes glyphs and recomputes the advance', () => {
         const before = enc.textRuns('1111', 12);
-        const after = applyFeaturesToRuns(before, ['pnum'], 12);
+        // The codes are the document's CIDs (C28): the wrapper takes the context's resolver.
+        const after = applyFeaturesToRuns(before, ['pnum'], 12, undefined, (ref, cid) => enc.getCidMaps!().get(ref)![cid]);
         expect(after[0].hexStr).not.toBe(before[0].hexStr);
         // Proportional "1" is narrower than the tabular default.
         expect(after[0].widthPt).toBeLessThan(before[0].widthPt);
@@ -206,6 +207,21 @@ describe('feature-substituted glyphs are embedded, measured and mapped', () => {
         widths: Map<number, number>; // /W as CID → width
         toUnicode: Map<number, number>; // bfchar CID → codepoint
         glyf: ReturnType<typeof parseGlyfFont>;
+        /** The embedded program's hmtx advance of a CID (glyph i = CID i since C28). */
+        advance: (cid: number) => number;
+    }
+
+    /** `hmtx` advances of a TrueType program, by glyph id. */
+    function hmtxReader(program: Uint8Array): (gid: number) => number {
+        const view = new DataView(program.buffer, program.byteOffset, program.byteLength);
+        const tables: Record<string, number> = {};
+        const n = view.getUint16(4);
+        for (let i = 0; i < n; i++) {
+            const rec = 12 + i * 16;
+            tables[String.fromCharCode(program[rec], program[rec + 1], program[rec + 2], program[rec + 3])] = view.getUint32(rec + 8);
+        }
+        const nHM = view.getUint16(tables['hhea'] + 34);
+        return (gid: number): number => view.getUint16(tables['hmtx'] + Math.min(gid, nHM - 1) * 4);
     }
 
     function facts(bytes: Uint8Array): FontFacts {
@@ -226,7 +242,9 @@ describe('feature-substituted glyphs are embedded, measured and mapped', () => {
 
         const fdesc = reader.resolveValue(desc.get('FontDescriptor') as PdfValue) as PdfDict;
         const ff2 = reader.resolveValue(fdesc.get('FontFile2') as PdfValue) as PdfStream;
-        const glyf = parseGlyfFont(reader.decodeStream(ff2));
+        const program = reader.decodeStream(ff2);
+        const glyf = parseGlyfFont(program);
+        const advance = hmtxReader(program);
 
         const tu = reader.resolveValue(f3.get('ToUnicode') as PdfValue) as PdfStream;
         const cmapText = Buffer.from(reader.decodeStream(tu)).toString('latin1');
@@ -241,7 +259,7 @@ describe('feature-substituted glyphs are embedded, measured and mapped', () => {
         for (const m of stream.matchAll(/<([0-9A-Fa-f]+)>/g)) {
             for (let i = 0; i + 4 <= m[1].length; i += 4) cids.add(parseInt(m[1].slice(i, i + 4), 16));
         }
-        return { cids, widths, toUnicode, glyf };
+        return { cids, widths, toUnicode, glyf, advance };
     }
 
     for (const tags of [['onum'], ['smcp'], ['onum', 'smcp'], ['pnum']]) {
@@ -253,17 +271,26 @@ describe('feature-substituted glyphs are embedded, measured and mapped', () => {
                 expect([...f.cids].some(c => !plain.cids.has(c))).toBe(true);
             });
 
-            it('lists every shown CID in /W', () => {
-                // A glyph the font itself gives no width (the space, gid 3)
-                // is covered by /DW, which is the documented contract.
-                const missing = [...f.cids].filter(c => latin.widths[c] !== undefined && !f.widths.has(c));
-                expect(missing).toEqual([]);
+            it('lists every shown CID in /W, or leaves it to /DW at the same advance', () => {
+                // A glyph the font module gives no width (the space) is covered
+                // by /DW, which is the documented contract: either way the
+                // viewer's advance is the embedded program's (the codes are
+                // CIDs and glyph i of the program is CID i, C28).
+                for (const c of f.cids) {
+                    expect(f.widths.get(c) ?? latin.defaultWidth, `CID ${c}`).toBe(f.advance(c));
+                }
+                expect([...f.cids].filter(c => f.widths.has(c)).length).toBeGreaterThan(f.cids.size / 2);
             });
 
             it('declares the advance the layout engine measured with', () => {
+                // A substituted glyph keeps the module's width of the glyph it
+                // became: the program's advance for every shown CID is one of
+                // the module's advances, and every shown letter's /W entry
+                // matches the embedded program.
+                const moduleAdvances = new Set(Object.values(latin.widths));
+                moduleAdvances.add(latin.defaultWidth);
                 for (const c of f.cids) {
-                    if (latin.widths[c] === undefined) continue;
-                    expect(f.widths.get(c)).toBe(latin.widths[c]);
+                    expect(moduleAdvances.has(f.advance(c)), `CID ${c} advance ${f.advance(c)}`).toBe(true);
                 }
             });
 
@@ -272,12 +299,21 @@ describe('feature-substituted glyphs are embedded, measured and mapped', () => {
                 expect(missing).toEqual([]);
             });
 
-            it('embeds an outline for every shown CID that has one in the source font', () => {
+            it('embeds an outline for every shown CID that stands for a visible character', () => {
                 expect(f.glyf).not.toBeNull();
-                const blank = [...f.cids].filter(c =>
-                    extractGlyphContours(f.glyf!, c).length === 0
-                    && extractGlyphContours(FULL_FONT!, c).length > 0);
+                expect(FULL_FONT).not.toBeNull();
+                // Every shown code names a character through ToUnicode; a
+                // letter or digit — substituted or not — has an outline in the
+                // compact program, and so does the source glyph of that character.
+                const blank = [...f.cids].filter(c => {
+                    const cp = f.toUnicode.get(c);
+                    if (cp === undefined || cp === 0x20 || cp === 0xA0 || cp === 0x202F) return false;
+                    return extractGlyphContours(f.glyf!, c).length === 0;
+                });
                 expect(blank).toEqual([]);
+                const sourceBlank = [...f.cids].map(c => f.toUnicode.get(c)).filter(cp => cp !== undefined && /[A-Za-z0-9]/.test(String.fromCodePoint(cp)))
+                    .filter(cp => extractGlyphContours(FULL_FONT!, latin.cmap[cp!]).length === 0);
+                expect(sourceBlank).toEqual([]);
             });
         });
     }

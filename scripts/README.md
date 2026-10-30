@@ -1,6 +1,8 @@
 # scripts/ – Sample PDF Generation and the Quality Gate
 
-Generates 292 sample PDFs (49 generators) for visual inspection across all supported languages, features, and edge cases, and hosts `gate.ts`, the one definition of what "green" means for this repository.
+Generates 310 sample PDFs (50 generators) for visual inspection across all supported languages, features, and edge cases, and hosts `gate.ts`, the one definition of what "green" means for this repository.
+
+`run-compat.ts` (`npm run compat:previous`) replays the previous release's test suite, as tagged, against the current sources (`tests/compat/allow-<version>.json` lists what it may skip, each with a reason and a compatibility-ledger entry).
 
 Font tooling lives here too: `download-fonts.ts` (`npm run fonts:download`) fetches every source TTF at the commit, release tag and SHA-256 pinned in `fonts/SOURCES.json` and derives the five Latin subsets from `NotoSans-VF.ttf` with the library's own `subsetTTF()` (`build-latin-subsets.ts`, `lib/latin-subsets.ts`, code-point lists in `fonts/subsets/`); `verify-fonts.ts` (`npm run verify:fonts`) re-derives them and rebuilds every `fonts/*-data.js` from its source, byte for byte. Nothing under `fonts/ttf/` is committed.
 

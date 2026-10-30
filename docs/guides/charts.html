@@ -17,6 +17,7 @@
   <meta property="og:title" content="Charts (native vector) — pdfnative">
   <meta property="og:description" content="Nine chart kinds as pure PDF path operators — charts since v1.6.0, charts v2 (stacked, area, scatter, dual axis, log &amp; time scales) in v1.7.0. Zero dependencies, PDF/A-safe.">
   <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
+  <meta property="og:image:alt" content="pdfnative — pure native PDF generation, zero dependencies">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
@@ -153,9 +154,10 @@ paragraph, or table.</p>
   chartType: &#39;bar&#39; | &#39;barH&#39; | &#39;line&#39; | &#39;pie&#39; | &#39;donut&#39;
     | &#39;stackedBar&#39; | &#39;stackedBarH&#39; | &#39;area&#39; | &#39;scatter&#39;;    // last four: v1.7.0
   series: {
-    label: string;
+    label?: string;              // optional since v1.9.0 — an unlabelled series is listed as &quot;Series N&quot;
     values: number[];
     color?: PdfColor;
+    colors?: PdfColor[];         // one colour per value on bar charts — the legend keeps `color` (v1.9.0)
     xValues?: (number | string)[]; // x positions for scatter / linear / time x-axes (v1.7.0)
     yAxis?: &#39;left&#39; | &#39;right&#39;;      // bind the series to the secondary right axis (v1.7.0)
   }[];
@@ -183,7 +185,12 @@ paragraph, or table.</p>
 </code></pre>
 <p>Colours accept the same forms as the rest of pdfnative — <code>&#39;#4e79a7&#39;</code>,
 <code>[78, 121, 167]</code>, or a PDF RGB string — and are validated (injection-safe). When
-omitted, a built-in 8-colour categorical palette is used deterministically.</p>
+omitted, a built-in 8-colour categorical palette is used deterministically.
+On the four bar types a series may also carry <code>colors</code>, one entry per value, so
+each category&#39;s bar takes its own ink — an ink-coverage chart paints the C, M, Y
+and K plates in their process colours and the fifth plate in its spot colour
+(<code>{ spot: &#39;PANTONE 300 C&#39; }</code>). The legend swatch keeps the series <code>color</code>; the
+array must be as long as <code>values</code> or the build throws.</p>
 <h2 id="examples">Examples<a class="heading-anchor" href="#examples" aria-label="Link to this section">#</a></h2>
 <h3 id="multi-series-line-with-markers">Multi-series line with markers<a class="heading-anchor" href="#multi-series-line-with-markers" aria-label="Link to this section">#</a></h3>
 <pre><code class="language-ts">{

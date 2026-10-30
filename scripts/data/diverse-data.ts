@@ -178,9 +178,9 @@ export const DIVERSE_SAMPLES: LangSample[] = [
         headers: ['परीक्षण', 'परिणाम', 'सन्दर्भ सीमा', 'इकाई', 'स्थिति'],
         rows: [
             { cells: ['हीमोग्लोबिन', '14.2', '13.0–17.0', 'g/dL', 'सामान्य'], type: 'credit', pointed: false },
-            { cells: ['श्वेत रक्त कणिकाएँ', '7,200', '4,000–11,000', '/μL', 'सामान्य'], type: 'credit', pointed: false },
-            { cells: ['लाल रक्त कणिकाएँ', '5.1', '4.5–5.5', 'M/μL', 'सामान्य'], type: 'credit', pointed: false },
-            { cells: ['प्लेटलेट्स', '245,000', '150,000–400,000', '/μL', 'सामान्य'], type: 'credit', pointed: false },
+            { cells: ['श्वेत रक्त कणिकाएँ', '7,200', '4,000–11,000', '/µL', 'सामान्य'], type: 'credit', pointed: false },
+            { cells: ['लाल रक्त कणिकाएँ', '5.1', '4.5–5.5', 'M/µL', 'सामान्य'], type: 'credit', pointed: false },
+            { cells: ['प्लेटलेट्स', '245,000', '150,000–400,000', '/µL', 'सामान्य'], type: 'credit', pointed: false },
             { cells: ['रक्त शर्करा', '128', '70–100', 'mg/dL', 'उच्च'], type: 'debit', pointed: true },
             { cells: ['कोलेस्ट्रॉल', '210', '< 200', 'mg/dL', 'उच्च'], type: 'debit', pointed: true },
             { cells: ['क्रिएटिनिन', '0.9', '0.7–1.3', 'mg/dL', 'सामान्य'], type: 'credit', pointed: false },

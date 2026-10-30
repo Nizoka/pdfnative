@@ -174,6 +174,28 @@ export const TAMIL_END = 0x0BFF;
 export const TELUGU_START = 0x0C00;
 export const TELUGU_END = 0x0C7F;
 
+// ── Gujarati, Gurmukhi, Kannada, Malayalam, Odia (v1.9.0) ────────────
+
+/** Gujarati Unicode block. */
+export const GUJARATI_START = 0x0A80;
+export const GUJARATI_END = 0x0AFF;
+
+/** Gurmukhi Unicode block. */
+export const GURMUKHI_START = 0x0A00;
+export const GURMUKHI_END = 0x0A7F;
+
+/** Kannada Unicode block. */
+export const KANNADA_START = 0x0C80;
+export const KANNADA_END = 0x0CFF;
+
+/** Malayalam Unicode block. */
+export const MALAYALAM_START = 0x0D00;
+export const MALAYALAM_END = 0x0D7F;
+
+/** Odia Unicode block (the UCD calls it Oriya). */
+export const ODIA_START = 0x0B00;
+export const ODIA_END = 0x0B7F;
+
 // ── Ethiopic (v1.3.0) ───────────────────────────────
 
 /** Ethiopic Unicode block (covers Amharic, Tigrinya, Ge'ez…). */
@@ -408,6 +430,31 @@ export function isTeluguCodepoint(cp: number): boolean {
     return cp >= TELUGU_START && cp <= TELUGU_END;
 }
 
+/** Check if a codepoint falls in the Gujarati Unicode block. */
+export function isGujaratiCodepoint(cp: number): boolean {
+    return cp >= GUJARATI_START && cp <= GUJARATI_END;
+}
+
+/** Check if a codepoint falls in the Gurmukhi Unicode block. */
+export function isGurmukhiCodepoint(cp: number): boolean {
+    return cp >= GURMUKHI_START && cp <= GURMUKHI_END;
+}
+
+/** Check if a codepoint falls in the Kannada Unicode block. */
+export function isKannadaCodepoint(cp: number): boolean {
+    return cp >= KANNADA_START && cp <= KANNADA_END;
+}
+
+/** Check if a codepoint falls in the Malayalam Unicode block. */
+export function isMalayalamCodepoint(cp: number): boolean {
+    return cp >= MALAYALAM_START && cp <= MALAYALAM_END;
+}
+
+/** Check if a codepoint falls in the Odia Unicode block. */
+export function isOdiaCodepoint(cp: number): boolean {
+    return cp >= ODIA_START && cp <= ODIA_END;
+}
+
 /** Check if a codepoint falls in any Ethiopic Unicode block. */
 export function isEthiopicCodepoint(cp: number): boolean {
     return (cp >= ETHIOPIC_START && cp <= ETHIOPIC_END) ||
@@ -634,6 +681,46 @@ export function containsEthiopic(str: string): boolean {
     return false;
 }
 
+/** Check whether a string contains any Gujarati characters. */
+export function containsGujarati(str: string): boolean {
+    for (let i = 0; i < str.length; i++) {
+        if (isGujaratiCodepoint(str.charCodeAt(i))) return true;
+    }
+    return false;
+}
+
+/** Check whether a string contains any Gurmukhi characters. */
+export function containsGurmukhi(str: string): boolean {
+    for (let i = 0; i < str.length; i++) {
+        if (isGurmukhiCodepoint(str.charCodeAt(i))) return true;
+    }
+    return false;
+}
+
+/** Check whether a string contains any Kannada characters. */
+export function containsKannada(str: string): boolean {
+    for (let i = 0; i < str.length; i++) {
+        if (isKannadaCodepoint(str.charCodeAt(i))) return true;
+    }
+    return false;
+}
+
+/** Check whether a string contains any Malayalam characters. */
+export function containsMalayalam(str: string): boolean {
+    for (let i = 0; i < str.length; i++) {
+        if (isMalayalamCodepoint(str.charCodeAt(i))) return true;
+    }
+    return false;
+}
+
+/** Check whether a string contains any Odia characters. */
+export function containsOdia(str: string): boolean {
+    for (let i = 0; i < str.length; i++) {
+        if (isOdiaCodepoint(str.charCodeAt(i))) return true;
+    }
+    return false;
+}
+
 /** Check whether a string contains any Sinhala characters. */
 export function containsSinhala(str: string): boolean {
     for (let i = 0; i < str.length; i++) {
@@ -670,6 +757,34 @@ export function containsMyanmar(str: string): boolean {
 export function containsDevanagari(str: string): boolean {
     for (let i = 0; i < str.length; i++) {
         if (isDevanagariCodepoint(str.charCodeAt(i))) return true;
+    }
+    return false;
+}
+
+/**
+ * Is `cp` a character whose Unicode Script property is Devanagari — not
+ * merely a code point of the Devanagari block? The block also holds the
+ * danda and double danda (U+0964–U+0965, `Script=Common`), which every
+ * Indic script borrows as its full stop, and the Vedic tone marks
+ * U+0951–U+0954 (`Script=Inherited`). HarfBuzz itemises runs by that
+ * property, so an Odia or Gurmukhi sentence ending in « । » belongs to its
+ * own shaper; dispatching on the block sent the whole line to the
+ * Devanagari configuration (no split vowel signs, no conjuncts). @since 1.9.0
+ */
+export function isDevanagariScriptCodepoint(cp: number): boolean {
+    if (cp >= 0x0951 && cp <= 0x0954) return false;
+    if (cp === 0x0964 || cp === 0x0965) return false;
+    return isDevanagariCodepoint(cp);
+}
+
+/**
+ * Does `str` contain a character of `Script=Devanagari`? The dispatch
+ * predicate of the shaper registry; {@link containsDevanagari} keeps its
+ * block-wide meaning for callers that route fonts. @since 1.9.0
+ */
+export function containsDevanagariScript(str: string): boolean {
+    for (let i = 0; i < str.length; i++) {
+        if (isDevanagariScriptCodepoint(str.charCodeAt(i))) return true;
     }
     return false;
 }

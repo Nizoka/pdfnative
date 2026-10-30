@@ -2,7 +2,10 @@ name: Setup veraPDF
 description: >-
   Installs a pinned veraPDF greenfield release (the PDF/A reference validator)
   on the runner, after checking the installer against the SHA-256 recorded in
-  .github/checksums/. Exports VERAPDF_HOME and puts `verapdf` on the PATH.
+  .github/checksums/. Hands the install directory back as the `home` output;
+  the calling step passes it as VERAPDF_HOME to scripts/validate-pdfa.ts and
+  the gate. Nothing is written to GITHUB_ENV or GITHUB_PATH (zizmor
+  github-env): a step-scoped `env:` is the trust boundary, not the job.
   pdfnative stays a zero-runtime-dependency library; veraPDF is a CI tool.
 
 inputs:
@@ -15,6 +18,11 @@ inputs:
       https://software.verapdf.org/rel/
     required: false
     default: '1.30.2'
+
+outputs:
+  home:
+    description: The veraPDF install directory, to pass as VERAPDF_HOME.
+    value: ${{ steps.install.outputs.home }}
 
 runs:
   using: composite
@@ -48,6 +56,7 @@ runs:
         unzip -q "${ARCHIVE}" -d "$HOME/verapdf-installer"
 
     - name: Install veraPDF CLI
+      id: install
       shell: bash
       run: |
         set -euo pipefail
@@ -68,8 +77,7 @@ runs:
         </AutomatedInstallation>
         XML
         java -jar "${INSTALLER_JAR}" "$HOME/verapdf/auto-install.xml"
-        echo "VERAPDF_HOME=$HOME/verapdf" >> "$GITHUB_ENV"
-        echo "$HOME/verapdf" >> "$GITHUB_PATH"
+        echo "home=$HOME/verapdf" >> "$GITHUB_OUTPUT"
 
     - name: Verify veraPDF
       shell: bash

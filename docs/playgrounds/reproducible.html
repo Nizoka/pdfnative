@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Reproducible output — pdfnative playground</title>
-  <meta name="description" content="Build the same document twice in your browser with pdfnative 1.8.0, pin the creation instant with layout.creationDate or setDefaultCreationDate, and compare the SHA-256 of both builds: identical bytes for identical input, so a PDF can be hashed, diffed and gated in CI. Flip one input to watch the hashes diverge.">
+  <meta name="description" content="Build the same document twice in your browser with pdfnative 1.9.0, pin the creation instant with layout.creationDate or setDefaultCreationDate, and compare the SHA-256 of both builds: identical bytes for identical input, so a PDF can be hashed, diffed and gated in CI. Flip one input to watch the hashes diverge.">
   <link rel="canonical" href="https://pdfnative.dev/playgrounds/reproducible.html">
   <link rel="alternate" hreflang="en" href="https://pdfnative.dev/playgrounds/reproducible.html">
   <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/playgrounds/reproducible.html">
@@ -15,6 +15,7 @@
   <meta property="og:title" content="Reproducible output — pdfnative playground">
   <meta property="og:description" content="Pin the creation instant, build twice, compare the SHA-256: identical bytes for identical input, in the browser, zero install.">
   <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
+  <meta property="og:image:alt" content="pdfnative — pure native PDF generation, zero dependencies">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
@@ -111,7 +112,7 @@
   <nav class="playground-switcher" aria-label="Playground switcher">
     <span class="playground-switcher-label">Playgrounds:</span>
     <a href="./extreme-scripts.html">Extreme scripts</a>
-    <a href="./all-scripts.html">All 27 scripts</a>
+    <a href="./all-scripts.html">All 32 scripts</a>
     <a href="./toolkit.html">PDF Toolkit</a>
     <a href="./inspect.html">Inspect &amp; verify</a>
     <a href="./charts.html">Charts</a>
@@ -124,11 +125,12 @@
     <a href="./print.html">Print &amp; PDF/X</a>
     <a href="./reproducible.html" aria-current="page">Reproducible output</a>
     <a href="./docspec-lint.html">DocSpec lint</a>
+    <a href="./images.html">Images</a>
     <a href="./" style="margin-left:auto;">All →</a>
   </nav>
   <article class="guide-content">
     <h1>Reproducible output — since 1.8.0</h1>
-    <p>pdfnative 1.8.0 writes identical bytes for identical input once the creation instant is pinned — per call with <code>layout.creationDate</code>, or once per process with <code>setDefaultCreationDate</code>; every date is written in UTC, so the bytes do not depend on the host. <code>/CreationDate</code>, the XMP dates, the <code>{date}</code> header and footer placeholder and the trailer <code>/ID</code> all derive from that one instant, which means a document can be hashed, diffed and gated in CI. Pick a preset and build it <strong>twice</strong>: the page shows the SHA-256 of each build. Then flip one input for the second build and watch the hashes diverge.</p>
+    <p>pdfnative 1.9.0 writes identical bytes for identical input once the creation instant is pinned — per call with <code>layout.creationDate</code>, or once per process with <code>setDefaultCreationDate</code>; every date is written in UTC, so the bytes do not depend on the host. <code>/CreationDate</code>, the XMP dates, the <code>{date}</code> header and footer placeholder and the trailer <code>/ID</code> all derive from that one instant, which means a document can be hashed, diffed and gated in CI. Pick a preset and build it <strong>twice</strong>: the page shows the SHA-256 of each build. Then flip one input for the second build and watch the hashes diverge.</p>
 
     <div id="snippets" style="margin-top:20px;padding:14px 16px;background:var(--c-bg-alt);border:1px solid var(--c-border);border-radius:8px;">
       <p style="margin:0 0 8px 0;font-size:14px;"><strong>The same pin on the other surfaces</strong> <span style="color:var(--c-text-dim);">— copy-only: the CLI and the MCP server do not run in the browser.</span></p>
@@ -382,7 +384,7 @@ function applyPreset(id) {
   if (window.Prism) window.Prism.highlightElement(codeView);
 }
 
-const CDN_URLS = ['https://esm.sh/pdfnative@1.8.0', 'https://cdn.jsdelivr.net/npm/pdfnative@1.8.0/+esm'];
+const CDN_URLS = ['https://esm.sh/pdfnative@1.9.0', 'https://cdn.jsdelivr.net/npm/pdfnative@1.9.0/+esm'];
 let pdfMod = null;
 async function loadPdfnative() {
   if (pdfMod) return pdfMod;

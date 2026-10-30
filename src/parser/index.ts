@@ -42,6 +42,9 @@ export { createModifier } from './pdf-modifier.js';
 export type { ExtractTextOptions, ExtractedTextRun, ExtractedPageText } from './pdf-text-extract.js';
 export { extractText } from './pdf-text-extract.js';
 
+// ── Text strings (ISO 32000-1 §7.9.2.2) ─────────────────────────────
+export { decodePdfTextString } from './pdf-text-string.js';
+
 // ── Page-tree manipulation (merge / split / extract) ────────────────
 export type { PageRange, MergeOptions, PdfSourceInput, StreamMergeOptions, SplitPdfStream } from './pdf-pagetree.js';
 export {

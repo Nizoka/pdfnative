@@ -71,6 +71,23 @@ function escapeUrlForPdf(url: string): string {
 }
 
 /**
+ * The dictionary entries that make an annotation a URI link: no visible
+ * border and the `/URI` action. Validates the scheme (`http:`, `https:`,
+ * `mailto:`) and escapes the URL for a PDF literal string. Shared by the
+ * document builder's link block and the incremental `link` markup
+ * annotation (#91).
+ *
+ * @throws Error if the URL scheme is not allowed
+ * @since 1.9.0
+ */
+export function linkActionEntries(url: string): string {
+    if (!validateURL(url)) {
+        throw new Error(`Blocked URL scheme: only http:, https:, mailto: allowed — got "${url}"`);
+    }
+    return `/Border [0 0 0] /A << /Type /Action /S /URI /URI (${escapeUrlForPdf(url)}) >>`;
+}
+
+/**
  * Build a PDF link annotation object for an external URI.
  *
  * @param annot - Link annotation with URL and click rectangle

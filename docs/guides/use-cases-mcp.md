@@ -2,7 +2,7 @@
 
 > **Three architectures on pdfnative-mcp v1.7.0 (pdfnative ≥ 1.8.0, Node ≥ 22):**
 > one shared HTTP server whose outputs are files, a token-frugal typesetting
-> loop, and multilingual PDF/A notices in 27 scripts.
+> loop, and multilingual PDF/A notices in every script the engine shapes.
 
 pdfnative-mcp v1.7.0 exposes the pdfnative ≥ 1.8.0 engine to conversational
 assistants as 28 tools and seven prompts, over stdio or Streamable HTTP
@@ -183,7 +183,7 @@ because the typography fragment is inlined in every tool that carries it —
 hosts should honour its 24 h public cache hint rather than refetch it per
 session.
 
-## Case 3 — Multilingual notices in 27 scripts from a conversation
+## Case 3 — Multilingual notices in every script from a conversation
 
 A safety notice, a consent form or a receipt that must exist in the reader's
 own script is usually a font-procurement project before it is a document
@@ -193,7 +193,7 @@ script shapers, always embeds the fonts, and can claim PDF/A — from a single
 tool call inside a conversation.
 
 The building blocks: `add_international_text` with a `lang` array covering the
-27 scripts — including, since v1.7.0, `lo` (Lao, dedicated shaper), `nod`
+every script of the engine it was built on — including, since v1.7.0, `lo` (Lao, dedicated shaper), `nod`
 (Tai Tham) and `cjm` (Cham) through the Universal Shaping Engine, `khb`
 (New Tai Lue) and `tdd` (Tai Le), plus the `latin` aliases `ha`, `yo`, `ig`
 and `sw` whose tone marks are anchored; `pdfA: "pdfa2b"` with `strict: true`
@@ -239,14 +239,15 @@ What you gain, concretely:
 
 Honest limits: there are no custom fonts on the MCP surface — the operator-side
 font sandbox (`PDFNATIVE_MCP_FONT_DIR`) is on the roadmap, not in v1.7.0; a
-house typeface needs the CLI (`render --font-file`) or the library. Tai Tham
-under PDF/A-2**u** fails veraPDF (one shaped glyph has no `ToUnicode` entry,
-rule 6.2.11.7.2), so use `pdfa2b` whenever `nod` is in the list — the other
-four new scripts pass level U. Text extraction from an **untagged** PDF returns
-visual order for eleven scripts; a `pdfA` claim makes the output tagged, which
-is what turns extraction exact. And `annotate_pdf` has no `link` annotation
-type yet (the engine's markup union lacks it); the `link` block of
-`generate_basic_pdf` covers new documents.
+house typeface needs the CLI (`render --font-file`) or the library. Every
+script passes PDF/A-2**u** since pdfnative 1.9.0 (every shaper's glyph is named
+in `ToUnicode`, and `PDFA_GLYPH_WITHOUT_UNICODE` names any glyph that still is
+not). Text extraction from an **untagged** PDF returns
+the logical string since pdfnative 1.9.0 (every reordered run, right-to-left
+runs included, carries its text as `/ActualText`, tagged or not). And
+`annotate_pdf` in pdfnative-mcp 1.7.0 has no `link` annotation type yet — the
+engine added `{ type: 'link' }` to its markup union in 1.9.0; the `link` block
+of `generate_basic_pdf` covers new documents.
 
 ## See also
 

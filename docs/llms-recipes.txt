@@ -5,6 +5,50 @@
 > (tests/docs/recipes.test.ts). The machine index is recipes/index.json.
 
 ---
+<!-- source: recipes/annotate-link.ts -->
+
+```ts
+/**
+ * Add a clickable link to an existing PDF without rewriting it: open the
+ * document, build a `/Link` annotation with a `/URI` action (the URL goes
+ * through the builder's allow-list — `javascript:`, `file:` and `data:` are
+ * refused) and append it as an incremental update, so every earlier byte,
+ * and any signature over them, stays intact.
+ *
+ * @task Add a URL link annotation to an existing PDF as an incremental update
+ * @surface library
+ * @since 1.9.0
+ * @expect pdf contains '/Subtype /Link'
+ * @expect pdf contains '/URI (https://pdfnative.dev)'
+ * @expect the update keeps the original bytes as its prefix
+ */
+import { buildAnnotationBody, buildDocumentPDFBytes, createModifier, openPdf } from 'pdfnative';
+
+export async function run(): Promise<{ original: Uint8Array; bytes: Uint8Array }> {
+    const original = buildDocumentPDFBytes(
+        {
+            title: 'Release notes',
+            blocks: [
+                { type: 'heading', text: 'Release notes', level: 1 },
+                { type: 'paragraph', text: 'The full changelog is on pdfnative.dev.' },
+            ],
+        },
+        { creationDate: new Date('2026-10-23T00:00:00Z') },
+    );
+
+    const modifier = createModifier(openPdf(original));
+    // Rect in PDF user space (points, origin bottom-left): a strip over the second line of text.
+    modifier.addAnnotation(0, buildAnnotationBody({
+        type: 'link',
+        rect: [36, 700, 300, 716],
+        url: 'https://pdfnative.dev',
+        contents: 'Open the changelog',
+    }));
+    return { original, bytes: modifier.save() };
+}
+```
+
+---
 <!-- source: recipes/arabic-rtl.ts -->
 
 ```ts
@@ -159,6 +203,111 @@ export async function run(): Promise<{ bytes: Uint8Array; pages: number; text: s
 ```
 
 ---
+<!-- source: recipes/dual-pdfa-pdfx.ts -->
+
+```ts
+/**
+ * One file, two claims: PDF/A-2b for the archive and PDF/X-4 for the press.
+ * Since 1.9.0 `tagged: 'pdfa2b'` (or `'pdfa2u'`) combines with
+ * `pdfx: 'pdfx4'`: the XMP carries `pdfaid` and `pdfxid`, two OutputIntents
+ * (`/GTS_PDFA1`, `/GTS_PDFX`) share one ICC stream, and `validatePdfX()`
+ * accepts the result. The profile here is the synthetic CMYK profile from
+ * `pdfnative/tools` — it characterises no press; a real job uses the
+ * printer's profile.
+ *
+ * @task Claim PDF/A-2b and PDF/X-4 in the same document
+ * @surface library
+ * @since 1.9.0
+ * @expect validatePdfX(bytes).valid === true
+ * @expect pdf contains 'pdfaid:part'
+ * @expect pdf contains '/S /GTS_PDFX'
+ * @expect pdf contains '/S /GTS_PDFA1'
+ */
+import { buildDocumentPDFBytes, validatePdfX } from 'pdfnative';
+import type { FontData, PdfXValidationResult } from 'pdfnative';
+import { buildSyntheticCmykProfile } from 'pdfnative/tools';
+import * as notoSans from 'pdfnative/fonts/noto-sans-data.js';
+
+export async function run(): Promise<{ bytes: Uint8Array; report: PdfXValidationResult }> {
+    const bytes = buildDocumentPDFBytes(
+        {
+            title: 'Annual report — archive and press master',
+            fontEntries: [{ fontData: notoSans as unknown as FontData, fontRef: '/F3', lang: 'latin' }],
+            blocks: [
+                { type: 'heading', text: 'Annual report', level: 1 },
+                { type: 'paragraph', text: 'Archived as PDF/A-2b, printed from the same bytes as PDF/X-4.', color: [0, 0, 0, 100] },
+            ],
+            footerText: 'Annual report',
+            metadata: { trapped: 'False' },
+        },
+        {
+            creationDate: new Date('2026-10-23T00:00:00Z'),
+            tagged: 'pdfa2b',
+            pdfx: 'pdfx4',
+            outputIntent: {
+                iccProfile: buildSyntheticCmykProfile(),
+                outputConditionIdentifier: 'Synthetic CMYK (characterises no press)',
+                registryName: 'http://www.color.org',
+            },
+        },
+    );
+    return { bytes, report: validatePdfX(bytes) };
+}
+```
+
+---
+<!-- source: recipes/extract-roundtrip.ts -->
+
+```ts
+/**
+ * Round-trip check: shaped text — a Devanagari conjunct, Thai with a tone
+ * mark over sara am, an Arabic word in its positional forms — written with
+ * the bundled fonts and read back with `extractText()`. Since 1.9.0 every
+ * shaper reports the code points behind each glyph it emits, the ToUnicode
+ * CMap names them, and untagged Thai and Lao sara am carry an /ActualText
+ * span, so the letters a reader copies are the letters the author typed.
+ *
+ * @task Write shaped Devanagari, Thai and Arabic text and read every letter back
+ * @surface library
+ * @since 1.9.0
+ * @expect text of page 0 contains 'क्षमता'
+ * @expect text of page 0 contains 'น้ำ'
+ * @expect every letter of 'مرحبا' extracts
+ */
+import { buildDocumentPDFBytes, extractText } from 'pdfnative';
+import type { FontData } from 'pdfnative';
+import * as notoDevanagari from 'pdfnative/fonts/noto-devanagari-data.js';
+import * as notoThai from 'pdfnative/fonts/noto-thai-data.js';
+import * as notoArabic from 'pdfnative/fonts/noto-arabic-data.js';
+
+export const SAMPLES = {
+    devanagari: 'क्षमता और विश्वास',   // conjunct क्ष, then independent words
+    thai: 'น้ำ และ ก่ำ',               // sara am under a tone mark, twice
+    arabic: 'مرحبا بالعالم',           // positional forms, no ligature but lam-alef in بالعالم
+};
+
+export async function run(): Promise<{ bytes: Uint8Array; text: string }> {
+    const bytes = buildDocumentPDFBytes(
+        {
+            title: 'Round trip',
+            fontEntries: [
+                { fontData: notoDevanagari as unknown as FontData, fontRef: '/F3', lang: 'devanagari' },
+                { fontData: notoThai as unknown as FontData, fontRef: '/F4', lang: 'thai' },
+                { fontData: notoArabic as unknown as FontData, fontRef: '/F5', lang: 'arabic' },
+            ],
+            blocks: [
+                { type: 'paragraph', text: SAMPLES.devanagari },
+                { type: 'paragraph', text: SAMPLES.thai },
+                { type: 'paragraph', text: SAMPLES.arabic, direction: 'rtl' },
+            ],
+        },
+        { creationDate: new Date('2026-10-23T00:00:00Z') },
+    );
+    return { bytes, text: extractText(bytes)[0].text };
+}
+```
+
+---
 <!-- source: recipes/form-fill-roundtrip.ts -->
 
 ```ts
@@ -273,6 +422,58 @@ export async function run(): Promise<{ bytes: Uint8Array; pages: number; text: s
 ```
 
 ---
+<!-- source: recipes/jpx-image.ts -->
+
+```ts
+/**
+ * Embed a JPEG 2000 image. The file's bytes travel untouched as a
+ * `/JPXDecode` stream; colour space and bit depth are left to the codestream
+ * when the JP2 header declares them (ISO 32000-1 §7.4.9), an opacity channel
+ * becomes `/SMaskInData 1`, and the header is raised to PDF 1.5. The image
+ * below is an 8 × 8 JP2 file with a `colr` box and an alpha channel, inlined
+ * so the recipe has no file dependency; in a real job read the `.jp2` or
+ * `.j2k` from disk.
+ *
+ * @task Embed a JPEG 2000 image as a JPXDecode pass-through
+ * @surface library
+ * @since 1.9.0
+ * @expect pages === 1
+ * @expect pdf contains '/JPXDecode'
+ * @expect pdf contains '/SMaskInData 1'
+ * @expect header === '%PDF-1.5'
+ */
+import { buildDocumentPDFBytes, openPdf, parseImage } from 'pdfnative';
+import type { JpxInfo } from 'pdfnative';
+
+const JP2_BASE64 = 'AAAADGpQICANCocKAAAAFGZ0eXBqcDIgAAAAAGpwMiAAAABJanAyaAAAABZpaGRyAAAACAAAAAgAAwcHAAAAAAAPY29scgEAAAAAABAAAAAcY2RlZgADAAAAAAABAAEAAAACAAIAAQAAAAAAYmpwMmP/T/9RAC8AAAAAAAgAAAAIAAAAAAAAAAAAAAAIAAAACAAAAAAAAAAAAAMHAQEHAQEHAQH/UgAMAAAAAQEABAQAAf9cAARAQP+QAAoAAAAAABEAAf+TAAAA/9k=';
+
+function fromBase64(b64: string): Uint8Array {
+    const bin = atob(b64);
+    const out = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return out;
+}
+
+export async function run(): Promise<{ bytes: Uint8Array; pages: number; header: string; jpx: JpxInfo | undefined }> {
+    const image = fromBase64(JP2_BASE64);
+    const parsed = parseImage(image); // what the XObject will say: 3 colour channels + alpha, colour declared
+    const bytes = buildDocumentPDFBytes(
+        {
+            title: 'JPEG 2000',
+            blocks: [
+                { type: 'heading', text: 'A JPEG 2000 image, passed through', level: 1 },
+                { type: 'image', data: image, width: 160, height: 160, alt: 'An 8 by 8 JPEG 2000 test image with an opacity channel' },
+                { type: 'paragraph', text: 'The codestream is embedded as written; viewers with JPX support decode it.' },
+            ],
+        },
+        { creationDate: new Date('2026-10-23T00:00:00Z') },
+    );
+    const header = String.fromCharCode(...bytes.subarray(0, 8));
+    return { bytes, pages: openPdf(bytes).pageCount, header, jpx: parsed.jpx };
+}
+```
+
+---
 <!-- source: recipes/layout-preview.ts -->
 
 ```ts
@@ -306,6 +507,70 @@ const params: DocumentParams = {
 export async function run(): Promise<{ inspection: LayoutInspection }> {
     const inspection = inspectDocumentLayout(params);
     return { inspection };
+}
+```
+
+---
+<!-- source: recipes/ltv-compose-offline.ts -->
+
+```ts
+/**
+ * Long-term validation from material collected out of band. A signed PDF
+ * and flat lists of certificates, OCSP responses and CRLs — fetched by
+ * another system, read from an archive, or handed over by the CA — are
+ * composed into the `/DSS` with `composeLtvData()`: `match: 'chain'` keeps
+ * only what validates each signature (issuers found by verifying
+ * signatures, OCSP responses by CertID, CRLs by issuer name), so nothing
+ * unrelated lands in the file. No network, no provider: the recipe is the
+ * offline half of the LTV pipeline.
+ *
+ * @task Embed LTV material collected offline into a signed PDF, keeping only what the chain needs
+ * @surface library
+ * @since 1.9.0
+ * @expect signatures.length === 1
+ * @expect pdf contains '/DSS'
+ * @expect pdf contains '/VRI'
+ * @expect data.certificates.length === 2
+ */
+import { addSignaturePlaceholder, buildDocumentPDFBytes, composeLtvData, embedValidationInfo, listSignatures, signPdfBytes } from 'pdfnative';
+import type { ComposeLtvOptions, LtvData, LtvMaterial, PdfSignatureInfo, RsaPrivateKey, X509Certificate } from 'pdfnative';
+
+/** Key material supplied by the caller (e.g. from a PKCS#12 store). */
+export interface SignerMaterial {
+    readonly cert: X509Certificate;
+    readonly key: RsaPrivateKey;
+    readonly chain?: readonly X509Certificate[];
+}
+
+/** Validation material gathered out of band: DER certificates, OCSP responses, CRLs — the public LtvMaterial shape. */
+export type OfflineMaterial = LtvMaterial;
+
+export async function run(signer: SignerMaterial, material: OfflineMaterial): Promise<{ bytes: Uint8Array; signatures: readonly PdfSignatureInfo[]; data: LtvData }> {
+    const signingTime = new Date('2026-10-23T00:00:00Z');
+    const unsigned = buildDocumentPDFBytes(
+        { title: 'Service agreement', blocks: [{ type: 'paragraph', text: 'Signed, then made verifiable for the long term.' }] },
+        { creationDate: signingTime },
+    );
+    const placeheld = addSignaturePlaceholder(unsigned, {
+        fieldName: 'Author',
+        metadata: { subFilter: 'ETSI.CAdES.detached', reason: 'Approval', signingTime },
+    });
+    const signed = signPdfBytes(placeheld, {
+        signerCert: signer.cert,
+        certChain: signer.chain,
+        rsaKey: signer.key,
+        algorithm: 'rsa-sha256',
+        profile: 'pades',
+        signingTime,
+    });
+
+    // Only the material that validates this document's signature is kept: 'chain' keeps the
+    // certificates of the signer's chain and the OCSP responses and CRLs that answer for them
+    // (ocspResponseMatchesCertificate decides which response answers for which certificate).
+    const options: ComposeLtvOptions = { match: 'chain' };
+    const data = composeLtvData(signed, material, options);
+    const bytes = embedValidationInfo(signed, data);
+    return { bytes, signatures: listSignatures(bytes), data };
 }
 ```
 
@@ -509,6 +774,56 @@ export async function run(options: { readonly iccProfile: Uint8Array }): Promise
 ```
 
 ---
+<!-- source: recipes/rtl-document.ts -->
+
+```ts
+/**
+ * A right-to-left document: Arabic and Hebrew paragraphs whose base
+ * direction is detected from their first strong letter (`direction: 'auto'`,
+ * UAX #9 P2–P3), aligned to the right margin, with a Latin product name and
+ * figures kept in reading order inside the Arabic sentence. The text comes
+ * back through the embedded ToUnicode CMaps.
+ *
+ * @task Render Arabic and Hebrew paragraphs with detected base direction and right alignment
+ * @surface library
+ * @since 1.9.0
+ * @expect pages === 1
+ * @expect pdf contains '/Identity-H'
+ * @expect every letter of the Arabic heading extracts
+ */
+import { buildDocumentPDFBytes, extractText, openPdf } from 'pdfnative';
+import type { FontData } from 'pdfnative';
+import * as notoArabic from 'pdfnative/fonts/noto-arabic-data.js';
+import * as notoHebrew from 'pdfnative/fonts/noto-hebrew-data.js';
+
+export const HEADING = 'الفصل الأول (المقدمة)';
+
+export async function run(): Promise<{ bytes: Uint8Array; pages: number; text: string }> {
+    const bytes = buildDocumentPDFBytes(
+        {
+            title: 'Quarterly report',
+            fontEntries: [
+                { fontData: notoArabic as unknown as FontData, fontRef: '/F3', lang: 'arabic' },
+                { fontData: notoHebrew as unknown as FontData, fontRef: '/F4', lang: 'hebrew' },
+            ],
+            blocks: [
+                { type: 'heading', text: HEADING, level: 1 },
+                // Figures and the percent sign keep their reading order inside the right-to-left run (W1–W7).
+                { type: 'paragraph', text: 'بلغت الإيرادات 1,250 مليون ريال في عام 2026، أي بزيادة 12% مقارنة بالعام السابق.' },
+                // A Latin product name inside an Arabic sentence: a forced right-to-left paragraph.
+                { type: 'paragraph', text: 'المنتج pdfnative يعمل بلا تبعيات.', direction: 'rtl' },
+                // Hebrew, detected from its first letter; the full stop lands at the line's left end (N1).
+                { type: 'paragraph', text: 'שלום עולם. דוח רבעוני לשנת 2026.' },
+            ],
+            footerText: 'Quarterly report',
+        },
+        { direction: 'auto', creationDate: new Date('2026-10-23T00:00:00Z') },
+    );
+    return { bytes, pages: openPdf(bytes).pageCount, text: extractText(bytes).map(p => p.text).join('\n') };
+}
+```
+
+---
 <!-- source: recipes/signed-pades.ts -->
 
 ```ts
@@ -568,6 +883,53 @@ export async function run(signer: SignerMaterial): Promise<{ bytes: Uint8Array; 
     });
 
     return { bytes, signatures: listSignatures(bytes) };
+}
+```
+
+---
+<!-- source: recipes/spot-colours.ts -->
+
+```ts
+/**
+ * Spot colours for the press: two inks declared once in
+ * `layout.print.spotColours` with their process alternates, painted as a
+ * solid, a tint, and a two-ink mix. pdfnative writes one `/Separation`
+ * colour space per ink the content uses and a `/DeviceN` space for the mix,
+ * each with the tint transform that lets a viewer without the ink show the
+ * alternate.
+ *
+ * @task Paint text in named spot inks and a two-ink mix, with process alternates
+ * @surface library
+ * @since 1.9.0
+ * @expect pages === 1
+ * @expect pdf contains '/Separation'
+ * @expect pdf contains '/DeviceN'
+ */
+import { buildDocumentPDFBytes, openPdf } from 'pdfnative';
+
+export async function run(): Promise<{ bytes: Uint8Array; pages: number }> {
+    const bytes = buildDocumentPDFBytes(
+        {
+            title: 'Spot colours',
+            blocks: [
+                { type: 'heading', text: 'Brand blue, solid', level: 1, color: { spot: 'PANTONE 300 C' } },
+                { type: 'paragraph', text: 'Brand blue at a 40 % tint.', color: { spot: 'PANTONE 300 C', tint: 0.4 } },
+                { type: 'paragraph', text: 'Gold accent, solid.', color: { spot: 'Gold' } },
+                { type: 'paragraph', text: 'A duotone mix: 60 % blue over 30 % gold.', color: { inks: { 'PANTONE 300 C': 0.6, Gold: 0.3 } } },
+                { type: 'paragraph', text: 'Body text stays in process black.' },
+            ],
+        },
+        {
+            creationDate: new Date('2026-10-23T00:00:00Z'),
+            print: {
+                spotColours: [
+                    { name: 'PANTONE 300 C', alternate: [100, 44, 0, 0] }, // CMYK percent
+                    { name: 'Gold', alternate: [0, 17, 74, 17] },
+                ],
+            },
+        },
+    );
+    return { bytes, pages: openPdf(bytes).pageCount };
 }
 ```
 

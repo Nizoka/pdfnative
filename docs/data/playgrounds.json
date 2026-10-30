@@ -1,7 +1,7 @@
 {
   "$comment": "Machine-readable inventory of the live playgrounds (docs/playgrounds/*.html, redirect stubs excluded). Hand-maintained; the playgrounds-manifest rule of scripts/verify-docs.ts checks that every live page is listed and every listed page exists, and that the count equals derived.playgrounds in docs/assets/ecosystem.json. Control ids are DOM ids on the page. selfContained: true means every code view of the page (the CODE object shown in #code-view and copied by the Copy button) declares all it uses and imports only from 'pdfnative', so it reproduces the result outside the browser; tests/docs/playgrounds.test.ts runs each such view in Node and locks that promise. false carries a note saying why the page is not covered.",
-  "verifiedOn": "2026-09-27",
-  "engine": "pdfnative@1.8.0 loaded from a CDN (esm.sh, jsdelivr or unpkg); nothing runs server-side",
+  "verifiedOn": "2026-10-30",
+  "engine": "pdfnative@1.9.0 loaded from a CDN (esm.sh, jsdelivr or unpkg); nothing runs server-side",
   "playgrounds": [
     {
       "id": "extreme-scripts",
@@ -12,14 +12,60 @@
       "since": "1.3.0",
       "requires": [],
       "controls": [
-        { "id": "preset", "kind": "select", "values": ["bidi", "embeddings", "emoji", "tamil", "bengali", "harakat", "use"] },
-        { "id": "title", "kind": "text", "meaning": "document title" },
-        { "id": "heading", "kind": "text", "meaning": "H1 text" },
-        { "id": "body", "kind": "textarea", "meaning": "body paragraphs, blank line separated" },
-        { "id": "generate", "kind": "button" },
-        { "id": "copy", "kind": "button", "meaning": "copy the code view to the clipboard" }
+        {
+          "id": "preset",
+          "kind": "select",
+          "values": [
+            "bidi",
+            "embeddings",
+            "emoji",
+            "tamil",
+            "bengali",
+            "harakat",
+            "use",
+            "rtl"
+          ]
+        },
+        {
+          "id": "title",
+          "kind": "text",
+          "meaning": "document title"
+        },
+        {
+          "id": "heading",
+          "kind": "text",
+          "meaning": "H1 text"
+        },
+        {
+          "id": "body",
+          "kind": "textarea",
+          "meaning": "body paragraphs, blank line separated"
+        },
+        {
+          "id": "generate",
+          "kind": "button"
+        },
+        {
+          "id": "copy",
+          "kind": "button",
+          "meaning": "copy the code view to the clipboard"
+        }
       ],
-      "exercises": ["registerFonts", "loadFontData", "buildDocumentPDFBytes", "downloadBlob", "params.fontEntries", "shaping.bidi", "shaping.use (nod, cjm)", "shaping.arabic", "shaping.indic", "shaping.emoji (COLRv1)"],
+      "exercises": [
+        "registerFonts",
+        "loadFontData",
+        "buildDocumentPDFBytes",
+        "downloadBlob",
+        "params.fontEntries",
+        "shaping.bidi",
+        "shaping.use (nod, cjm)",
+        "shaping.arabic",
+        "shaping.indic",
+        "shaping.emoji (COLRv1)",
+        "layout.direction: 'auto' (TextDirection) and ParagraphBlock.direction",
+        "right-to-left paragraphs aligned right and justified in visual order (align: 'justify')",
+        "UAX #9 isolates (FSI … PDI) and bracket pairs (N0) under the full resolver (resolveBidiLevels)"
+      ],
       "codeView": "#code-view",
       "selfContained": false,
       "note": "The code view is assembled from the form inputs at runtime and registers its fonts from esm.sh URLs, so it is not run by tests/docs/playgrounds.test.ts; it reproduces the result once those URLs are replaced by pdfnative/fonts/* imports.",
@@ -30,19 +76,59 @@
       "id": "all-scripts",
       "file": "all-scripts.html",
       "url": "https://pdfnative.dev/playgrounds/all-scripts.html",
-      "title": "All 27 scripts + emoji",
-      "purpose": "One document mixing every supported script (27 lang keys incl. the five 1.8.0 additions lo, nod, khb, tdd, cjm) plus colour or monochrome emoji, routed per code point to 29 embedded fonts.",
+      "title": "All 32 scripts + emoji",
+      "purpose": "One document mixing every supported script (32 lang keys incl. the five 1.8.0 additions lo, nod, khb, tdd, cjm and the five 1.9.0 Indic additions gu, pa, kn, ml, or) plus colour or monochrome emoji, routed per code point to 34 embedded fonts.",
       "since": "1.3.0",
       "requires": [],
       "controls": [
-        { "id": "preset", "kind": "select", "values": ["world-color", "world-mono", "greetings"] },
-        { "id": "title", "kind": "text", "meaning": "document title" },
-        { "id": "heading", "kind": "text", "meaning": "H1 text" },
-        { "id": "body", "kind": "textarea", "meaning": "body paragraphs, blank line separated; #greetings-table is the data source of the greetings preset" },
-        { "id": "generate", "kind": "button" },
-        { "id": "copy", "kind": "button", "meaning": "copy the code view to the clipboard" }
+        {
+          "id": "preset",
+          "kind": "select",
+          "values": [
+            "world-color",
+            "world-mono",
+            "greetings"
+          ]
+        },
+        {
+          "id": "title",
+          "kind": "text",
+          "meaning": "document title"
+        },
+        {
+          "id": "heading",
+          "kind": "text",
+          "meaning": "H1 text"
+        },
+        {
+          "id": "body",
+          "kind": "textarea",
+          "meaning": "body paragraphs, blank line separated; #greetings-table is the data source of the greetings preset"
+        },
+        {
+          "id": "generate",
+          "kind": "button"
+        },
+        {
+          "id": "copy",
+          "kind": "button",
+          "meaning": "copy the code view to the clipboard"
+        }
       ],
-      "exercises": ["registerFonts", "loadFontData", "buildDocumentPDFBytes", "downloadBlob", "params.fontEntries", "font routing across 27 scripts", "shaping.indic (hi, bn, ta, te, si — one OpenType engine since 1.8.0)", "shaping.use (nod, cjm)", "shaping.lao", "shaping.latin-marks (Yoruba and Igbo tone marks on the latin module)", "shaping.emoji (COLRv1 and monochrome)", "font subsetting (CIDFont Type2, Identity-H)"],
+      "exercises": [
+        "registerFonts",
+        "loadFontData",
+        "buildDocumentPDFBytes",
+        "downloadBlob",
+        "params.fontEntries",
+        "font routing across 32 scripts",
+        "shaping.indic (hi, bn, ta, te, si since 1.8.0; gu, pa, kn, ml, or since 1.9.0 — one OpenType engine)",
+        "shaping.use (nod, cjm)",
+        "shaping.lao",
+        "shaping.latin-marks (Yoruba and Igbo tone marks on the latin module)",
+        "shaping.emoji (COLRv1 and monochrome)",
+        "font subsetting (CIDFont Type2, Identity-H)"
+      ],
       "codeView": "#code-view",
       "selfContained": false,
       "note": "The code view is assembled from the form inputs at runtime and registers its fonts from esm.sh URLs, so it is not run by tests/docs/playgrounds.test.ts; it reproduces the result once those URLs are replaced by pdfnative/fonts/* imports.",
@@ -58,11 +144,47 @@
       "since": "1.4.0",
       "requires": [],
       "controls": [
-        { "id": "preset", "kind": "select", "values": ["bookmarks", "layout", "manipulation", "formfill", "secure", "extract"] },
-        { "id": "generate", "kind": "button" },
-        { "id": "copy", "kind": "button", "meaning": "copy the code view to the clipboard" }
+        {
+          "id": "preset",
+          "kind": "select",
+          "values": [
+            "bookmarks",
+            "layout",
+            "manipulation",
+            "formfill",
+            "secure",
+            "extract"
+          ]
+        },
+        {
+          "id": "generate",
+          "kind": "button"
+        },
+        {
+          "id": "copy",
+          "kind": "button",
+          "meaning": "copy the code view to the clipboard"
+        }
       ],
-      "exercises": ["buildDocumentPDFBytes", "params.outline", "params.pageLabels", "layout.viewerPreferences", "list nesting", "table cellBorders and cellVAlign", "mergePdfs", "splitPdf", "extractPages", "fillForm", "flattenForm", "layout.encryption", "MergeOptions.encrypt", "extractText", "downloadBlob"],
+      "exercises": [
+        "buildDocumentPDFBytes",
+        "params.outline",
+        "params.pageLabels",
+        "layout.viewerPreferences",
+        "list nesting",
+        "table cellBorders and cellVAlign",
+        "mergePdfs",
+        "splitPdf",
+        "extractPages",
+        "fillForm",
+        "flattenForm",
+        "layout.encryption",
+        "MergeOptions.encrypt",
+        "extractText",
+        "downloadBlob",
+        "toc block (generated from the headings; paginates when longer than its page since 1.9.0)",
+        "ColumnDef.kind: 'amount' on a table column"
+      ],
       "codeView": "#code-view",
       "selfContained": true,
       "diagnostics": null,
@@ -75,15 +197,51 @@
       "title": "Inspect & verify",
       "purpose": "Read a dropped PDF entirely in the tab: overview and /Info, extracted text (honouring /ActualText), PDF/UA structure, PDF/X structure, signature inventory and form fields; or build a tagged sample in the page.",
       "since": "1.6.0",
-      "requires": ["a PDF file dropped on #dropzone or chosen with #file-input — or click #sample-btn to build the in-page sample instead"],
-      "controls": [
-        { "id": "dropzone", "kind": "dropzone", "meaning": "drop a PDF file" },
-        { "id": "file-input", "kind": "file", "meaning": "choose a PDF file" },
-        { "id": "sample-btn", "kind": "button", "meaning": "build the tagged sample document in the tab and inspect it (enabled once the engine has loaded)" },
-        { "id": "pdf-password", "kind": "password", "meaning": "password for an encrypted file; shown in #password-row when needed" },
-        { "id": "password-apply", "kind": "button", "meaning": "unlock and inspect" }
+      "requires": [
+        "a PDF file dropped on #dropzone or chosen with #file-input — or click #sample-btn to build the in-page sample instead"
       ],
-      "exercises": ["openPdf", "findStartxref", "extractText (includeRuns, /ActualText)", "validatePdfUA", "validatePdfX", "listSignatures", "readFormFields", "PdfPasswordError", "buildDocumentPDFBytes (tagged sample with a justified paragraph and an svg block with alt)", "setDefaultCreationDate"],
+      "controls": [
+        {
+          "id": "dropzone",
+          "kind": "dropzone",
+          "meaning": "drop a PDF file"
+        },
+        {
+          "id": "file-input",
+          "kind": "file",
+          "meaning": "choose a PDF file"
+        },
+        {
+          "id": "sample-btn",
+          "kind": "button",
+          "meaning": "build the tagged sample document in the tab and inspect it (enabled once the engine has loaded)"
+        },
+        {
+          "id": "pdf-password",
+          "kind": "password",
+          "meaning": "password for an encrypted file; shown in #password-row when needed"
+        },
+        {
+          "id": "password-apply",
+          "kind": "button",
+          "meaning": "unlock and inspect"
+        }
+      ],
+      "exercises": [
+        "openPdf",
+        "findStartxref",
+        "extractText (includeRuns, /ActualText)",
+        "validatePdfUA",
+        "validatePdfX",
+        "listSignatures",
+        "readFormFields",
+        "PdfPasswordError",
+        "buildDocumentPDFBytes (tagged sample with a justified paragraph and an svg block with alt)",
+        "setDefaultCreationDate",
+        "decodePdfTextString (PDFDocEncoding and UTF-16BE text strings of /Info, read by the Overview card)",
+        "extractText onStreamError (StreamErrorPolicy: 'limit' by default, 'skip', 'throw') and PdfStreamLimitError",
+        "a tagged table in the generated sample: /TH with /Scope and /ID, /TD with /Headers, /IDTree under validatePdfUA"
+      ],
       "codeView": null,
       "selfContained": false,
       "note": "No code view: the page reads a dropped PDF and renders report cards.",
@@ -99,11 +257,38 @@
       "since": "1.2.0",
       "requires": [],
       "controls": [
-        { "id": "preset", "kind": "select", "values": ["bar", "line", "pie", "donut", "mixed", "v2"] },
-        { "id": "generate", "kind": "button" },
-        { "id": "copy", "kind": "button", "meaning": "copy the code view to the clipboard" }
+        {
+          "id": "preset",
+          "kind": "select",
+          "values": [
+            "bar",
+            "line",
+            "pie",
+            "donut",
+            "mixed",
+            "v2",
+            "colors"
+          ]
+        },
+        {
+          "id": "generate",
+          "kind": "button"
+        },
+        {
+          "id": "copy",
+          "kind": "button",
+          "meaning": "copy the code view to the clipboard"
+        }
       ],
-      "exercises": ["buildDocumentPDFBytes", "chart block (bar, barH, line, pie, donut, stackedBar, stackedBarH, area, scatter)", "chart.series", "chart.alt under layout.tagged", "downloadBlob"],
+      "exercises": [
+        "buildDocumentPDFBytes",
+        "chart block (bar, barH, line, pie, donut, stackedBar, stackedBarH, area, scatter)",
+        "chart.series",
+        "chart.alt under layout.tagged",
+        "downloadBlob",
+        "ChartSeries.colors (one colour per value on bar, barH, stackedBar, stackedBarH)",
+        "optional ChartSeries.label (a series without one draws without a legend entry)"
+      ],
       "codeView": "#code-view",
       "selfContained": true,
       "diagnostics": null,
@@ -118,11 +303,43 @@
       "since": "1.5.0",
       "requires": [],
       "controls": [
-        { "id": "preset", "kind": "select", "values": ["svgtext", "debug", "annotations", "math", "pagelabels", "controlchars"] },
-        { "id": "generate", "kind": "button" },
-        { "id": "copy", "kind": "button", "meaning": "copy the code view to the clipboard" }
+        {
+          "id": "preset",
+          "kind": "select",
+          "values": [
+            "svgtext",
+            "debug",
+            "annotations",
+            "math",
+            "pagelabels",
+            "controlchars"
+          ]
+        },
+        {
+          "id": "generate",
+          "kind": "button"
+        },
+        {
+          "id": "copy",
+          "kind": "button",
+          "meaning": "copy the code view to the clipboard"
+        }
       ],
-      "exercises": ["buildDocumentPDFBytes", "svg block with <text>", "layout.debug", "inspectDocumentLayout", "openPdf", "createModifier", "buildAnnotationBody", "getAnnotations", "registerFont (math)", "getPageLabels", "control-character sanitisation", "downloadBlob"],
+      "exercises": [
+        "buildDocumentPDFBytes",
+        "svg block with <text>",
+        "layout.debug",
+        "inspectDocumentLayout",
+        "openPdf",
+        "createModifier",
+        "buildAnnotationBody",
+        "getAnnotations",
+        "registerFont (math)",
+        "getPageLabels",
+        "control-character sanitisation",
+        "downloadBlob",
+        "LinkMarkupAnnotation ({ type: 'link', rect, url } through buildAnnotationBody)"
+      ],
       "codeView": "#code-view",
       "selfContained": false,
       "note": "Two of the six code views do not run standalone: 'math' registers the math font from an esm.sh URL instead of pdfnative/fonts/noto-sans-math-data.js, and 'annotations' calls downloadBlob without importing it. The other four (svgtext, debug, pagelabels, controlchars) are self-contained. Not run by tests/docs/playgrounds.test.ts until the two views are fixed.",
@@ -136,17 +353,62 @@
       "title": "Scale",
       "purpose": "Stream up to 100,000 lean pages from an ES-module Web Worker with buildDocumentPDFStreamTrue, measuring pages per second, bytes per page and peak memory; works on pdfnative.dev, disabled on file:// origins.",
       "since": "1.6.0",
-      "requires": ["an http(s) origin (ES-module Workers are blocked on file://)", "for 100,000 pages: tick #confirmBig and enough memory (several hundred MB inside the worker)"],
-      "controls": [
-        { "id": "pageCount", "kind": "select", "values": ["1000", "10000", "50000", "100000"] },
-        { "id": "sinkDownload", "kind": "radio", "meaning": "output sink: download; siblings #sinkDisk (save to disk) and the measure-only default" },
-        { "id": "chunkSize", "kind": "select", "values": ["65536", "262144", "1048576"] },
-        { "id": "verifyPages", "kind": "checkbox", "meaning": "count /Type /Page headers in the emitted bytes" },
-        { "id": "confirmBig", "kind": "checkbox", "meaning": "acknowledge the memory cost of 100,000 pages" },
-        { "id": "generate", "kind": "button" },
-        { "id": "cancel", "kind": "button", "meaning": "terminate the worker" }
+      "requires": [
+        "an http(s) origin (ES-module Workers are blocked on file://)",
+        "for 100,000 pages: tick #confirmBig and enough memory (several hundred MB inside the worker)"
       ],
-      "exercises": ["buildDocumentPDFStreamTrue", "Web Worker dispatch", "pageBreak block", "chunked streaming (chunkSize)", "measured page count"],
+      "controls": [
+        {
+          "id": "pageCount",
+          "kind": "select",
+          "values": [
+            "1000",
+            "10000",
+            "50000",
+            "100000"
+          ]
+        },
+        {
+          "id": "sinkDownload",
+          "kind": "radio",
+          "meaning": "output sink: download; siblings #sinkDisk (save to disk) and the measure-only default"
+        },
+        {
+          "id": "chunkSize",
+          "kind": "select",
+          "values": [
+            "65536",
+            "262144",
+            "1048576"
+          ]
+        },
+        {
+          "id": "verifyPages",
+          "kind": "checkbox",
+          "meaning": "count /Type /Page headers in the emitted bytes"
+        },
+        {
+          "id": "confirmBig",
+          "kind": "checkbox",
+          "meaning": "acknowledge the memory cost of 100,000 pages"
+        },
+        {
+          "id": "generate",
+          "kind": "button"
+        },
+        {
+          "id": "cancel",
+          "kind": "button",
+          "meaning": "terminate the worker"
+        }
+      ],
+      "exercises": [
+        "buildDocumentPDFStreamTrue",
+        "Web Worker dispatch",
+        "pageBreak block",
+        "chunked streaming (chunkSize)",
+        "measured page count"
+      ],
       "codeView": null,
       "selfContained": false,
       "note": "No code view: the page drives a Web Worker and reports measurements.",
@@ -160,15 +422,44 @@
       "title": "CLI builder",
       "purpose": "Compose a pdfnative-cli command (render, sign, verify, inspect, merge, split, extract-pages, annotate, fill, encrypt, decrypt, extract-text, metadata, ltv, doc-timestamp, compare, batch, govern-verify…) from a form and copy it; nothing runs in the browser.",
       "since": "1.3.0",
-      "requires": ["pdfnative-cli installed (npx pdfnative-cli) to run the generated command outside the page"],
-      "controls": [
-        { "id": "preset", "kind": "select", "meaning": "worked examples that fill the form; one option value per scenario (render-basic, render-pdfa, sign-meta, verify-strict, merge-basic, ltv-add, doc-timestamp-lta, compare-ci, batch-manifest…; v1.5.0 presets render-typography, render-pdfx4-cmyk, render-font-file, render-reproducible, render-dry-run, inspect-pdfx, annotate-link, sign-timestamp-timeout, verify-weak-digest, doctor-conformance, global-flags-first)" },
-        { "id": "cmd-output", "kind": "code", "meaning": "the generated shell command" },
-        { "id": "copy", "kind": "button", "meaning": "copy #cmd-output to the clipboard" },
-        { "id": "reset", "kind": "button" },
-        { "id": "validation", "kind": "status", "meaning": "form validation messages" }
+      "requires": [
+        "pdfnative-cli installed (npx pdfnative-cli) to run the generated command outside the page"
       ],
-      "exercises": ["pdfnative-cli command surface (21 commands)", "JSON-in/JSON-out flags", "PAdES ladder (sign, ltv, doc-timestamp)", "shell completion (#co-shell)", "v1.5.0 render flags: --split-paragraphs, --keep-headings-with-next, --kerning, --font-features, --pdfx pdfx4, --output-intent-icc, --output-intent-id, --trapped, --font-file", "global --creation-date (SOURCE_DATE_EPOCH fallback) and global flags placed before the command (#gl-position)", "inspect --pdfx / --check pdfx / --iso-dates; annotate link; sign --timestamp-timeout; verify weak-digest note; doctor fonts / unicode / conformance"],
+      "controls": [
+        {
+          "id": "preset",
+          "kind": "select",
+          "meaning": "worked examples that fill the form; one option value per scenario (render-basic, render-pdfa, sign-meta, verify-strict, merge-basic, ltv-add, doc-timestamp-lta, compare-ci, batch-manifest…; v1.5.0 presets render-typography, render-pdfx4-cmyk, render-font-file, render-reproducible, render-dry-run, inspect-pdfx, annotate-link, sign-timestamp-timeout, verify-weak-digest, doctor-conformance, global-flags-first)"
+        },
+        {
+          "id": "cmd-output",
+          "kind": "code",
+          "meaning": "the generated shell command"
+        },
+        {
+          "id": "copy",
+          "kind": "button",
+          "meaning": "copy #cmd-output to the clipboard"
+        },
+        {
+          "id": "reset",
+          "kind": "button"
+        },
+        {
+          "id": "validation",
+          "kind": "status",
+          "meaning": "form validation messages"
+        }
+      ],
+      "exercises": [
+        "pdfnative-cli command surface (21 commands)",
+        "JSON-in/JSON-out flags",
+        "PAdES ladder (sign, ltv, doc-timestamp)",
+        "shell completion (#co-shell)",
+        "v1.5.0 render flags: --split-paragraphs, --keep-headings-with-next, --kerning, --font-features, --pdfx pdfx4, --output-intent-icc, --output-intent-id, --trapped, --font-file",
+        "global --creation-date (SOURCE_DATE_EPOCH fallback) and global flags placed before the command (#gl-position)",
+        "inspect --pdfx / --check pdfx / --iso-dates; annotate link; sign --timestamp-timeout; verify weak-digest note; doctor fonts / unicode / conformance"
+      ],
       "codeView": "#cmd-output",
       "selfContained": false,
       "note": "The code view is a pdfnative-cli shell command, not a pdfnative program; it runs wherever pdfnative-cli is installed.",
@@ -184,11 +475,42 @@
       "since": "1.3.0",
       "requires": [],
       "controls": [
-        { "id": "config-output", "kind": "code", "meaning": "MCP servers config for the selected client (Claude Desktop, Cursor, Continue, Zed)" },
-        { "id": "copy-config", "kind": "button", "meaning": "copy #config-output to the clipboard" },
-        { "id": "cards", "kind": "container", "meaning": "tool cards; each has data-action buttons (generate, copy-args) and a [data-status] line" }
+        {
+          "id": "config-output",
+          "kind": "code",
+          "meaning": "MCP servers config for the selected client (Claude Desktop, Cursor, Continue, Zed)"
+        },
+        {
+          "id": "copy-config",
+          "kind": "button",
+          "meaning": "copy #config-output to the clipboard"
+        },
+        {
+          "id": "cards",
+          "kind": "container",
+          "meaning": "tool cards; each has data-action buttons (generate, copy-args) and a [data-status] line"
+        }
       ],
-      "exercises": ["pdfnative-mcp tool surface (28 tools)", "buildDocumentPDFBytes", "mergePdfs", "splitPdf", "extractPages", "annotations", "update metadata", "inspectDocumentLayout", "governance issue draft validation", "layout.typography", "PDF/X-4 (layout.pdfx, outputIntent, colour bars)", "validatePdfX", "validatePdfUA", "inspect_pdf pdfX claim", "27 scripts (lo, nod, khb, tdd, cjm)", "reproducible output (creationDate, SHA-256)", "operator environment (12 variables, #env-panel)", "7 MCP prompts (#prompts-panel)"],
+      "exercises": [
+        "pdfnative-mcp tool surface (28 tools)",
+        "buildDocumentPDFBytes",
+        "mergePdfs",
+        "splitPdf",
+        "extractPages",
+        "annotations",
+        "update metadata",
+        "inspectDocumentLayout",
+        "governance issue draft validation",
+        "layout.typography",
+        "PDF/X-4 (layout.pdfx, outputIntent, colour bars)",
+        "validatePdfX",
+        "validatePdfUA",
+        "inspect_pdf pdfX claim",
+        "five more scripts (lo, nod, khb, tdd, cjm)",
+        "reproducible output (creationDate, SHA-256)",
+        "operator environment (12 variables, #env-panel)",
+        "7 MCP prompts (#prompts-panel)"
+      ],
       "codeView": "#config-output",
       "selfContained": false,
       "note": "The code view is an MCP client configuration, not a pdfnative program; the per-card payloads are tool arguments for pdfnative-mcp.",
@@ -202,16 +524,63 @@
       "title": "React renderer",
       "purpose": "Edit JSX and render a PDF in the browser with pdfnative-react (React 19 reconciler to pdfnative blocks), including charts v2 and print production presets, plus the DocSpec alternative.",
       "since": "1.5.0",
-      "requires": ["React 19, pdfnative-react 1.3.0 and Babel standalone loaded from the CDN by the page"],
-      "controls": [
-        { "id": "rx-preset", "kind": "select", "values": ["invoice", "report", "multilingual", "charts-v2", "print", "typography-justify", "print-pdfx4-cmyk", "reproducible-creationDate", "scripts-27", "lint-gate"] },
-        { "id": "rx-editor", "kind": "textarea", "meaning": "JSX source" },
-        { "id": "rx-run", "kind": "button", "meaning": "render the PDF" },
-        { "id": "rx-reset", "kind": "button" },
-        { "id": "rx-copy", "kind": "button", "meaning": "copy the JSX" },
-        { "id": "rx-download", "kind": "button", "meaning": "download the rendered PDF" }
+      "requires": [
+        "React 19, pdfnative-react 1.3.0 and Babel standalone loaded from the CDN by the page"
       ],
-      "exercises": ["pdfnative-react components (Document, Table, Barcode, Chart)", "registerFont (Arabic)", "charts v2", "print production (bleed, marks)", "DocSpec (compileSpec, renderSpecToBytes)", "Document typography + Heading keepWithNext + Paragraph align=\"justify\" splittable (typography-justify)", "Document pdfx=\"pdfx4\" + outputIntent (synthetic prtr ICC) + metadata.trapped + print.marks.colourBars, CMYK colours, resolveFonts, lintDocument, validatePdfX (print-pdfx4-cmyk)", "Document creationDate: two renderToBytes runs compared by length + SHA-256 (reproducible-creationDate)", "resolveFonts for Lao and Cham font modules (scripts-27)", "lintDocument + Object.keys(LINT_RULES).length read live, fixed tree re-linted and rendered (lint-gate)"],
+      "controls": [
+        {
+          "id": "rx-preset",
+          "kind": "select",
+          "values": [
+            "invoice",
+            "report",
+            "multilingual",
+            "charts-v2",
+            "print",
+            "typography-justify",
+            "print-pdfx4-cmyk",
+            "reproducible-creationDate",
+            "scripts-27",
+            "lint-gate"
+          ]
+        },
+        {
+          "id": "rx-editor",
+          "kind": "textarea",
+          "meaning": "JSX source"
+        },
+        {
+          "id": "rx-run",
+          "kind": "button",
+          "meaning": "render the PDF"
+        },
+        {
+          "id": "rx-reset",
+          "kind": "button"
+        },
+        {
+          "id": "rx-copy",
+          "kind": "button",
+          "meaning": "copy the JSX"
+        },
+        {
+          "id": "rx-download",
+          "kind": "button",
+          "meaning": "download the rendered PDF"
+        }
+      ],
+      "exercises": [
+        "pdfnative-react components (Document, Table, Barcode, Chart)",
+        "registerFont (Arabic)",
+        "charts v2",
+        "print production (bleed, marks)",
+        "DocSpec (compileSpec, renderSpecToBytes)",
+        "Document typography + Heading keepWithNext + Paragraph align=\"justify\" splittable (typography-justify)",
+        "Document pdfx=\"pdfx4\" + outputIntent (synthetic prtr ICC) + metadata.trapped + print.marks.colourBars, CMYK colours, resolveFonts, lintDocument, validatePdfX (print-pdfx4-cmyk)",
+        "Document creationDate: two renderToBytes runs compared by length + SHA-256 (reproducible-creationDate)",
+        "resolveFonts for Lao and Cham font modules (scripts-27)",
+        "lintDocument + Object.keys(LINT_RULES).length read live, fixed tree re-linted and rendered (lint-gate)"
+      ],
       "codeView": "#rx-editor",
       "selfContained": false,
       "note": "The code view is JSX compiled by Babel standalone and rendered through pdfnative-react in the page; it needs React 19 and pdfnative-react outside the browser.",
@@ -227,12 +596,59 @@
       "since": "1.8.0",
       "requires": [],
       "controls": [
-        { "id": "preset", "kind": "select", "values": ["breaks", "shortwords", "justify", "spacing", "hyphenation", "metrics", "kerning", "figures", "figures-tnum"] },
-        { "id": "apply", "kind": "checkbox", "meaning": "generate with (checked) or without the option" },
-        { "id": "generate", "kind": "button" },
-        { "id": "copy", "kind": "button", "meaning": "copy the code view to the clipboard" }
+        {
+          "id": "preset",
+          "kind": "select",
+          "values": [
+            "breaks",
+            "shortwords",
+            "justify",
+            "spacing",
+            "hyphenation",
+            "metrics",
+            "kerning",
+            "figures",
+            "figures-tnum",
+            "uncovered"
+          ]
+        },
+        {
+          "id": "apply",
+          "kind": "checkbox",
+          "meaning": "generate with (checked) or without the option"
+        },
+        {
+          "id": "generate",
+          "kind": "button"
+        },
+        {
+          "id": "copy",
+          "kind": "button",
+          "meaning": "copy the code view to the clipboard"
+        }
       ],
-      "exercises": ["layout.typography.splitParagraphs", "layout.typography.orphans", "layout.typography.widows", "layout.typography.keepHeadingsWithNext (true and { minLines: 3 })", "layout.typography.bindShortWords", "layout.typography.opticalMargins", "layout.typography.unitBinding", "layout.typography.punctuationSpacing", "setHyphenationProvider", "layout.typography.hyphenationLanguage", "soft hyphens (U+00AD)", "layout.typography.metrics: 'exact'", "layout.typography.kerning", "layout.typography.fontFeatures", "layout.onDiagnostic", "TYPOGRAPHY_FEATURE_INEFFECTIVE", "registerFonts", "loadFontData"],
+      "exercises": [
+        "layout.typography.splitParagraphs",
+        "layout.typography.orphans",
+        "layout.typography.widows",
+        "layout.typography.keepHeadingsWithNext (true and { minLines: 3 })",
+        "layout.typography.bindShortWords",
+        "layout.typography.opticalMargins",
+        "layout.typography.unitBinding",
+        "layout.typography.punctuationSpacing",
+        "setHyphenationProvider",
+        "layout.typography.hyphenationLanguage",
+        "soft hyphens (U+00AD)",
+        "layout.typography.metrics: 'exact'",
+        "layout.typography.kerning",
+        "layout.typography.fontFeatures",
+        "layout.onDiagnostic",
+        "TYPOGRAPHY_FEATURE_INEFFECTIVE",
+        "registerFonts",
+        "loadFontData",
+        "TEXT_GLYPH_NOT_COVERED (characters outside WinAnsi on the base-14 path, or a CID font's .notdef)",
+        "layout.strict (the diagnostic thrown instead of reported)"
+      ],
       "codeView": "#code-view",
       "selfContained": true,
       "diagnostics": "#diagnostics",
@@ -247,14 +663,63 @@
       "since": "1.8.0",
       "requires": [],
       "controls": [
-        { "id": "preset", "kind": "select", "values": ["bleed", "cmyk", "pdfa", "pdfx", "errors"] },
-        { "id": "icc", "kind": "file", "meaning": "optional output ICC profile (.icc/.icm); when empty the synthetic CMYK profile inlined in the page is used — it characterises no press" },
-        { "id": "bars", "kind": "checkbox", "meaning": "colour bars in a 5 mm bleed instead of plain marks in 3 mm" },
-        { "id": "claim", "kind": "checkbox", "meaning": "cmyk preset only: add tagged: 'pdfa2b' under the default sRGB intent so PDFA_DEVICE_CMYK_CONTENT is raised in #diagnostics" },
-        { "id": "generate", "kind": "button" },
-        { "id": "copy", "kind": "button", "meaning": "copy the code view to the clipboard" }
+        {
+          "id": "preset",
+          "kind": "select",
+          "values": [
+            "bleed",
+            "cmyk",
+            "pdfa",
+            "pdfx",
+            "spot",
+            "dual",
+            "errors"
+          ]
+        },
+        {
+          "id": "icc",
+          "kind": "file",
+          "meaning": "optional output ICC profile (.icc/.icm); when empty the synthetic CMYK profile inlined in the page is used — it characterises no press"
+        },
+        {
+          "id": "bars",
+          "kind": "checkbox",
+          "meaning": "colour bars in a 5 mm bleed instead of plain marks in 3 mm"
+        },
+        {
+          "id": "claim",
+          "kind": "checkbox",
+          "meaning": "cmyk preset only: add tagged: 'pdfa2b' under the default sRGB intent so PDFA_DEVICE_CMYK_CONTENT is raised in #diagnostics"
+        },
+        {
+          "id": "generate",
+          "kind": "button"
+        },
+        {
+          "id": "copy",
+          "kind": "button",
+          "meaning": "copy the code view to the clipboard"
+        }
       ],
-      "exercises": ["layout.print.bleed", "layout.print.marks", "layout.print.marks.colourBars", "layout.pageWidth and pageHeight from PAGE_SIZES", "CMYK colours ([c, m, y, k] percent)", "layout.outputIntent", "layout.tagged: 'pdfa2b' under a CMYK intent", "layout.pdfx: 'pdfx4'", "validatePdfX", "PDF/X coherence errors (pdfx + tagged, pdfx + encryption, missing outputIntent, metadata.trapped: 'Unknown')", "registerFonts", "loadFontData"],
+      "exercises": [
+        "layout.print.bleed",
+        "layout.print.marks",
+        "layout.print.marks.colourBars",
+        "layout.pageWidth and pageHeight from PAGE_SIZES",
+        "CMYK colours ([c, m, y, k] percent)",
+        "layout.outputIntent",
+        "layout.tagged: 'pdfa2b' under a CMYK intent",
+        "layout.pdfx: 'pdfx4'",
+        "validatePdfX",
+        "PDF/X coherence errors (pdfx + tagged: 'pdfa1b', pdfx + encryption, missing outputIntent, metadata.trapped: 'Unknown')",
+        "registerFonts",
+        "loadFontData",
+        "layout.print.spotColours (SpotColourDef: name + CMYK or RGB alternate)",
+        "PdfSpotColor ({ spot, tint }) and PdfInkMix ({ inks }) — /Separation and /DeviceN with a type-4 tint transform",
+        "ChartSeries.colors painting each bar in its own ink",
+        "the dual claim: tagged: 'pdfa2b' next to pdfx: 'pdfx4' (one XMP packet, two OutputIntents on one ICC stream)",
+        "buildSyntheticCmykProfile from pdfnative/tools (the CMYK OutputIntent of every code view)"
+      ],
       "codeView": "#code-view",
       "selfContained": true,
       "diagnostics": "#diagnostics",
@@ -269,13 +734,52 @@
       "since": "1.8.0",
       "requires": [],
       "controls": [
-        { "id": "preset", "kind": "select", "values": ["invoice", "report", "footer-date"] },
-        { "id": "creation-date", "kind": "datetime-local", "meaning": "the pinned creation instant, read as UTC (default 2026-01-01T00:00)" },
-        { "id": "flip", "kind": "select", "values": ["none", "title", "creation-date", "compress"], "meaning": "the one input the second build changes; none builds the same input twice" },
-        { "id": "build", "kind": "button", "meaning": "build the preset twice and compare the SHA-256 of both builds" },
-        { "id": "copy", "kind": "button", "meaning": "copy the code view to the clipboard" }
+        {
+          "id": "preset",
+          "kind": "select",
+          "values": [
+            "invoice",
+            "report",
+            "footer-date"
+          ]
+        },
+        {
+          "id": "creation-date",
+          "kind": "datetime-local",
+          "meaning": "the pinned creation instant, read as UTC (default 2026-01-01T00:00)"
+        },
+        {
+          "id": "flip",
+          "kind": "select",
+          "values": [
+            "none",
+            "title",
+            "creation-date",
+            "compress"
+          ],
+          "meaning": "the one input the second build changes; none builds the same input twice"
+        },
+        {
+          "id": "build",
+          "kind": "button",
+          "meaning": "build the preset twice and compare the SHA-256 of both builds"
+        },
+        {
+          "id": "copy",
+          "kind": "button",
+          "meaning": "copy the code view to the clipboard"
+        }
       ],
-      "exercises": ["layout.creationDate", "setDefaultCreationDate", "getDefaultCreationDate", "footerTemplate {date}", "buildDocumentPDFBytes", "downloadBlob", "SHA-256 via crypto.subtle", "layout.onDiagnostic"],
+      "exercises": [
+        "layout.creationDate",
+        "setDefaultCreationDate",
+        "getDefaultCreationDate",
+        "footerTemplate {date}",
+        "buildDocumentPDFBytes",
+        "downloadBlob",
+        "SHA-256 via crypto.subtle",
+        "layout.onDiagnostic"
+      ],
       "codeView": "#code-view",
       "selfContained": true,
       "diagnostics": "#diagnostics",
@@ -292,21 +796,223 @@
         "React 19 and pdfnative-react 1.3.0 loaded from the CDN by the page"
       ],
       "controls": [
-        { "id": "preset", "kind": "select", "values": ["valid-invoice", "pdfx-incoherent", "typography-ineffective", "tagged-no-fonts", "colour-bars-off-print", "schema-error"] },
-        { "id": "spec", "kind": "textarea", "meaning": "DocSpec JSON" },
-        { "id": "lint", "kind": "button", "meaning": "run validateSpec then lintSpec; report in #report" },
-        { "id": "render", "kind": "button", "meaning": "renderSpecToBytes; enabled only when the last lint reported no error" },
-        { "id": "reset", "kind": "button" },
-        { "id": "copy", "kind": "button", "meaning": "copy the spec" },
-        { "id": "download", "kind": "button", "meaning": "download the rendered PDF" },
-        { "id": "rules", "kind": "table", "meaning": "the LINT_RULES table built at load; caption counts the rules live" }
+        {
+          "id": "preset",
+          "kind": "select",
+          "values": [
+            "valid-invoice",
+            "pdfx-incoherent",
+            "typography-ineffective",
+            "tagged-no-fonts",
+            "colour-bars-off-print",
+            "schema-error"
+          ]
+        },
+        {
+          "id": "spec",
+          "kind": "textarea",
+          "meaning": "DocSpec JSON"
+        },
+        {
+          "id": "lint",
+          "kind": "button",
+          "meaning": "run validateSpec then lintSpec; report in #report"
+        },
+        {
+          "id": "render",
+          "kind": "button",
+          "meaning": "renderSpecToBytes; enabled only when the last lint reported no error"
+        },
+        {
+          "id": "reset",
+          "kind": "button"
+        },
+        {
+          "id": "copy",
+          "kind": "button",
+          "meaning": "copy the spec"
+        },
+        {
+          "id": "download",
+          "kind": "button",
+          "meaning": "download the rendered PDF"
+        },
+        {
+          "id": "rules",
+          "kind": "table",
+          "meaning": "the LINT_RULES table built at load; caption counts the rules live"
+        }
       ],
-      "exercises": ["validateSpec (V_ARITY, V_UNKNOWN_KIND, V_PAYLOAD_TYPE, V_BLOCK_SHAPE, V_UNKNOWN_FIELD)", "lintSpec", "LINT_RULES (37 rules)", "renderSpecToBytes", "DocSpec pdfx / outputIntent / typography / creationDate fields", "L_PDFX_TAGGED_CONFLICT, L_PDFX_OUTPUT_INTENT, L_PDFX_NO_FONTS, L_PDFX_ANNOTATIONS", "L_TYPOGRAPHY_INEFFECTIVE", "L_TAGGED_NO_FONTS", "L_PRINT_COLOUR_BARS"],
+      "exercises": [
+        "validateSpec (V_ARITY, V_UNKNOWN_KIND, V_PAYLOAD_TYPE, V_BLOCK_SHAPE, V_UNKNOWN_FIELD)",
+        "lintSpec",
+        "LINT_RULES (37 rules)",
+        "renderSpecToBytes",
+        "DocSpec pdfx / outputIntent / typography / creationDate fields",
+        "L_PDFX_TAGGED_CONFLICT, L_PDFX_OUTPUT_INTENT, L_PDFX_NO_FONTS, L_PDFX_ANNOTATIONS",
+        "L_TYPOGRAPHY_INEFFECTIVE",
+        "L_TAGGED_NO_FONTS",
+        "L_PRINT_COLOUR_BARS"
+      ],
       "codeView": "#code-view",
       "selfContained": false,
       "note": "The code view is the equivalent Node snippet; the page itself runs validateSpec, lintSpec and renderSpecToBytes from the pdfnative-react CDN build, which needs React 19 and pdfnative-react outside the browser.",
       "diagnostics": "#report",
       "output": "PDF preview in #preview and a download via #download"
+    },
+    {
+      "id": "images",
+      "file": "images.html",
+      "url": "https://pdfnative.dev/playgrounds/images.html",
+      "title": "Images",
+      "purpose": "JPEG, PNG and JPEG 2000 embedded as pass-through streams: the JPXDecode fixture with the colour and opacity its codestream declares, the three formats on one page and under PDF/A-2b, the PDF/A-1b refusal, and a file from the user's disk.",
+      "since": "1.9.0",
+      "requires": [],
+      "controls": [
+        {
+          "id": "preset",
+          "kind": "select",
+          "values": [
+            "jpx",
+            "formats",
+            "pdfa2b",
+            "pdfa1",
+            "watermark",
+            "upload"
+          ]
+        },
+        {
+          "id": "file",
+          "kind": "file",
+          "meaning": "upload preset only: a JPEG, PNG or JPEG 2000 file embedded at 400 pt wide; detectImageFormat() names the format"
+        },
+        {
+          "id": "generate",
+          "kind": "button"
+        },
+        {
+          "id": "copy",
+          "kind": "button",
+          "meaning": "copy the code view to the clipboard"
+        }
+      ],
+      "exercises": [
+        "image block with JPEG 2000 data (/JPXDecode, /SMaskInData 1, PDF 1.5 header)",
+        "image block with JPEG and PNG data",
+        "layout.tagged: 'pdfa2b' with images (PDFA_JPX_IMAGE for an opacity channel)",
+        "layout.tagged: 'pdfa1b' with a JPEG 2000 image under strict (PDFA1_JPX_IMAGE thrown)",
+        "detectImageFormat",
+        "parseImage and ParsedImage.jpx",
+        "layout.onDiagnostic",
+        "layout.watermark.image with a JPEG 2000 file (one /JPXDecode XObject behind every page)",
+        "parseJPX and JpxInfo (the reader on its own)"
+      ],
+      "codeView": "#code-view",
+      "selfContained": true,
+      "diagnostics": "#diagnostics",
+      "output": "a downloaded PDF per preset (the pdfa1 preset reports the thrown message in #report instead)"
+    }
+  ],
+  "coverageExemptions": [
+    {
+      "name": "BidiLevels",
+      "reason": "The return type of resolveBidiLevels; the extreme-scripts rtl preset drives the resolver through layout.direction."
+    },
+    {
+      "name": "BidiDirection",
+      "reason": "An alias of TextDirection (the direction parameter of resolveBidiLevels and of layout.direction); the extreme-scripts rtl preset passes 'auto' to both."
+    },
+    {
+      "name": "bidiLineLevels",
+      "reason": "The per-line step (L1) of the UAX #9 resolver the engine runs for every wrapped line; the extreme-scripts rtl preset shows the result."
+    },
+    {
+      "name": "bidiRunsForLine",
+      "reason": "The reordering step (L2) of the UAX #9 resolver the engine runs for every line; the extreme-scripts rtl preset shows the result."
+    },
+    {
+      "name": "containsGujarati",
+      "reason": "Script detection primitive routed by SCRIPT_SHAPERS; the all-scripts tour renders Gujarati through fontEntries."
+    },
+    {
+      "name": "containsGurmukhi",
+      "reason": "Script detection primitive routed by SCRIPT_SHAPERS; the all-scripts tour renders Gurmukhi through fontEntries."
+    },
+    {
+      "name": "containsKannada",
+      "reason": "Script detection primitive routed by SCRIPT_SHAPERS; the all-scripts tour renders Kannada through fontEntries."
+    },
+    {
+      "name": "containsMalayalam",
+      "reason": "Script detection primitive routed by SCRIPT_SHAPERS; the all-scripts tour renders Malayalam through fontEntries."
+    },
+    {
+      "name": "containsOdia",
+      "reason": "Script detection primitive routed by SCRIPT_SHAPERS; the all-scripts tour renders Odia through fontEntries."
+    },
+    {
+      "name": "isGujaratiCodepoint",
+      "reason": "Per-code-point classifier behind containsGujarati; exercised by the all-scripts tour through font routing."
+    },
+    {
+      "name": "isGurmukhiCodepoint",
+      "reason": "Per-code-point classifier behind containsGurmukhi; exercised by the all-scripts tour through font routing."
+    },
+    {
+      "name": "isKannadaCodepoint",
+      "reason": "Per-code-point classifier behind containsKannada; exercised by the all-scripts tour through font routing."
+    },
+    {
+      "name": "isMalayalamCodepoint",
+      "reason": "Per-code-point classifier behind containsMalayalam; exercised by the all-scripts tour through font routing."
+    },
+    {
+      "name": "isOdiaCodepoint",
+      "reason": "Per-code-point classifier behind containsOdia; exercised by the all-scripts tour through font routing."
+    },
+    {
+      "name": "shapeGujaratiText",
+      "reason": "The Indic-engine wrapper SCRIPT_SHAPERS dispatches to; the all-scripts tour shapes Gujarati through buildDocumentPDFBytes."
+    },
+    {
+      "name": "shapeGurmukhiText",
+      "reason": "The Indic-engine wrapper SCRIPT_SHAPERS dispatches to; the all-scripts tour shapes Gurmukhi through buildDocumentPDFBytes."
+    },
+    {
+      "name": "shapeKannadaText",
+      "reason": "The Indic-engine wrapper SCRIPT_SHAPERS dispatches to; the all-scripts tour shapes Kannada through buildDocumentPDFBytes."
+    },
+    {
+      "name": "shapeMalayalamText",
+      "reason": "The Indic-engine wrapper SCRIPT_SHAPERS dispatches to; the all-scripts tour shapes Malayalam through buildDocumentPDFBytes."
+    },
+    {
+      "name": "shapeOdiaText",
+      "reason": "The Indic-engine wrapper SCRIPT_SHAPERS dispatches to; the all-scripts tour shapes Odia through buildDocumentPDFBytes."
+    },
+    {
+      "name": "OcspCertId",
+      "reason": "The CertID parseOcspResponse exposes for ocspResponseMatchesCertificate; the ltv-compose-offline recipe reaches both through composeLtvData({ match: 'chain' }) rather than by name, and a page has no OCSP responder to query."
+    },
+    {
+      "name": "ecdsaSignHash",
+      "reason": "A raw ECDSA primitive for custom signers (#88); the signing flow a visitor runs is signPdfBytes (recipe signed-pades, pdfnative-cli sign --algorithm ecdsa-sha256)."
+    },
+    {
+      "name": "ecdsaVerifyHash",
+      "reason": "A raw ECDSA primitive for custom verifiers; PDF signatures are verified by pdfnative-cli verify and the verify_pdf MCP tool, not in a page."
+    },
+    {
+      "name": "encodeDerSignature",
+      "reason": "The DER (r, s) encoder behind ecdsaSignHash; a signer primitive with no visible output of its own."
+    },
+    {
+      "name": "decodeDerSignature",
+      "reason": "The DER (r, s) decoder behind ecdsaVerifyHash; a verifier primitive with no visible output of its own."
+    },
+    {
+      "name": "ocspResponseMatchesCertificate",
+      "reason": "The matcher composeLtvData applies under match: 'chain' to keep the OCSP responses that answer for the signer's chain; the ltv-compose-offline recipe runs that path through composeLtvData rather than by name, and a page has no OCSP responder to query."
     }
   ]
 }

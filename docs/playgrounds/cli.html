@@ -16,6 +16,7 @@
   <meta property="og:title" content="CLI Command Builder — pdfnative-cli playground">
   <meta property="og:description" content="Interactive command-builder for pdfnative-cli — all 21 commands, from render and fill to the PAdES ladder (sign --timestamp, ltv, doc-timestamp), metadata, compare and batch manifests. Live shell preview, copy-to-clipboard, validation. Zero install.">
   <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
+  <meta property="og:image:alt" content="pdfnative — pure native PDF generation, zero dependencies">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
@@ -112,7 +113,7 @@
   <nav class="playground-switcher" aria-label="Playground switcher">
     <span class="playground-switcher-label">Playgrounds:</span>
     <a href="./extreme-scripts.html">Extreme scripts</a>
-    <a href="./all-scripts.html">All 27 scripts</a>
+    <a href="./all-scripts.html">All 32 scripts</a>
     <a href="./toolkit.html">PDF Toolkit</a>
     <a href="./inspect.html">Inspect &amp; verify</a>
     <a href="./charts.html">Charts</a>
@@ -125,6 +126,7 @@
     <a href="./print.html">Print &amp; PDF/X</a>
     <a href="./reproducible.html">Reproducible output</a>
     <a href="./docspec-lint.html">DocSpec lint</a>
+    <a href="./images.html">Images</a>
     <a href="./" style="margin-left:auto;">All →</a>
   </nav>
   <article class="guide-content">
@@ -1289,6 +1291,7 @@
           <label><input type="checkbox" data-cmd="doctor" data-flag="--pretty"> --pretty</label>
         </div>
       </div>
+<!-- verify-docs:allow stale-token (historical: this companion release was built on pdfnative 1.8.0 (27 scripts)) -->
       <p class="hint" style="margin-top: 14px;">Eight offline checks: <code>cli</code> version, <code>node</code> (≥ 22 since v1.4.0), <code>webcrypto</code> CSPRNG, the resolved <code>pdfnative</code> engine version, the <code>commands</code> count, and since v1.5.0 <code>fonts</code> (31 modules / 27 scripts, probed on disk), <code>unicode</code> (the USE database version) and <code>conformance</code> (<code>pdfa1b,pdfa2b,pdfa2u,pdfa3b,pdfx4</code>). <code>--json</code> emits <code>{ ok, checks: [{ name, status, value, detail }] }</code>. The first thing to run in a new environment — and the first thing an agent should call.</p>
     </section>
 
@@ -1904,6 +1907,7 @@
     'verify-weak-digest': { tab: 'verify', fields: { 'v-input': 'signed.pdf' }, checks: ['--strict'], globalChecks: ['--json'],
       hint: 'Since v1.5.0 every signature report carries <code>timestampDigest</code> (the RFC 3161 messageImprint algorithm). A SHA-1 imprint is reported as the note <code>weak digest: RFC 3161 messageImprint uses SHA-1 (refused under --strict)</code> and fails under <code>--strict</code> (exit 1 / <code>E_VERIFY_FAILED</code>); without <code>--strict</code> it stays a note.' },
     'doctor-conformance': { tab: 'doctor', globalChecks: ['--json'],
+// verify-docs:allow stale-token (historical: this companion release was built on pdfnative 1.8.0 (27 scripts))
       hint: 'Eight offline checks in <code>{ ok, checks: [{ name, status, value, detail }] }</code>: <code>cli</code>, <code>node</code>, <code>webcrypto</code>, <code>pdfnative</code>, <code>commands</code>, and since v1.5.0 <code>fonts</code> (<code>31 modules / 27 scripts</code>, each bundled module probed on disk), <code>unicode</code> (the Universal Shaping Engine database version) and <code>conformance</code> (<code>pdfa1b,pdfa2b,pdfa2u,pdfa3b,pdfx4</code>). Exit 0 when every check passes.' },
     'global-flags-first': { tab: 'inspect', fields: { 'gl-position': 'before', 'i-input': 'doc.pdf' }, checks: ['--summary'], globalChecks: ['--json', '--quiet', '--no-color'],
       hint: 'Since v1.5.0 the global flags (<code>--json</code>, <code>--quiet</code>, <code>--no-color</code>, <code>--dry-run</code>, <code>--no-config</code>, <code>--config</code>, <code>--max-inflate-size</code>, <code>--creation-date</code>) may precede the command name — the dispatcher finds the command wherever the flags sit, and even a command flag placed first (<code>--strict render …</code>) no longer swallows the command name. Arguments without any command exit 2 / <code>E_USAGE</code> instead of printing the usage with exit 0; a bare <code>pdfnative</code> still prints the usage.' },

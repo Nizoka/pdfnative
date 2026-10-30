@@ -55,8 +55,7 @@ jobs:
       - name: Harden the runner
         uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
-          egress-policy: audit
-
+          egress-policy: audit # 2026-10-23: endpoints not baselined yet; block once a month of audit logs names them
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
@@ -72,6 +71,7 @@ jobs:
       # a floating "latest" URL can silently change the rule set between two
       # runs of the same commit. Bump deliberately in the action's default.
       - name: Setup veraPDF
+        id: verapdf
         uses: ./.github/actions/setup-verapdf
 
       - name: Install dependencies
@@ -88,4 +88,6 @@ jobs:
       # corresponding PDF/A profile (1b, 2b, 2u, 3b). Non-PDF/A files are
       # skipped by scripts/validate-pdfa.ts and never trigger failures.
       - name: Validate PDF/A claims (blocking)
+        env:
+          VERAPDF_HOME: ${{ steps.verapdf.outputs.home }}
         run: npm run validate:pdfa

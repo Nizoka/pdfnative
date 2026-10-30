@@ -82,7 +82,7 @@ describe('no-break space metrics', () => {
     it('measures NBSP and narrow NBSP as the space they render as', () => {
         const space = helveticaWidth('a a', 11);
         expect(helveticaWidth(`a${NBSP}a`, 11)).toBe(space);
-        expect(helveticaWidth(`a${NNBSP}a`, 11)).toBe(space);
+        expect(helveticaWidth(`a${NNBSP}a`, 11)).toBeCloseTo(helveticaWidth('aa', 11) + 0.167 * 11, 6); // narrow: 167/1000 em since 1.9.0
         expect(helveticaBoldWidth(`a${NBSP}a`, 11)).toBe(helveticaBoldWidth('a a', 11));
     });
 
@@ -109,7 +109,6 @@ describe('no-break space metrics', () => {
 describe('no-break spaces reach the font', () => {
     const latin = notoSans as unknown as FontData;
     const entries: FontEntry[] = [{ fontData: latin, fontRef: '/F3', lang: 'latin' }];
-    const gidOf = (cp: number): string => latin.cmap[cp].toString(16).toUpperCase().padStart(4, '0');
     const advOf = (cp: number): number => latin.widths[latin.cmap[cp]] ?? latin.defaultWidth;
 
     it('Noto Sans carries both no-break spaces, the narrow one narrower', () => {
@@ -121,9 +120,12 @@ describe('no-break spaces reach the font', () => {
     it('encodes U+202F and U+00A0 as their own glyphs in a CID font', () => {
         const uni = createEncodingContext(entries, false, false);
         const hex = uni.textRuns(`a${NNBSP}b${NBSP}c`, 11).map(r => r.hexStr).join('');
-        expect(hex).toContain(gidOf(0x202F));
-        expect(hex).toContain(gidOf(0xA0));
-        expect(uni.ps(`a${NNBSP}b`)).toContain(gidOf(0x202F));
+        // The codes are CIDs (C28): the context says which glyph each stands for.
+        const codeOf = (cp: number): string => uni.getCidMaps!().get('/F3')!.indexOf(latin.cmap[cp]).toString(16).toUpperCase().padStart(4, '0');
+        expect(hex).toContain(codeOf(0x202F));
+        expect(hex).toContain(codeOf(0xA0));
+        expect(codeOf(0x202F)).not.toBe(codeOf(0x20));
+        expect(uni.ps(`a${NNBSP}b`)).toContain(codeOf(0x202F));
     });
 
     it('measures the narrow no-break space at its real advance', () => {
@@ -139,9 +141,11 @@ describe('no-break spaces reach the font', () => {
         const bare: FontData = { ...latin, cmap };
         const uni = createEncodingContext([{ fontData: bare, fontRef: '/F3', lang: 'latin' }], true, false);
         const hex = uni.textRuns(`a${NNBSP}b${NBSP}c`, 11).map(r => r.hexStr).join('');
-        expect(hex).not.toContain(gidOf(0x202F));
-        expect(hex).not.toContain(gidOf(0xA0));
-        expect(hex.match(new RegExp(gidOf(0x20), 'g'))?.length).toBe(2);
+        const cids = uni.getCidMaps!().get('/F3')!; // the codes are CIDs (C28)
+        expect(cids).not.toContain(latin.cmap[0x202F]);
+        expect(cids).not.toContain(latin.cmap[0xA0]);
+        const space = cids.indexOf(latin.cmap[0x20]).toString(16).toUpperCase().padStart(4, '0');
+        expect(hex.match(new RegExp(space, 'g'))?.length).toBe(2);
     });
 
     const spaced: DocumentParams = {
@@ -167,12 +171,43 @@ describe('no-break spaces reach the font', () => {
         expect(text).toContain(`«${NBSP}citation${NBSP}»`);
     });
 
-    it('degrades to the ordinary space on the base-14 path, where WinAnsi has no U+202F', () => {
+    it('narrows the space on the base-14 path with a TJ adjustment, where WinAnsi has no U+202F (1.9.0)', () => {
         const base14: DocumentParams = { ...spaced, fontEntries: undefined };
         const fr = buildDocumentPDFBytes(base14, { creationDate: PINNED, typography: { punctuationSpacing: 'fr' } });
         const s = new TextDecoder('latin1').decode(fr);
-        expect(s).toContain('Vraiment ?');
-        expect(s).toContain('Total :');
+        // An ordinary space is shown, then the pen pulls back 111/1000 em so
+        // the gap measures the 167/1000 em of a narrow no-break space.
+        // demo-language: fr (the fr preset is a French typographic convention; the sentence is the fixture)
+        expect(s).toContain('[(Vraiment ) 111 (? Oui ) 111 (! Ainsi ) 111 (; Total\xA0: 42. Et une \xAB\xA0citation\xA0\xBB pour finir.)] TJ');
+        // The full no-break space (U+00A0) is a WinAnsi byte and stays inside the literal.
+        expect(s).toContain('Total\xA0:');
+        // Extraction still yields a space there (the narrow glyph does not exist in Helvetica).
+        expect(extractText(fr).map(p => p.text).join('\n')).toContain('Vraiment ?');
+    });
+
+    it('fr and fr-CA stay distinguishable on the base-14 path', () => {
+        const base14: DocumentParams = { ...spaced, fontEntries: undefined };
+        const fr = buildDocumentPDFBytes(base14, { creationDate: PINNED, typography: { punctuationSpacing: 'fr' } });
+        const ca = buildDocumentPDFBytes(base14, { creationDate: PINNED, typography: { punctuationSpacing: 'fr-CA' } });
+        expect(Buffer.from(fr).equals(Buffer.from(ca))).toBe(false);
+        expect(new TextDecoder('latin1').decode(ca)).not.toContain(' 111 ');
+    });
+
+    it('measures the narrow no-break space at 167/1000 em in both Helvetica estimates', () => {
+        expect(helveticaWidth(`a${NNBSP}b`, 10)).toBeCloseTo(helveticaWidth('ab', 10) + 1.67, 6);
+        expect(helveticaWidth(`a${NNBSP}b`, 10)).toBeLessThan(helveticaWidth('a b', 10));
+        expect(helveticaBoldWidth(`a${NNBSP}b`, 10)).toBeCloseTo(helveticaBoldWidth('ab', 10) + 1.67, 6);
+        const exact = createEncodingContext([], false, false, 'exact');
+        expect(exact.tw(`a${NNBSP}b`, 10)).toBeCloseTo(exact.tw('a b', 10) - 1.11, 6);
+    });
+
+    it('leaves text without a narrow space on the historical Tj operator', () => {
+        const base14: DocumentParams = { ...spaced, fontEntries: undefined };
+        const none = buildDocumentPDFBytes(base14, { creationDate: PINNED });
+        const s = new TextDecoder('latin1').decode(none);
+        // demo-language: fr (the fr preset is a French typographic convention; the sentence is the fixture)
+        expect(s).toContain('(Vraiment ? Oui ! Ainsi ; Total : 42. Et une \xAB citation \xBB pour finir.) Tj');
+        expect(s).not.toContain('] TJ');
     });
 });
 

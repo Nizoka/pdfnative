@@ -17,6 +17,7 @@
   <meta property="og:title" content="Digital signatures — pdfnative">
   <meta property="og:description" content="CMS/PKCS#7 detached signatures in pdfnative — RSA SHA-256/384/512 + ECDSA P-256, the PAdES baseline profile, multiple signatures and listSignatures() (v1.7.0), one-call addSignaturePlaceholder() workflow, Adobe Reader / openssl-cms validation.">
   <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
+  <meta property="og:image:alt" content="pdfnative — pure native PDF generation, zero dependencies">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
@@ -184,7 +185,10 @@ verify a signed PDF end to end (byte-range digest, CMS signature value,
 chain, trust, timestamps, revocation), use
 <a href="cli.html#pdfnative-verify"><code>pdfnative-cli verify</code></a> or the
 <a href="mcp.html"><code>verify_pdf</code> MCP tool</a> — the CMS verification logic lives
-there. Since pdfnative-mcp 1.6.0, <code>verify_pdf</code> also validates <!-- verify-docs:allow version-token (historical release entry) -->
+there. In the library family, <a href="https://pkinative.dev" target="_blank" rel="noopener">pkinative</a> verifies
+the CMS over the <code>/ByteRange</code> digest and the chain against your trust
+anchors, timestamp-aware — see
+<a href="native-family.html#case-1--sign-with-pdfnative-prove-it-with-pkinative">the native family guide</a>. Since pdfnative-mcp 1.6.0, <code>verify_pdf</code> also validates <!-- verify-docs:allow version-token (historical release entry) -->
 <code>/DocTimeStamp</code> fields as RFC 3161 tokens and reports the achieved
 PAdES level (B-B → B-LTA) with <code>ltv: true</code>.</p>
 <h2 id="why-a-separate-placeholder-step">Why a separate placeholder step?<a class="heading-anchor" href="#why-a-separate-placeholder-step" aria-label="Link to this section">#</a></h2>
@@ -332,7 +336,10 @@ ESS <code>signing-certificate-v2</code> attribute.</p>
 </tr>
 </tbody></table>
 <p>That is the complete <code>SignatureAlgorithm</code> union — the RSA variants widened
-to SHA-384/512 in v1.7.0; ECDSA is offered with SHA-256 only.</p>
+to SHA-384/512 in v1.7.0; ECDSA is offered with SHA-256 only. Since v1.9.0 the
+ECDSA primitives are exported beside the RSA ones — <code>ecdsaVerifyHash(hash, r, s, publicKey)</code>,
+<code>ecdsaSignHash</code>, <code>encodeDerSignature</code>, <code>decodeDerSignature</code> — for a verifier that
+has already hashed the signed range (<a href="https://github.com/Nizoka/pdfnative/issues/88" target="_blank" rel="noopener">#88</a>).</p>
 <p>All primitives live under <a href="https://github.com/Nizoka/pdfnative/tree/main/src/crypto" target="_blank" rel="noopener">src/crypto/</a>:
 SHA-256/384/512 in <code>sha.ts</code>, ASN.1 DER in <code>asn1.ts</code>, RSA modular
 arithmetic in <code>rsa.ts</code>, ECDSA P-256 in <code>ecdsa.ts</code>, X.509 parsing in

@@ -18,6 +18,7 @@
   <meta property="og:title" content="Inspect &amp; Verify Playground — pdfnative">
   <meta property="og:description" content="Drop a PDF and read a full report — metadata, text, PDF/UA structure, signature inventory, form fields — produced entirely in your browser. Nothing is uploaded.">
   <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
+  <meta property="og:image:alt" content="pdfnative — pure native PDF generation, zero dependencies">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
@@ -112,7 +113,7 @@
   <nav class="playground-switcher" aria-label="Playground switcher">
     <span class="playground-switcher-label">Playgrounds:</span>
     <a href="./extreme-scripts.html">Extreme scripts</a>
-    <a href="./all-scripts.html">All 27 scripts</a>
+    <a href="./all-scripts.html">All 32 scripts</a>
     <a href="./toolkit.html">PDF Toolkit</a>
     <a href="./inspect.html" aria-current="page">Inspect &amp; verify</a>
     <a href="./charts.html">Charts</a>
@@ -125,6 +126,7 @@
     <a href="./print.html">Print &amp; PDF/X</a>
     <a href="./reproducible.html">Reproducible output</a>
     <a href="./docspec-lint.html">DocSpec lint</a>
+    <a href="./images.html">Images</a>
     <a href="./" style="margin-left:auto;">All →</a>
   </nav>
   <article class="guide-content">
@@ -255,30 +257,20 @@ function rawJsonDetails(obj) {
   return details;
 }
 
-// PDF text strings are either PDFDocEncoding (close to Latin-1) or UTF-16BE
-// with a FE FF byte-order mark. The parser hands both over as byte strings.
-function decodePdfText(s) {
-  if (typeof s !== 'string') return String(s);
-  if (s.length >= 2 && s.charCodeAt(0) === 0xFE && s.charCodeAt(1) === 0xFF) {
-    let out = '';
-    for (let i = 2; i + 1 < s.length; i += 2) {
-      out += String.fromCharCode((s.charCodeAt(i) << 8) | s.charCodeAt(i + 1));
-    }
-    return out;
-  }
-  return s;
-}
+// PDF text strings are PDFDocEncoding or UTF-16BE behind a byte-order mark (ISO 32000-1 §7.9.2.2);
+// the parser hands both over as byte strings. Since 1.9.0 the library decodes them itself —
+// decodePdfTextString() is what openPdf() applies to /Info, outlines, page labels and signature names.
 function displayValue(mod, reader, raw) {
   const v = reader.resolveValue(raw);
   if (v === null || v === undefined) return '';
-  if (typeof v === 'string') return decodePdfText(v);
+  if (typeof v === 'string') return mod.decodePdfTextString(v);
   if (typeof v === 'number' || typeof v === 'boolean') return String(v);
   if (typeof v === 'object' && v.type === 'name') return '/' + v.value;
   return '(non-scalar value)';
 }
 
 // ── pdfnative loader — eager, at page load, so no request follows a drop ──
-const CDN_URLS = ['https://esm.sh/pdfnative@1.8.0', 'https://unpkg.com/pdfnative@1.8.0?module'];
+const CDN_URLS = ['https://esm.sh/pdfnative@1.9.0', 'https://unpkg.com/pdfnative@1.9.0?module'];
 let pdfnativeMod = null;
 let loadErr = null;
 
@@ -356,9 +348,20 @@ function renderOverview(mod, bytes, password) {
 function renderText(mod, bytes, password) {
   const body = $('text-body');
   body.replaceChildren();
-  const opts = { includeRuns: true };
+  // onStreamError (1.9.0): 'limit' (the default) throws PdfStreamLimitError when a content or font
+  // stream exceeds the decode cap, instead of returning the page without its text; 'skip' is the
+  // 1.8.0 lenience, 'throw' reports any undecodable stream. The card tries the default first.
+  const opts = { includeRuns: true, onStreamError: 'limit' };
   if (password !== undefined) opts.password = password;
-  const pages = mod.extractText(bytes, opts);
+  let pages;
+  let limitNote = null;
+  try {
+    pages = mod.extractText(bytes, opts);
+  } catch (err) {
+    if (!(err instanceof mod.PdfStreamLimitError) && !(err && err.code === 'PDF_STREAM_LIMIT')) throw err;
+    limitNote = err.message;
+    pages = mod.extractText(bytes, { ...opts, onStreamError: 'skip' });
+  }
   let totalChars = 0, runCount = 0;
   for (const page of pages) {
     totalChars += page.text.length;
@@ -368,6 +371,9 @@ function renderText(mod, bytes, password) {
   kv(dl, 'Pages read', String(pages.length));
   kv(dl, 'Characters', String(totalChars) + ' across all pages');
   kv(dl, 'Positioned runs', String(runCount) + ' (includeRuns: true)');
+  kv(dl, 'Stream errors', limitNote
+    ? "PdfStreamLimitError (code PDF_STREAM_LIMIT) under the default policy — re-read with onStreamError: 'skip': " + limitNote
+    : "none — every content and font stream decoded within the cap (onStreamError: 'limit', the 1.9.0 default)");
   body.appendChild(dl);
   if (pages.length > 0 && pages[0].text.trim() !== '') {
     const preview = pages[0].text.length > 1200 ? pages[0].text.slice(0, 1200) + '… (truncated)' : pages[0].text;
@@ -642,6 +648,13 @@ $('sample-btn').addEventListener('click', () => {
             'Text extraction returns reading-order text plus positioned runs, honouring /ActualText.',
             'Nothing about this file exists outside this tab.',
           ]},
+          // A tagged table (1.9.0): /TH cells carry /Scope and an /ID, /TD cells name their /Headers,
+          // and the structure tree root registers an /IDTree — the PDF/UA card checks all three.
+          { type: 'table', headers: ['Card', 'Reader', 'What it reports'], rows: [
+            { cells: ['Overview', 'openPdf', 'header, xref, /Info'], type: '', pointed: false },
+            { cells: ['Text', 'extractText', 'reading order, runs, stream errors'], type: '', pointed: false },
+            { cells: ['PDF/UA', 'validatePdfUA', 'structure, /Scope, /Headers, /IDTree'], type: '', pointed: false },
+          ] },
           { type: 'pageBreak' },
           { type: 'heading', text: 'Form fields', level: 1 },
           { type: 'formField', fieldType: 'text', name: 'fullName', label: 'Full name' },

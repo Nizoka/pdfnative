@@ -542,6 +542,7 @@ for (const [name, pkg] of Object.entries(manifest.packages)) {
         { pattern: /\b(\d+)\s+reference PDFs\b/g, source: 'derived.samplePdfs', mode: 'equal' },
         { pattern: /\b(\d+)\s+(?:sample\s+)?generators\b/g, source: 'derived.sampleGenerators', mode: 'equal' },
         { pattern: /\b(\d+)\s+PDF\/A-claiming samples\b/g, source: 'declared.pdfaSamples', mode: 'equal' },
+        { pattern: /\b(\d+)\s+PDF\/X-claiming samples\b/g, source: 'declared.pdfxSamples', mode: 'equal' },
         // "across 38 categories" — a chart's "2 series, 4 categories" alt text
         // is not a sample-tree claim, so the preposition is part of the token.
         { pattern: /\b(?:across|in|into)\s+(\d+)\s+(?:sample\s+)?categories\b/g, source: 'derived.sampleCategories', mode: 'equal' },
@@ -552,7 +553,13 @@ for (const [name, pkg] of Object.entries(manifest.packages)) {
         // the 1.8.0 bump while every sentence around them said 27. Word
         // numerals count too: the playground index said "Ten" playgrounds.
         { pattern: /\b(\d+)[ -](?:Unicode\s+)?scripts?\b/gi, source: 'declared.scripts', mode: 'equal' },
-        { pattern: /\b(\d+|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen)\s+(?:zero-install\s+|hands-on\s+|interactive\s+|live\s+)?(?:pdfnative\s+)?playgrounds\b/gi, source: 'derived.playgrounds', mode: 'equal' },
+        // The 1.9.0 final pass found "Fourteen <a href>playgrounds</a>" and
+        // "Fourteen hands-on environments" (a tag or a synonym between the
+        // numeral and the noun), "27 writing systems" and "35 reference guides"
+        // — all invisible to the three tokens above.
+        { pattern: /\b(\d+|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen)\s+(?:<a\s[^>]*>\s*)?(?:zero-install\s+|hands-on\s+|interactive\s+|live\s+)?(?:pdfnative\s+)?(?:playgrounds|environments)\b/gi, source: 'derived.playgrounds', mode: 'equal' },
+        { pattern: /\b(\d+)\s+writing systems\b/gi, source: 'declared.scripts', mode: 'equal' },
+        { pattern: /\b(\d+)\s+(?:<a\s[^>]*>\s*)?reference guides\b/gi, source: 'derived.guides', mode: 'equal' },
     ];
     const NUMERALS: Record<string, number> = { ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16 };
     const COMPANION_DOC = /docs[\\/](?:guides|playgrounds)[\\/](?:react|cli|mcp)\.(?:md|html)$/;
@@ -752,16 +759,29 @@ for (const [name, pkg] of Object.entries(manifest.packages)) {
             if (uses.length === 0) continue;
             const withFile = [...text.matchAll(/node-version-file:\s*\.nvmrc\b/g)].length;
             if (withFile >= uses.length) continue;
-            const matrix = /node-version:\s*\$\{\{\s*matrix\.node-version\s*\}\}/.test(text)
-                && /node-version:\s*\[([^\]]*)\]/.exec(text);
-            if (name === 'ci.yml' && matrix) {
-                const majors = matrix[1].split(',').map((s) => Number(s.trim().replace(/['"]/g, '')));
-                if (pinnedMajor !== null && !majors.includes(pinnedMajor)) {
-                    fail(relPath, lineOf(text, matrix.index), 'node-pin-parity', `matrix [${matrix[1].trim()}] does not include the .nvmrc major ${pinnedMajor}`);
+            const usesMatrix = /node-version:\s*\$\{\{\s*matrix\.node-version\s*\}\}/.test(text);
+            if (name === 'ci.yml' && usesMatrix) {
+                // A list (`node-version: [22, 24]`) or include entries (`- { name: …, node-version: 22, … }`).
+                const list = /node-version:\s*\[([^\]]*)\]/.exec(text);
+                const majors = list
+                    ? list[1].split(',').map((s) => Number(s.trim().replace(/['"]/g, '')))
+                    : [...text.matchAll(/^\s+- \{[^\n]*\bnode-version:\s*(\d+)\b/gm)].map((m) => Number(m[1]));
+                if (majors.length === 0) {
+                    fail(relPath, lineOf(text, uses[0].index), 'node-pin-parity', 'ci.yml spans a matrix but no node-version list or include entry names a major');
+                } else if (pinnedMajor !== null && !majors.includes(pinnedMajor)) {
+                    fail(relPath, lineOf(text, (list ?? uses[0]).index), 'node-pin-parity', `matrix [${majors.join(', ')}] does not include the .nvmrc major ${pinnedMajor}`);
                 }
                 continue;
             }
-            fail(relPath, lineOf(text, uses[0].index), 'node-pin-parity', 'actions/setup-node must read `node-version-file: .nvmrc` (only ci.yml may span a matrix)');
+            if (name === 'node-current.yml') {
+                // The Current line, tested and not promised (SECURITY.md §Supported runtimes): one major above the pin.
+                const current = /^\s+node-version:\s*(\d+)\s*$/m.exec(text);
+                if (!current || (pinnedMajor !== null && Number(current[1]) <= pinnedMajor)) {
+                    fail(relPath, lineOf(text, uses[0].index), 'node-pin-parity', `node-current.yml must pin one Node major above the .nvmrc pin ${pinnedMajor}`);
+                }
+                continue;
+            }
+            fail(relPath, lineOf(text, uses[0].index), 'node-pin-parity', 'actions/setup-node must read `node-version-file: .nvmrc` (only ci.yml may span a matrix, and node-current.yml the Current line)');
         }
     }
 }
@@ -811,6 +831,10 @@ for (const [name, pkg] of Object.entries(manifest.packages)) {
                         if (!current) continue;
                         const jobName = /^ {4}name:\s*(.+?)\s*$/.exec(line);
                         if (jobName) jobs.add(jobName[1].replace(/^["']|["']$/g, ''));
+                        // A matrix include entry names the check GitHub reports when the job's
+                        // `name:` is `${{ matrix.name }}` (ci.yml since 1.9.0).
+                        const include = /^ {8,}- \{ name: '?([^,']+)'?,/.exec(line);
+                        if (include) jobs.add(include[1]);
                         const list = /^ {8}[A-Za-z0-9_-]+:\s*\[([^\]]*)\]\s*$/.exec(line);
                         if (list) {
                             for (const v of list[1].split(',')) matrixValues.get(current)!.add(v.trim().replace(/['"]/g, ''));
@@ -1361,15 +1385,31 @@ if (existsSync(SITEMAP)) {
     };
     const toplevel = git('rev-parse', '--show-toplevel')?.trim().replace(/\\/g, '/');
     const shallow = git('rev-parse', '--is-shallow-repository')?.trim();
-    if (toplevel !== undefined && toplevel === ROOT.replace(/\\/g, '/') && shallow === 'false') {
+    // Windows paths are case-insensitive and git reports the drive letter in
+    // upper case; a shell that opened the checkout as d:\… must not make the
+    // rule skip itself silently (the 1.9.0 review found it never running here).
+    const samePath = (a: string, b: string): boolean =>
+        process.platform === 'win32' ? a.toLowerCase() === b.toLowerCase() : a === b;
+    if (toplevel !== undefined && samePath(toplevel, ROOT.replace(/\\/g, '/')) && shallow === 'false') {
         const tracked = new Set((git('ls-files', '--', 'docs') ?? '').split(/\r?\n/).filter(Boolean));
+        // Commits listed in .git-blame-ignore-revs (the 1.9.0 line-ending
+        // normalisation) touched every line of a page without changing one:
+        // they date a page no more than they attribute it in blame.
+        const ignoredRevs = (existsSync(join(ROOT, '.git-blame-ignore-revs')) ? read(join(ROOT, '.git-blame-ignore-revs')) : '').split(/\r?\n/)
+            .map((l) => l.replace(/#.*/, '').trim()).filter((l) => /^[0-9a-f]{7,40}$/.test(l));
         const lastCommit = new Map<string, string>();
-        const log = git('log', '--format=%x01%cs', '--name-only', '--', 'docs') ?? '';
+        const log = git('log', '--format=%x01%H %cs', '--name-only', '--', 'docs') ?? '';
         let date = '';
+        let ignored = false;
         for (const raw of log.split(/\r?\n/)) {
-            if (raw.startsWith('')) { date = raw.slice(1).trim(); continue; }
+            if (raw.startsWith('')) {
+                const [hash, cs] = raw.slice(1).trim().split(' ');
+                ignored = ignoredRevs.some((rev) => hash.startsWith(rev));
+                date = cs ?? '';
+                continue;
+            }
             const file = raw.trim();
-            if (file && !lastCommit.has(file)) lastCommit.set(file, date);
+            if (file && !ignored && !lastCommit.has(file)) lastCommit.set(file, date);
         }
         const sourcesOf = (loc: string): string[] => {
             let path = loc.replace(/^https?:\/\/[^/]+/, '').replace(/^\//, '');
@@ -1503,6 +1543,174 @@ const PLAYGROUNDS = existsSync(join(ROOT, 'docs', 'playgrounds'))
         }
     }
 }
+
+// ── Rule: jsonld-item-count ─────────────────────────────────────────
+
+/**
+ * The guides and playgrounds index pages carry a JSON-LD ItemList whose
+ * `numberOfItems` and ListItem count must equal the manifest's counters —
+ * the playgrounds index shipped a 14 over 15 entries for a release.
+ */
+{
+    const LISTS: ReadonlyArray<readonly [string, string]> = [
+        ['docs/guides/index.html', 'derived.guides'],
+        ['docs/playgrounds/index.html', 'derived.playgrounds'],
+    ];
+    for (const [relFile, source] of LISTS) {
+        const file = join(ROOT, relFile);
+        if (!existsSync(file)) continue;
+        const expected = manifestRef(source);
+        if (expected === undefined) continue;
+        const text = read(file);
+        const m = /"numberOfItems":\s*(\d+)/.exec(text);
+        if (!m) {
+            fail(relFile, 1, 'jsonld-item-count', 'no JSON-LD "numberOfItems" found');
+            continue;
+        }
+        if (Number(m[1]) !== expected) fail(relFile, lineOf(text, m.index), 'jsonld-item-count', `"numberOfItems": ${m[1]} — the manifest says ${expected} (${source})`);
+        // Count inside the ItemList only: the same script block also carries a BreadcrumbList.
+        const blockEnd = text.indexOf('</script>', m.index);
+        const block = text.slice(m.index, blockEnd < 0 ? undefined : blockEnd);
+        const crumbs = block.indexOf('"BreadcrumbList"');
+        const items = ((crumbs < 0 ? block : block.slice(0, crumbs)).match(/"@type":\s*"ListItem"/g) ?? []).length;
+        if (items !== expected) fail(relFile, lineOf(text, m.index), 'jsonld-item-count', `${items} ListItem entries — the manifest says ${expected} (${source})`);
+    }
+}
+
+// ── Rule: release-coverage ──────────────────────────────────────────
+
+/**
+ * Every export the current release added — `docs/assets/api.json` minus the
+ * previous release's registry in `tests/compat/api-<previous>.json` (the one
+ * `tests/compat/allow-<previous>.json` names, the same file
+ * `tests/tools/api-compat.test.ts` replays) — is shown somewhere a visitor
+ * or an agent can run it: named under `exercises` of a live playground in
+ * `docs/data/playgrounds.json`, imported by a recipe under `recipes/`, or
+ * listed under `coverageExemptions` of the playground manifest with a reason
+ * (a low-level primitive the playgrounds show through a higher-level option).
+ * The 1.9.0 review found none of the release's 39 exports in any playground
+ * manifest and twenty user-facing features in no playground at all; this rule
+ * is what keeps the next release from drifting the same way.
+ */
+{
+    const MANIFEST_FILE = join(ROOT, 'docs', 'data', 'playgrounds.json');
+    const relManifest = 'docs/data/playgrounds.json';
+    const API_FILE = join(ROOT, 'docs', 'assets', 'api.json');
+    const COMPAT_DIR = join(ROOT, 'tests', 'compat');
+    interface ApiEntry { readonly name: string; readonly kind?: string }
+    interface Exemption { readonly name: string; readonly reason?: string }
+    interface Manifest { readonly playgrounds?: ReadonlyArray<{ readonly id: string; readonly file?: string; readonly exercises?: readonly string[] }>; readonly coverageExemptions?: readonly Exemption[] }
+    const previousTag = existsSync(COMPAT_DIR)
+        ? readdirSync(COMPAT_DIR)
+              .filter((f) => /^allow-.*\.json$/.test(f))
+              .map((f) => (JSON.parse(read(join(COMPAT_DIR, f))) as { tag?: string }).tag)
+              .filter((t): t is string => typeof t === 'string')
+              .sort()
+              .pop()
+        : undefined;
+    const previousFile = previousTag ? join(COMPAT_DIR, `api-${previousTag.replace(/^v/, '')}.json`) : undefined;
+    if (existsSync(MANIFEST_FILE) && existsSync(API_FILE) && previousFile && existsSync(previousFile)) {
+        const entries = (file: string): ApiEntry[] => {
+            const parsed = JSON.parse(read(file)) as ApiEntry[] | { exports?: ApiEntry[] };
+            return Array.isArray(parsed) ? parsed : (parsed.exports ?? []);
+        };
+        const previous = new Set(entries(previousFile).map((e) => e.name));
+        const current = entries(API_FILE);
+        const added = current.filter((e) => !previous.has(e.name)).map((e) => e.name);
+        // A type never appears in a JavaScript code view; only a value export can be required in the page.
+        const values = new Set(current.filter((e) => e.kind !== 'type').map((e) => e.name));
+        let manifestJson: Manifest = {};
+        try {
+            manifestJson = JSON.parse(read(MANIFEST_FILE)) as Manifest;
+        } catch {
+            // playgrounds-manifest has already reported the parse failure.
+        }
+        const shown = new Set<string>();
+        const claimedBy = new Map<string, Array<{ readonly id: string; readonly file: string }>>();
+        for (const entry of manifestJson.playgrounds ?? []) {
+            for (const item of entry.exercises ?? []) {
+                for (const token of item.match(/[A-Za-z_][A-Za-z0-9_]*/g) ?? []) {
+                    shown.add(token);
+                    claimedBy.set(token, [...(claimedBy.get(token) ?? []), { id: entry.id, file: entry.file ?? '' }]);
+                }
+            }
+        }
+        // An `exercises` sentence is a claim about its page: a new export named
+        // there must appear in the page (a code view, the inline script), or
+        // the claim is prose — the 1.9.0 final pass found resolveBidiLevels
+        // "covered" by a parenthesis the extreme-scripts page never ran.
+        for (const name of added) {
+            const claims = claimedBy.get(name) ?? [];
+            if (claims.length === 0 || !values.has(name)) continue;
+            const backed = claims.filter((c) => c.file !== '' && existsSync(join(ROOT, 'docs', 'playgrounds', c.file)) && read(join(ROOT, 'docs', 'playgrounds', c.file)).includes(name));
+            for (const c of claims) {
+                if (backed.includes(c)) continue;
+                fail(relManifest, 1, 'release-coverage', `"${c.id}" names "${name}" under exercises but docs/playgrounds/${c.file || '?'} does not contain it — call it in a code view or drop the claim`);
+            }
+            if (backed.length === 0) shown.delete(name);
+        }
+        const recipesDir = join(ROOT, 'recipes');
+        if (existsSync(recipesDir)) {
+            for (const file of readdirSync(recipesDir).filter((f) => f.endsWith('.ts'))) {
+                for (const m of read(join(recipesDir, file)).matchAll(/import\s+(?:type\s+)?\{([^}]+)\}\s+from\s+'pdfnative(?:\/tools)?'/g)) {
+                    for (const token of m[1].match(/[A-Za-z_][A-Za-z0-9_]*/g) ?? []) shown.add(token);
+                }
+            }
+        }
+        const exempt = new Map<string, string>();
+        for (const e of manifestJson.coverageExemptions ?? []) {
+            if (typeof e.name !== 'string' || typeof e.reason !== 'string' || e.reason.trim().length < 20) {
+                fail(relManifest, 1, 'release-coverage', `coverageExemptions entry "${String(e.name)}" needs a reason of at least 20 characters`);
+                continue;
+            }
+            if (previous.has(e.name)) fail(relManifest, 1, 'release-coverage', `coverageExemptions lists "${e.name}", which ${previousTag} already exported — drop the stale entry`);
+            else if (!added.includes(e.name)) fail(relManifest, 1, 'release-coverage', `coverageExemptions lists "${e.name}", which docs/assets/api.json does not export — a typo, or an export that was renamed`);
+            else if (shown.has(e.name)) fail(relManifest, 1, 'release-coverage', `coverageExemptions lists "${e.name}", which a playground or a recipe already shows — drop the entry`);
+            exempt.set(e.name, e.reason);
+        }
+        for (const name of added) {
+            if (shown.has(name) || exempt.has(name)) continue;
+            fail(
+                relManifest,
+                1,
+                'release-coverage',
+                `"${name}" is new since ${previousTag} and no playground exercises it, no recipe imports it and no coverageExemptions entry explains why — add a preset, a recipe, or an exemption with its reason`,
+            );
+        }
+    }
+}
+
+// ── Rule: social-image-fresh ────────────────────────────────────────
+
+/**
+ * og-image.png and social-preview.png are hand-rendered from their SVG
+ * sources (the procedure is in each SVG's header). A PNG committed before its
+ * SVG's last change shows the previous release — both shipped "27 Unicode
+ * scripts" for the whole 1.9.0 branch while their sources said 32. Full
+ * clones only, as sitemap-lastmod-vs-git.
+ */
+{
+    const gitDate = (path: string): string | null => {
+        const r = spawnSync('git', ['-C', ROOT, 'log', '-1', '--format=%cs', '--', path], { encoding: 'utf8', windowsHide: true });
+        return r.status === 0 && r.stdout.trim() !== '' ? r.stdout.trim() : null;
+    };
+    const top = spawnSync('git', ['-C', ROOT, 'rev-parse', '--show-toplevel'], { encoding: 'utf8', windowsHide: true });
+    const shallow = spawnSync('git', ['-C', ROOT, 'rev-parse', '--is-shallow-repository'], { encoding: 'utf8', windowsHide: true });
+    const here = top.status === 0 && top.stdout.trim().replace(/\\/g, '/').toLowerCase() === ROOT.replace(/\\/g, '/').toLowerCase();
+    if (here && shallow.stdout.trim() === 'false') {
+        for (const base of ['og-image', 'social-preview']) {
+            const svg = `docs/assets/${base}.svg`;
+            const png = `docs/assets/${base}.png`;
+            if (!existsSync(join(ROOT, svg)) || !existsSync(join(ROOT, png))) continue;
+            const svgDate = gitDate(svg);
+            const pngDate = gitDate(png);
+            if (svgDate !== null && pngDate !== null && pngDate < svgDate) {
+                fail(png, 1, 'social-image-fresh', `last committed ${pngDate}, before its source ${svg} (${svgDate}) — re-render it (headless Chrome, see the SVG header) and commit the PNG`);
+            }
+        }
+    }
+}
+
 
 const SWITCHER = /<nav class="playground-switcher"[\s\S]*?<\/nav>/;
 
@@ -2194,16 +2402,19 @@ const OFFLINE_RULES = [
     'claude-rules-sync', // .claude/rules/ equals a fresh render of .github/instructions/ (npm run agents:rules)
     'claude-rules-budget', // CLAUDE.md + its @imports + unscoped rules ≤ 16 KiB; a scoped rule > 32 KiB warns
     'pr-template-parity', // every PR-template checklist item is verbatim in CONTRIBUTING.md; the template mentions npm run gate
-    'eol-lf', // (git checkouts only) tracked text blobs are LF — warn until the renormalisation commit flips EOL_LF_MODE
+    'eol-lf', // (git checkouts only) tracked text blobs are LF — a failure since the 1.9.0 renormalisation commit (EOL_LF_MODE)
     'skills-shape', // every .claude/skills/*/SKILL.md names its directory, has a description, and its referenced templates exist
     'api-exists', // no phantom API identifier anywhere in docs or src
     'jsonld-version', // JSON-LD softwareVersion equals the manifest
     'internal-links', // every href/src and Markdown link resolves on disk
     'seo-head', // lang, canonical, hreflang self-references, og:locale, description
     'sitemap-parity', // sitemap lists every indexable page; lastmod inside the audit window
-    'sitemap-lastmod-vs-git', // (full clones only) lastmod ≥ last commit of the page's sources and ≤ verifiedOn
+    'sitemap-lastmod-vs-git', // (full clones only) lastmod ≥ last commit of the page's sources (commits in .git-blame-ignore-revs excepted) and ≤ verifiedOn
+    'social-image-fresh', // (full clones only) og-image.png and social-preview.png are not older than their SVG sources
     'cdn-sri', // third-party scripts carry integrity+crossorigin; pdfnative CDN imports are pinned
     'playgrounds-manifest', // docs/data/playgrounds.json lists every live playground with real control ids; count equals derived.playgrounds
+    'jsonld-item-count', // the guides and playgrounds indexes' JSON-LD ItemList sizes equal derived.guides / derived.playgrounds
+    'release-coverage', // every export added since the previous release is exercised by a playground (the page contains it), imported by a recipe, or exempted with a reason
     'switcher-parity', // playground switchers link every live playground, none link a noindex stub
     'learn-chain', // learn path prev/next links follow manifest.learnPath
     'bench-parity', // homepage benchmark bars round to bench/RESULTS.md
@@ -2222,8 +2433,8 @@ const OFFLINE_RULES = [
 
 if (errors.length === 0) {
     // Warnings never fail the run and are summarised per rule rather than
-    // listed — the `eol-lf` rule alone names every CRLF-stored file until the
-    // renormalisation commit, and a gate log is not the place for that list.
+    // listed — a per-file warning rule (as `eol-lf` was before the 1.9.0
+    // renormalisation) would otherwise fill a gate log with its list.
     const perRule = new Map<string, number>();
     for (const w of warnings) perRule.set(w.rule, (perRule.get(w.rule) ?? 0) + 1);
     const suffix = warnings.length === 0

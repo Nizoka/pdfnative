@@ -17,6 +17,7 @@
   <meta property="og:title" content="Layout debugging & inspection — pdfnative">
   <meta property="og:description" content="Opt-in visual overlay (margin/content/cell boxes) and inspectDocumentLayout() per-page block geometry. Byte-identical when off. New in v1.5.0.">
   <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
+  <meta property="og:image:alt" content="pdfnative — pure native PDF generation, zero dependencies">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
@@ -200,6 +201,16 @@ tags are the keys of the font module&#39;s <code>features</code> table.</p>
   onDiagnostic: (d) =&gt; console.error(d.code, d.message), // TYPOGRAPHY_FEATURE_INEFFECTIVE
 });
 </code></pre>
+<p><strong><code>TEXT_GLYPH_NOT_COVERED</code></strong> (v1.9.0) — a character of the document has no
+glyph in the font it was routed to. In a CID run it is drawn as the font&#39;s
+<code>.notdef</code> box; on the base-14 path it is written as <code>?</code> because
+WinAnsiEncoding has no byte for it (an arrow <code>→</code>, a mathematical operator, an
+emoji). The bytes are what they always were — the diagnostic names up to
+eight code points with the character and the font (<code>U+2192 &quot;→&quot; in /F3 NotoSansTamil-Regular</code>), once per font. Register a font that covers the
+characters (<code>registerFont(&#39;math&#39;, …)</code> carries arrows and operators; a Latin
+font through <code>fontEntries</code> when no font is registered at all) or change the
+text. Under <code>tagged: &#39;pdfa2u&#39;</code> the same <code>.notdef</code> also raises
+<code>PDFA_GLYPH_WITHOUT_UNICODE</code>.</p>
 <p><strong>PDF/X coherence errors</strong> — <code>pdfx: &#39;pdfx4&#39;</code> is checked before any byte is
 written, and an incoherent layout throws one of seven messages (each with
 its remedy):</p>

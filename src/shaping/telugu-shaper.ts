@@ -233,6 +233,10 @@ export const TELUGU_CONFIG: IndicScriptConfig = {
     rephPosition: 'afterPost',
     blwfMode: 'postOnly',
     splitMatras: {},
+    // HarfBuzz `gen-indic-table.py`: every above and below sign, and a right
+    // sign up to U+0C42 (ు ూ), sits before the subjoined consonants; ృ ౄ
+    // come after them.
+    matraBeforeSub: (cp: number): boolean => cp !== 0x0C43 && cp !== 0x0C44,
 };
 
 /**

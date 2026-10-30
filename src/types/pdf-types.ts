@@ -365,6 +365,26 @@ export interface TextRun {
      * @since 1.8.0
      */
     readonly tjStr?: string;
+    /**
+     * Set on every run cut from a right-to-left (odd-level) bidi run: the
+     * index of that run on its line and its text in **logical** order. The
+     * run's own `text` is visual (reversed and mirrored); the emitters wrap
+     * the runs of one index in a single untagged `/Span /ActualText` carrying
+     * `logical`, as Skia does for reversed clusters (C27).
+     *
+     * @since 1.9.0
+     */
+    readonly bidi?: { readonly run: number; readonly logical: string };
+    /**
+     * The code of each glyph of {@link shaped}, in the same order: the
+     * document's CID for it. Since 1.9.0 (C28) a font's CIDs are allotted in
+     * order of first use and the embedded subset is renumbered to match
+     * (GID i = CID i), so `hexStr` and `tjStr` hold CIDs too, while the
+     * shaped glyphs keep the font's glyph ids for widths and anchors.
+     *
+     * @since 1.9.0
+     */
+    readonly cids?: readonly number[];
 }
 
 /**
@@ -404,6 +424,14 @@ export interface KernTable {
     readonly c: readonly KernClassSubtable[] | null;
 }
 
+/**
+ * Base direction of a paragraph: detected from its first strong character
+ * (`'auto'`, UAX #9 P2–P3) or forced.
+ *
+ * @since 1.9.0
+ */
+export type TextDirection = 'auto' | 'ltr' | 'rtl';
+
 /** Encoding context encapsulating text encoding and font reference logic. */
 export interface EncodingContext {
     readonly isUnicode: boolean;
@@ -416,6 +444,15 @@ export interface EncodingContext {
     readonly fontData?: FontData;
     readonly getUsedGids?: () => Map<string, Set<number>>;
     /**
+     * The document's CID space per font ref: `cidToGid[cid]` is the font's
+     * glyph id behind each code the content streams show, CID 0 being
+     * `.notdef`, CIDs allotted in order of first use. The builders renumber
+     * the embedded subset in this order (GID i = CID i, `/CIDToGIDMap
+     * /Identity`) and key `/W` and ToUnicode by CID. Present only on
+     * Unicode contexts. (v1.9.0, C28)
+     */
+    readonly getCidMaps?: () => Map<string, readonly number[]>;
+    /**
      * Glyphs reachable only through a substitution — an OpenType feature such
      * as `smcp` or `onum` — mapped back to the codepoint of the glyph they
      * replaced, per font ref. The font's cmap cannot name them, so without
@@ -423,6 +460,41 @@ export interface EncodingContext {
      * extract as U+FFFD. Present only on Unicode contexts. (v1.8.0)
      */
     readonly getToUnicodeOverrides?: () => Map<string, Map<number, number | readonly number[]>>;
+    /**
+     * The code point the document actually encoded for each glyph it reached
+     * through the cmap, per font ref — the strongest evidence of what a glyph
+     * stands for when several code points share it (月 and the Kangxi
+     * radical ⽉, the two Arabic digit sets). Consulted first by the
+     * ToUnicode CMap builder. Present only on Unicode contexts. (v1.9.0, #84)
+     */
+    readonly getToUnicodeEncoded?: () => Map<string, Map<number, number>>;
+    /**
+     * The code points that reached a font with no glyph for them, per font
+     * ref: drawn as `.notdef` (glyph 0) in a CID run, or written as `?` by
+     * the base-14 WinAnsi path (under the key `/F1`). Read after layout by
+     * the builders for the `TEXT_GLYPH_NOT_COVERED` diagnostic. (v1.9.0)
+     */
+    readonly getUncoveredCodepoints?: () => Map<string, Set<number>>;
+    /**
+     * `false` when `layout.actualText: false` asked for bare shaped runs: the
+     * text emitters then never wrap a reordered run in an untagged
+     * `/Span /ActualText`. Absent or `true` otherwise. (v1.9.0)
+     */
+    readonly actualText?: boolean;
+    /**
+     * Derive a context for one paragraph: its bidirectional levels are resolved
+     * once over the whole logical text (UAX #9 P1–I2) and every line drawn
+     * through the derived context is reordered from them (L1–L4), so a
+     * wrapped line keeps the direction of the paragraph it belongs to. Returns
+     * the context itself when the paragraph needs no bidirectional resolution.
+     * Present only on Unicode contexts. (v1.9.0)
+     */
+    readonly withParagraph?: (text: string, direction?: TextDirection) => EncodingContext;
+    /**
+     * The paragraph embedding level (0 or 1) of the paragraph a context was
+     * derived for through `withParagraph`; absent otherwise. (v1.9.0)
+     */
+    readonly paragraphLevel?: number;
     /**
      * Colour-emoji collector — present only when an `'emoji-color'` font
      * (carrying `colorGlyphs`) is registered. Used by the text emitter to
@@ -563,6 +635,31 @@ export type PdfCmykString = `${number} ${number} ${number} ${number}`;
 export type PdfCmykTuple = readonly [c: number, m: number, y: number, k: number];
 
 /**
+ * A spot colour: one ink declared in `layout.print.spotColours`, painted at
+ * `tint` (0–1, default 1). Emitted as a `/Separation` colour space named
+ * after the ink, with the declared alternate for proofing.
+ *
+ * @since 1.9.0
+ */
+export interface PdfSpotColor {
+    /** The ink's name as declared — `'PANTONE 300 C'`, `'Varnish'`. */
+    readonly spot: string;
+    /** Tint 0–1 (1 = solid). Default 1. */
+    readonly tint?: number;
+}
+
+/**
+ * A mix of declared spot inks, each at a tint 0–1: a `/DeviceN` colour
+ * space over those inks whose tint transform combines their alternates.
+ *
+ * @since 1.9.0
+ */
+export interface PdfInkMix {
+    /** Ink name → tint 0–1. Every ink must be declared in `layout.print.spotColours`. */
+    readonly inks: Readonly<Record<string, number>>;
+}
+
+/**
  * Color input accepted by pdfnative.
  *
  * - Hex string: `"#2563EB"` or `"#26E"` (primary — standard web format)
@@ -570,8 +667,23 @@ export type PdfCmykTuple = readonly [c: number, m: number, y: number, k: number]
  * - PDF operator string: `"0.145 0.388 0.922"` values 0.0–1.0 (advanced — native PDF format)
  * - CMYK tuple: `[100, 60, 0, 10]` percent 0–100, emitted as DeviceCMYK (since 1.8.0)
  * - PDF CMYK string: `"1 0.6 0 0.1"` values 0.0–1.0 (since 1.8.0)
+ * - Spot colour `{ spot: 'PANTONE 300 C', tint: 0.5 }` and ink mix `{ inks: { … } }`,
+ *   over the inks declared in `layout.print.spotColours` (since 1.9.0)
  */
-export type PdfColor = PdfRgbString | PdfRgbTuple | PdfCmykString | PdfCmykTuple | (string & {});
+export type PdfColor = PdfRgbString | PdfRgbTuple | PdfCmykString | PdfCmykTuple | PdfSpotColor | PdfInkMix | (string & {});
+
+/**
+ * A spot ink the document may paint with: its name (the `/Separation`
+ * colorant and the plate name a RIP shows) and its alternate in a process
+ * space — CMYK percentages for a press job, RGB 0–255 for an RGB
+ * OutputIntent — used wherever the ink itself is not available.
+ *
+ * @since 1.9.0
+ */
+export interface SpotColourDef {
+    readonly name: string;
+    readonly alternate: PdfCmykTuple | PdfRgbTuple;
+}
 
 /**
  * Color palette for the PDF.
@@ -622,6 +734,11 @@ export interface ColumnDef {
      * driven by `row.type`. Opt-in replacement for the pre-1.2.0
      * hardcoded `i === 3` heuristic in `renderTable`. Default: plain text
      * in `colors.text` and `enc.f1` (Helvetica-Regular).
+     *
+     * Since 1.9.0 the table builder (`buildPDF`) honours it too: as soon as
+     * any column declares a `kind`, only the `'amount'` columns are styled and
+     * the fourth-column heuristic is off; with no `kind` anywhere the
+     * historical heuristic stays, byte for byte.
      * @since 1.2.0
      */
     readonly kind?: 'amount';
@@ -671,13 +788,32 @@ export type PdfDiagnosticCode =
     | 'PDFX_DEVICE_CMYK'
     /** Link annotations or form fields on a PDF/X-4 page (ISO 15930-7). @since 1.8.0 */
     | 'PDFX_ANNOTATIONS'
+    /** A JPEG 2000 image under a PDF/A-1 claim, whose PDF 1.4 base has no JPXDecode filter (ISO 19005-1 §6.1.10). @since 1.9.0 */
+    | 'PDFA1_JPX_IMAGE'
+    /** A JPEG 2000 image under a PDF/A-2+ claim that breaks ISO 19005-2 §6.2.8.3: a channel count other than 1, 3 or 4, or an opacity channel (/SMaskInData). @since 1.9.0 */
+    | 'PDFA_JPX_IMAGE'
+    /**
+     * A PDF/A level-U claim (`pdfa2u`) over a font whose used glyphs the
+     * ToUnicode CMap cannot all name — a shaper-produced form the font's
+     * cmap does not reach, or a `.notdef` — so ISO 19005-2 §6.2.11.7.2
+     * (every character code maps to Unicode) fails in veraPDF. @since 1.9.0
+     */
+    | 'PDFA_GLYPH_WITHOUT_UNICODE'
     /**
      * A `typography.fontFeatures` tag that changed nothing: no registered font
      * declares it, or the font declares it but no glyph in the document was
      * substituted (Noto Sans's default figures are already lining and
      * tabular, so `lnum` and `tnum` have nothing to do). @since 1.8.0
      */
-    | 'TYPOGRAPHY_FEATURE_INEFFECTIVE';
+    | 'TYPOGRAPHY_FEATURE_INEFFECTIVE'
+    /**
+     * A character no registered font covers: drawn as the `.notdef` box
+     * (glyph 0) of the CID font it was routed to, or written as `?` by the
+     * base-14 WinAnsi path. The bytes are what they always were — the
+     * diagnostic names the code points and the font so the author registers
+     * a covering font or changes the text. @since 1.9.0
+     */
+    | 'TEXT_GLYPH_NOT_COVERED';
 
 /** A single conformance diagnostic surfaced by the builders. */
 export interface PdfDiagnostic {
@@ -970,7 +1106,11 @@ export interface PdfLayoutOptions {
      * identification, a `/GTS_PDFX` OutputIntent, a TrimBox on every page
      * (the MediaBox when `print` sets none), and `/Trapped` (`False` unless
      * `metadata.trapped` says `True`). All fonts must be embedded, so pass
-     * `fontEntries`. Cannot be combined with `tagged` or `encryption`.
+     * `fontEntries`. Cannot be combined with `encryption`. Since 1.9.0 it
+     * combines with `tagged: 'pdfa2b'` or `'pdfa2u'` into one file that
+     * claims both PDF/A-2 and PDF/X-4 (two OutputIntents on one profile,
+     * both identifications in XMP); PDF/A-1 (PDF 1.4) and PDF/A-3 (embedded
+     * files) cannot share a file with PDF/X-4.
      * Check the result with `validatePdfX()`. @since 1.8.0
      */
     readonly pdfx?: 'pdfx4';
@@ -1128,6 +1268,34 @@ export interface PdfLayoutOptions {
      * @since 1.3.0
      */
     readonly normalize?: 'NFC' | 'NFD' | 'NFKC' | 'NFKD' | false;
+    /**
+     * Untagged `/Span /ActualText` around a shaped run whose glyph order
+     * differs from the text it was shaped from — a pre-base vowel sign drawn
+     * before its consonant, a reph, a split vowel sign, Thai and Lao sara am —
+     * so `extractText()` and every reader return the source string in logical
+     * order (what Chrome and Skia emit). Right-to-left runs are left alone.
+     * Default `true`; `false` restores the bare glyph runs. Tagged output is
+     * unaffected: its structure spans already carry the text.
+     *
+     * @since 1.9.0
+     */
+    readonly actualText?: boolean;
+    /**
+     * Base direction of the document's paragraphs (UAX #9).
+     *
+     * - `'auto'`: each paragraph takes the direction of its first strong
+     *   character (P2–P3) — a Hebrew or Arabic paragraph is laid out
+     *   right-to-left and right-aligned by default, a Latin one left-to-right.
+     * - `'rtl'` / `'ltr'`: every paragraph is forced to that base direction.
+     * - omitted: the 1.8.0 behaviour — bidirectional text is still resolved
+     *   per paragraph, but alignment defaults to the left whatever the script.
+     *
+     * A paragraph block's own `direction` overrides this. Byte-identical when
+     * omitted.
+     *
+     * @since 1.9.0
+     */
+    readonly direction?: TextDirection;
     /**
      * Override the PDF creation date embedded in `/Info /CreationDate` and
      * XMP metadata. Accepts any `Date` object.
@@ -1365,6 +1533,16 @@ export interface PrintOptions {
      * needed; forbidden under `tagged: 'pdfa1b'` (PDF/A-1 is PDF 1.4).
      */
     readonly userUnit?: number;
+    /**
+     * The spot inks the document paints with (`{ spot }` and `{ inks }`
+     * colour values). Each is written as a `/Separation` colour space with
+     * its alternate; a mix as a `/DeviceN` space. A CMYK alternate under a
+     * non-CMYK OutputIntent raises the same diagnostic as a device CMYK
+     * colour. Painting an ink that is not declared throws.
+     *
+     * @since 1.9.0
+     */
+    readonly spotColours?: readonly SpotColourDef[];
 }
 
 /**

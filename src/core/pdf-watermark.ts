@@ -16,6 +16,19 @@ import { fmtNum } from './pdf-text.js';
 // ── Types ────────────────────────────────────────────────────────────
 
 /** Resolved watermark state for use during PDF assembly. */
+/**
+ * Does any of these ExtGStates paint translucently (`/ca` below 1)? An
+ * opaque watermark (`opacity: 1`) still carries an ExtGState but needs no
+ * page transparency group (1.9.0).
+ */
+export function translucentStates(extGStates: ReadonlyMap<string, string>): boolean {
+    for (const dict of extGStates.values()) {
+        const m = /\/ca ([\d.]+)/.exec(dict);
+        if (m && parseFloat(m[1]) < 0.999) return true;
+    }
+    return false;
+}
+
 export interface WatermarkState {
     /** ExtGState object content string (each keyed by gs name). */
     readonly extGStates: Map<string, string>;

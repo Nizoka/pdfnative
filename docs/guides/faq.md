@@ -108,7 +108,7 @@ const pdf = buildDocumentPDFBytes({
 });
 ```
 
-The `lang` property triggers BiDi resolution for RTL scripts and OpenType GSUB/GPOS shaping for Arabic, Devanagari, Bengali, Tamil, Telugu, Sinhala, Tibetan, Khmer, Myanmar, Thai, Lao, Tai Tham, and Cham. Since v1.8.0 the five Indic scripts share one OpenType engine that applies the font's own features in specification order (reph, half forms, subjoined consonants, pre-base vowel signs), and Latin text with free-standing combining marks — Yoruba ẹ́ ọ̀, Igbo ị́, NFD accents — is composed through the font's `ccmp` and anchors when set in a registered font such as the bundled `latin` module.
+The `lang` property triggers BiDi resolution for RTL scripts and OpenType GSUB/GPOS shaping for Arabic, Devanagari, Bengali, Tamil, Telugu, Gujarati, Gurmukhi, Kannada, Malayalam, Odia, Sinhala, Tibetan, Khmer, Myanmar, Thai, Lao, Tai Tham, and Cham. Since v1.8.0 the Indic scripts share one OpenType engine (ten of them since v1.9.0) that applies the font's own features in specification order (reph, half forms, subjoined consonants, pre-base vowel signs), and Latin text with free-standing combining marks — Yoruba ẹ́ ọ̀, Igbo ị́, NFD accents — is composed through the font's `ccmp` and anchors when set in a registered font such as the bundled `latin` module.
 
 ### Why does my Arabic text appear backwards?
 
@@ -116,7 +116,7 @@ The most common cause: missing `lang: 'ar'` on the font entry. Without it, BiDi 
 
 ### Which scripts are supported out of the box?
 
-31 Noto font-data modules ship with the package: the 27 scripts — Amharic/Ethiopic, Arabic, Armenian, Bengali, Cham, Cyrillic, Devanagari, Georgian, Greek, Hebrew, Japanese, Khmer, Korean, Lao, Myanmar, New Tai Lue, Polish, Simplified Chinese, Sinhala, Tai Le, Tai Tham, Tamil, Telugu, Thai, Tibetan, Turkish, Vietnamese — plus Latin (Noto Sans), math (Noto Sans Math), and monochrome + COLRv1 colour emoji. Latin-script languages with extended letters or tone marks — Hausa, Yoruba, Igbo, Swahili — need only the `latin` module.
+36 Noto font-data modules ship with the package: the 32 scripts — Amharic/Ethiopic, Arabic, Armenian, Bengali, Cham, Cyrillic, Devanagari, Georgian, Greek, Gujarati, Gurmukhi, Hebrew, Japanese, Kannada, Khmer, Korean, Lao, Malayalam, Myanmar, New Tai Lue, Odia, Polish, Simplified Chinese, Sinhala, Tai Le, Tai Tham, Tamil, Telugu, Thai, Tibetan, Turkish, Vietnamese — plus Latin (Noto Sans), math (Noto Sans Math), and monochrome + COLRv1 colour emoji. Latin-script languages with extended letters or tone marks — Hausa, Yoruba, Igbo, Swahili — need only the `latin` module.
 
 ---
 
@@ -131,6 +131,8 @@ The most common cause: missing `lang: 'ar'` on the font entry. Without it, BiDi 
 | `tagged: 'pdfa1b'` | 1.4 | PDF/A-1b (ISO 19005-1) |
 | `tagged: 'pdfa2u'` | 1.7 | PDF/A-2u (ISO 19005-2 with unicode) |
 | `tagged: 'pdfa3b'` | 1.7 | PDF/A-3b (ISO 19005-3, supports embedded files) |
+| `pdfx: 'pdfx4'` | 1.6 | PDF/X-4 (ISO 15930-7) — since v1.9.0 combinable with `tagged: 'pdfa2b'` or `'pdfa2u'` into one file that claims both |
+| any mode with a JPEG 2000 image | ≥ 1.5 | `/JPXDecode` (v1.9.0) raises the header to 1.5 when it was lower; PDF/A-1 refuses it (`PDFA1_JPX_IMAGE`) |
 
 ### Which PDF/A variant should I pick?
 
@@ -213,8 +215,9 @@ inspect any file with `listSignatures(bytes)`. See
 ### Is the build supply-chain safe?
 
 - **Zero runtime dependencies** — `npm install pdfnative` brings in nothing transitive at runtime.
-- **NPM provenance** — every release is signed via GitHub Actions OIDC (SLSA L3-equivalent).
-- **OpenSSF Scorecard** scanned weekly; CodeQL on every push.
+- **NPM provenance** — every release is published with npm provenance signed through GitHub Actions OIDC and Sigstore (SLSA Build L2), and the attested tarball is the one fetched back from the registry, not a rebuild.
+- **OpenSSF Scorecard** scanned weekly; CodeQL (`security-extended`, workflows included) on every pull request and push; the workflows linted by zizmor and actionlint; the parser fuzzed by ClusterFuzzLite.
+- **Zero breaking changes, proven** — the previous release's test suite and API registry are replayed against every pull request (`compat-previous`).
 - **Pinned dev dependencies** managed via Dependabot.
 
 ---
@@ -289,7 +292,7 @@ Tables above the threshold run off the main thread (with an automatic main-threa
 See the [feature comparison table](https://github.com/Nizoka/pdfnative#why-pdfnative) in the README. Key differentiators:
 
 - **Zero runtime dependencies** (others ship 3–6).
-- **27 Unicode scripts** with built-in BiDi and OpenType GSUB/GPOS shaping.
+- **32 Unicode scripts** with built-in BiDi and OpenType GSUB/GPOS shaping.
 - **PDF/A** (1b, 2b, 2u, 3b) — none of the others support this directly.
 - **Built-in digital signatures** (RSA + ECDSA) without external crypto modules.
 - **5 native barcode formats** (Code 128, EAN-13, QR, Data Matrix, PDF417) as PDF vector paths.
@@ -308,10 +311,11 @@ pdfnative is built from pure functions. State is passed explicitly. This makes t
 
 | Error | Likely cause | Fix |
 |-------|--------------|-----|
-| Blank / missing glyphs for a script (no error is thrown) | `loadFontData('xx')` resolved to `null` because no loader was registered for that code — it returns `null` rather than throwing | Call `registerFonts({ xx: … })` (or `registerFont`) first, then check the `loadFontData` result for `null` before building `fontEntries` |
+| Blank / missing glyphs for a script (a `TEXT_GLYPH_NOT_COVERED` diagnostic since v1.9.0, thrown under `strict`; no error before) | `loadFontData('xx')` resolved to `null` because no loader was registered for that code — it returns `null` rather than throwing | Call `registerFonts({ xx: … })` (or `registerFont`) first, then check the `loadFontData` result for `null` before building `fontEntries` |
 | `PDF/A and encryption are mutually exclusive` | `tagged: 'pdfa…'` combined with `encryption: …` | Pick one |
 | `Invalid color format: …` / `Invalid color tuple …` | Unrecognized color value passed to a layout option | Use `#rrggbb`, an `[r, g, b]` tuple with channels **0–255**, or a PDF RGB string `'r g b'` with channels 0.0–1.0 |
 | Boxes / blank glyphs | Font for that script is not loaded | See [Troubleshooting → Missing glyphs](troubleshooting.html) |
+| `PdfStreamLimitError` (`code: 'PDF_STREAM_LIMIT'`) from `extractText()` | A content or font stream exceeds its decode cap (v1.9.0 throws by default instead of returning the page without its text) | Raise `setMaxInflateOutputSize()` for FlateDecode, or pass `onStreamError: 'skip'` (the 1.8.0 lenience) or `'throw'`; classify by `code`, never by the message |
 | Parser throws on external PDF | Encrypted PDF opened without a password, or non-standard structure | Pass `openPdf(bytes, { password })` — the parser decrypts RC4, AES-128 and AES-256 since v1.6.0. A missing or wrong password throws `PdfPasswordError` |
 
 For more cases, see the [Troubleshooting guide](troubleshooting.html).

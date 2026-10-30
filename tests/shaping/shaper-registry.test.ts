@@ -29,7 +29,9 @@ describe('SCRIPT_SHAPERS', () => {
     it('registers every script the engine shapes', () => {
         expect(SCRIPT_SHAPERS.map(s => s.id)).toEqual([
             'thai', 'lao', 'bengali', 'tamil', 'telugu', 'sinhala',
-            'tibetan', 'khmer', 'myanmar', 'devanagari', 'taitham', 'cham',
+            'tibetan', 'khmer', 'myanmar', 'devanagari',
+            'gujarati', 'gurmukhi', 'kannada', 'malayalam', 'odia',
+            'taitham', 'cham',
             'latin-marks',
         ]);
     });
@@ -77,5 +79,30 @@ describe('findShaper', () => {
 
     it('exposes the same function identity as the shaper module', () => {
         expect(SCRIPT_SHAPERS.find(s => s.id === 'devanagari')!.shape).toBe(shapeDevanagariText);
+    });
+});
+
+// ── The danda is script-neutral (1.9.0, C26) ─────────────────────────
+
+describe('findShaper and the danda', () => {
+    // demo-language: or pa gu hi (sentences ending in the danda U+0964 or the double danda U+0965 every Indic script borrows)
+    it('keeps an Odia, Gurmukhi or Gujarati sentence ending in a danda with its own shaper', () => {
+        // Before: the danda sits in the Devanagari block, Devanagari is
+        // registered first, and the whole line went to its configuration —
+        // no split ୋ, no Gurmukhi subjoined ra, a composed sign drawn around
+        // a dotted circle in the Odia document's paragraph.
+        expect(findShaper('ଗୋଟିଏ।')?.id).toBe('odia');
+        expect(findShaper('ਇਹ ਹੈ।')?.id).toBe('gurmukhi');
+        expect(findShaper('ગુજરાતી॥')?.id).toBe('gujarati');
+    });
+
+    it('still sends Devanagari with its dandas to Devanagari', () => {
+        expect(findShaper('नमस्ते। PDF/A-2b ॥')?.id).toBe('devanagari');
+    });
+
+    it('gives a danda alone, or a Vedic tone mark, no shaper of its own', () => {
+        expect(findShaper('।')).toBeNull();
+        expect(findShaper('॥ ।')).toBeNull();
+        expect(findShaper('ଗ॑')?.id).toBe('odia'); // U+0951 is Inherited: it belongs to the Odia letter it follows
     });
 });

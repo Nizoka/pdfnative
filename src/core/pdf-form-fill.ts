@@ -19,6 +19,7 @@
 import { openPdf } from '../parser/pdf-reader.js';
 import type { PdfReader } from '../parser/pdf-reader.js';
 import { createModifier } from '../parser/pdf-modifier.js';
+import { decodePdfTextString } from '../parser/pdf-text-string.js';
 import {
     isRef, isName, isDict, isArray, isStream, dictGetName,
 } from '../parser/pdf-object-parser.js';
@@ -220,15 +221,9 @@ function classify(node: FieldNode): ParsedFieldType {
     }
 }
 
-/** Decode a PDF text string value (`/T`, `/V`), handling UTF-16BE. */
+/** Decode a PDF text string value (`/T`, `/V`) — UTF-16BE, UTF-8 or PDFDocEncoding (ISO 32000-1 §7.9.2.2). */
 function decodeText(v: PdfValue | undefined): string | undefined {
-    if (typeof v !== 'string') return undefined;
-    if (v.length >= 2 && v.charCodeAt(0) === 0xFE && v.charCodeAt(1) === 0xFF) {
-        let out = '';
-        for (let i = 2; i + 1 < v.length; i += 2) out += String.fromCharCode((v.charCodeAt(i) << 8) | v.charCodeAt(i + 1));
-        return out;
-    }
-    return v;
+    return typeof v === 'string' ? decodePdfTextString(v) : undefined;
 }
 
 /** Parse /Opt into { export, label } pairs (ISO 32000-1 §12.7.4.4). */

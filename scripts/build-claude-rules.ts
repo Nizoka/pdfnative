@@ -25,6 +25,15 @@ import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { INSTRUCTIONS_DIR, RULES_DIR, diffRules, type RulesDiff } from './lib/agent-config.js';
 
+/** The file's text, or null when it cannot be read — one call, no exists-then-read race. */
+function readTextOr(path: string): string | null {
+    try {
+        return readFileSync(path, 'utf8');
+    } catch {
+        return null;
+    }
+}
+
 /** `name → text` of every instruction file under `<root>/.github/instructions/`. */
 export function readInstructionSources(root: string): Record<string, string> {
     const dir = join(root, INSTRUCTIONS_DIR);
@@ -88,7 +97,7 @@ function main(argv: readonly string[]): number {
     let written = 0;
     for (const [name, content] of Object.entries(diff.expected)) {
         const target = join(dir, name);
-        if (existsSync(target) && readFileSync(target, 'utf8') === content) continue;
+        if (readTextOr(target) === content) continue;
         writeFileSync(target, content, 'utf8');
         written++;
     }

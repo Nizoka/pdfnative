@@ -12,17 +12,30 @@
  *
  * @since 1.1.0
  */
+import { PdfStreamLimitError } from './pdf-inflate.js';
 
-// Cap to defend against zip-bomb-style adversarial streams. Must mirror the
-// output cap used by `pdf-inflate.ts` so all decoders behave consistently.
-const MAX_DECODE_OUTPUT = 256 * 1024 * 1024; // 256 MiB
+/**
+ * Cap on the output of every decoder here, against bomb-style streams
+ * (a 2-byte RunLength run expands 128×, an LZW code up to 4 096×). It is
+ * fixed and separate from the FlateDecode cap of `pdf-inflate.ts`
+ * (`setMaxInflateOutputSize`, 100 MB by default): the four filters below
+ * expand far less than Flate and are rare in practice, so the wider bound
+ * costs nothing and never refuses a stream a 1.8.0 reader accepted.
+ *
+ * @since 1.1.0 (named here since 1.9.0)
+ */
+export const MAX_DECODE_OUTPUT = 256 * 1024 * 1024; // 256 MiB
 
-/** Throw when a decoder would produce more than the safety cap. */
-function checkOutputSize(n: number, filter: string): void {
+/**
+ * Throw {@link PdfStreamLimitError} (filter name, cap) when a decoder's
+ * output has grown past the cap. Every decoder calls it as it writes;
+ * exported so the guard's contract is testable without a 256 MiB stream.
+ *
+ * @internal
+ */
+export function checkOutputSize(n: number, filter: string): void {
     if (n > MAX_DECODE_OUTPUT) {
-        throw new Error(
-            `${filter} output exceeds ${MAX_DECODE_OUTPUT} bytes (possible zip-bomb)`,
-        );
+        throw new PdfStreamLimitError(filter, MAX_DECODE_OUTPUT);
     }
 }
 

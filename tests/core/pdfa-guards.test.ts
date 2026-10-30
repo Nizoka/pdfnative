@@ -9,6 +9,11 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { buildDocumentPDFBytes } from '../../src/core/pdf-document.js';
 import { buildPDFBytes } from '../../src/core/pdf-builder.js';
 import * as notoSansData from '../../fonts/noto-sans-data.js';
+import * as notoTaiThamData from '../../fonts/noto-taitham-data.js';
+import * as notoOriyaData from '../../fonts/noto-oriya-data.js';
+import * as notoMalayalamData from '../../fonts/noto-malayalam-data.js';
+import * as notoDevanagariData from '../../fonts/noto-devanagari-data.js';
+import { extractText } from '../../src/parser/pdf-text-extract.js';
 import type { FontData, FontEntry, PdfDiagnostic, PdfParams } from '../../src/types/pdf-types.js';
 import type { DocumentParams } from '../../src/types/pdf-document-types.js';
 
@@ -217,5 +222,103 @@ describe('base-14 ToUnicode under tagged mode (conformance hardening)', () => {
         // The WinAnsi bfchar CMap (Euro at 0x80) is the base-14 one; the
         // CIDFont ToUnicode is gid-keyed. No base-14 dict exists here.
         expect(pdf).not.toContain('/BaseFont /Helvetica ');
+    });
+});
+
+// 1.9.0 (#87) — a level-U claim over a font whose used glyphs the ToUnicode
+// CMap cannot all name. Every bundled shaper now reports its glyphs, so the
+// remaining trigger is a character the font does not cover (glyph 0).
+
+describe('PDFA_GLYPH_WITHOUT_UNICODE (level U, #87)', () => {
+    const taiTham: FontEntry = { fontData: notoTaiThamData as unknown as FontData, fontRef: '/F3', lang: 'nod' };
+    const covered: DocumentParams = { title: 'U', blocks: [{ type: 'paragraph', text: 'ᨣᩤᩴᨾᩮᩬᩥᨦ' }], fontEntries: [taiTham] };
+    const uncovered: DocumentParams = { ...covered, blocks: [{ type: 'paragraph', text: 'ᨠ☃' }] };
+
+    it('stays silent when every used glyph is named (the #87 Tai Tham ligature included)', () => {
+        const seen: PdfDiagnostic[] = [];
+        buildDocumentPDFBytes(covered, { tagged: 'pdfa2u', onDiagnostic: d => seen.push(d) });
+        expect(seen.map(d => d.code)).not.toContain('PDFA_GLYPH_WITHOUT_UNICODE');
+    });
+
+    it('warns through onDiagnostic for a .notdef under pdfa2u, and names the font and glyph', () => {
+        const seen: PdfDiagnostic[] = [];
+        buildDocumentPDFBytes(uncovered, { tagged: 'pdfa2u', onDiagnostic: d => seen.push(d) });
+        const d = seen.find(x => x.code === 'PDFA_GLYPH_WITHOUT_UNICODE');
+        expect(d).toBeDefined();
+        expect(d?.message).toContain('NotoSansTaiTham');
+        expect(d?.message).toContain('glyph ids 0');
+        expect(d?.message).toContain('6.2.11.7.2');
+    });
+
+    it('throws under strict — the root cause first (TEXT_GLYPH_NOT_COVERED names the character), then the level-U consequence', () => {
+        expect(() => buildDocumentPDFBytes(uncovered, { tagged: 'pdfa2u', strict: true }))
+            .toThrow(/U\+2603 "☃" has no glyph in \/F3 NotoSansTaiTham/);
+        const seen: PdfDiagnostic[] = [];
+        buildDocumentPDFBytes(uncovered, { tagged: 'pdfa2u', onDiagnostic: d => seen.push(d) });
+        expect(seen.map(d => d.code)).toEqual(['TEXT_GLYPH_NOT_COVERED', 'PDFA_GLYPH_WITHOUT_UNICODE']);
+        expect(seen[1].message).toMatch(/ToUnicode CMap cannot name/);
+    });
+
+    // 1.9.0 — the two parts of a split vowel sign each name their own code
+    // point of the canonical decomposition (ୋ → U+0B47 U+0B3E), so the
+    // substituted length mark of ୈ (gid 75 in Noto Sans Oriya) is no longer a
+    // glyph without a Unicode value, and the extracted text is the NFD form.
+    it('stays silent for Odia split vowel signs (each part of ୈ ୋ ୌ carries its NFD code point)', () => {
+        const odia: FontEntry = { fontData: notoOriyaData as unknown as FontData, fontRef: '/F3', lang: 'or' };
+        // demo-language: or (split vowel signs — ବୈଠକ, କୈ, ଗୋଟିଏ)
+        const text = 'ବୈଠକ କୈ ଗୋଟିଏ';
+        const params: DocumentParams = { title: 'U', blocks: [{ type: 'paragraph', text }], fontEntries: [odia] };
+        const seen: PdfDiagnostic[] = [];
+        const bytes = buildDocumentPDFBytes(params, { tagged: 'pdfa2u', onDiagnostic: d => seen.push(d) });
+        expect(seen.map(d => d.code)).not.toContain('PDFA_GLYPH_WITHOUT_UNICODE');
+        expect(() => buildDocumentPDFBytes(params, { tagged: 'pdfa2u', strict: true })).not.toThrow();
+        const extracted = extractText(bytes)[0].text.normalize('NFC');
+        for (const word of text.split(' ')) expect(extracted).toContain(word);
+    });
+
+    // 1.9.0 (C19): a legacy chillu (consonant + virama + ZWJ) is one glyph
+    // naming its three code points, so level U is satisfied and the text
+    // extracts as written.
+    it('stays silent for a legacy Malayalam chillu sequence and extracts it as written', () => {
+        const malayalam: FontEntry = { fontData: notoMalayalamData as unknown as FontData, fontRef: '/F3', lang: 'ml' };
+        // demo-language: ml (legacy and atomic chillu spellings — അവന്‍ അവൻ)
+        const text = 'അവന്‍ അവൻ';
+        const params: DocumentParams = { title: 'U', blocks: [{ type: 'paragraph', text }], fontEntries: [malayalam] };
+        const seen: PdfDiagnostic[] = [];
+        const bytes = buildDocumentPDFBytes(params, { tagged: 'pdfa2u', onDiagnostic: d => seen.push(d) });
+        expect(seen.map(d => d.code)).not.toContain('PDFA_GLYPH_WITHOUT_UNICODE');
+        expect(() => buildDocumentPDFBytes(params, { tagged: 'pdfa2u', strict: true })).not.toThrow();
+        expect(extractText(bytes)[0].text).toContain(text);
+    });
+
+    // 1.9.0: Noto Sans Devanagari draws ई as इ + a hook that is also its reph
+    // glyph; both pieces name U+0908 now, so level U holds and the word
+    // extracts as written through the run's /ActualText.
+    it('stays silent for Devanagari ई, drawn in two pieces, and extracts it as written', () => {
+        const hindi: FontEntry = { fontData: notoDevanagariData as unknown as FontData, fontRef: '/F3', lang: 'hi' };
+        // demo-language: hi (नई दिल्ली, इकाई)
+        const text = 'नई दिल्ली इकाई';
+        const params: DocumentParams = { title: 'U', blocks: [{ type: 'paragraph', text }], fontEntries: [hindi] };
+        const seen: PdfDiagnostic[] = [];
+        const bytes = buildDocumentPDFBytes(params, { tagged: 'pdfa2u', onDiagnostic: d => seen.push(d) });
+        expect(seen.map(d => d.code)).toEqual([]);
+        expect(extractText(bytes)[0].text).toContain(text);
+        expect(extractText(buildDocumentPDFBytes(params))[0].text).toContain('इकाई');
+    });
+
+    it('does not fire under pdfa2b, which has no Unicode requirement', () => {
+        const seen: PdfDiagnostic[] = [];
+        buildDocumentPDFBytes(uncovered, { tagged: 'pdfa2b', onDiagnostic: d => seen.push(d) });
+        expect(seen.map(d => d.code)).not.toContain('PDFA_GLYPH_WITHOUT_UNICODE');
+    });
+
+    it('is raised by the table builder too', () => {
+        const seen: PdfDiagnostic[] = [];
+        const params: PdfParams = {
+            title: 'U', infoItems: [], balanceText: '', countText: '', footerText: '',
+            headers: ['ᨠ☃'], rows: [{ cells: ['ᨠ'], type: '', pointed: false }], fontEntries: [taiTham],
+        };
+        buildPDFBytes(params, { tagged: 'pdfa2u', onDiagnostic: d => seen.push(d) });
+        expect(seen.map(d => d.code)).toContain('PDFA_GLYPH_WITHOUT_UNICODE');
     });
 });

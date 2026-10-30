@@ -9,6 +9,7 @@ import {
     type Fingerprint, type Baseline,
 } from '../../scripts/lib/sample-fingerprint.js';
 import { findNonEnglishProse } from '../../scripts/lib/prose-language.js';
+import { validatePdfX } from '../../src/parser/pdf-x-validator.js';
 
 // v1.8.0 — sample regression gate.
 //
@@ -82,10 +83,12 @@ describe.runIf(havecorpus)('sample regression baseline', { timeout: 120_000 }, (
         // The chain is the point: a large share of the entries must still be
         // held to what 1.7.0 emitted, not silently re-anchored to the current
         // tree (which is what a rebaseline with no previous manifest does).
-        // 1.8.0 keeps 122 of 271: every sample embedding a hinted TrueType
-        // face was re-anchored once, deliberately, when the subsetter started
-        // keeping the hinting tables. The provenance note in the manifest
-        // accounts for each group.
+        // 1.8.0 kept 122 of 271 (the subsetter started keeping the hinting
+        // tables); 1.9.0 keeps 126 of 292: the lean embeds re-anchor every
+        // document with a TrueType subset, the full UAX #9 every right-to-left
+        // document, one text object per line every document with a shaped
+        // run, and the transparency group and tagged-table semantics the
+        // rest — twenty-six causes, each a ledger entry of the release note.
         const baseline = loadBaseline()!;
         const inherited = Object.values(baseline.entries)
             .filter(e => e.since !== baseline.baselineVersion).length;
@@ -174,6 +177,49 @@ describe('sample fingerprint helpers', () => {
 
     it('ships a committed baseline', () => {
         expect(existsSync(BASELINE_PATH)).toBe(true);
+    });
+});
+
+// 1.9.0 — conformance claims. veraPDF (the publish gate's `validate:pdfa`)
+// covers PDF/A and PDF/UA, never PDF/X, so a `pdfxid:GTS_PDFXVersion` claim
+// is held to pdfnative's own `validatePdfX()`; both claim counts are the
+// coverage canaries of docs/assets/ecosystem.json, repeated here so the
+// ordinary test suite notices a sample that starts or stops claiming a level.
+describe.runIf(havecorpus)('conformance claims of the sample corpus', { timeout: 60_000 }, () => {
+    const manifest = JSON.parse(readFileSync(join(REPO_ROOT, 'docs', 'assets', 'ecosystem.json'), 'utf8')) as {
+        declared: { pdfaSamples: number; pdfxSamples: number };
+    };
+    const text = (abs: string): string => readFileSync(abs).toString('latin1');
+    const claimsPdfA = (t: string): boolean => /<pdfaid:part>\d<\/pdfaid:part>/.test(t) || /\bpdfaid:part="\d"/.test(t);
+    const claimsPdfX = (t: string): boolean => /<pdfxid:GTS_PDFXVersion>[^<]+</.test(t) || /\bpdfxid:GTS_PDFXVersion="/.test(t);
+    const pdfa = samples.filter(abs => claimsPdfA(text(abs)));
+    const pdfx = samples.filter(abs => claimsPdfX(text(abs)));
+
+    it('has exactly the declared number of PDF/A-claiming samples (declared.pdfaSamples)', () => {
+        expect(pdfa.length).toBe(manifest.declared.pdfaSamples);
+    });
+
+    it('has exactly the declared number of PDF/X-claiming samples (declared.pdfxSamples)', () => {
+        expect(pdfx.length).toBe(manifest.declared.pdfxSamples);
+        expect(pdfx.map(abs => relative(OUTPUT_DIR, abs).replace(/\\/g, '/')).sort()).toEqual([
+            'print/print-cmyk-pdfx4.pdf',
+            'print/print-dual-pdfa2b-pdfx4.pdf',
+            'print/print-gray-pdfx4.pdf',
+            'print/print-spot-colours.pdf',
+        ]);
+    });
+
+    it('every PDF/X-claiming sample passes validatePdfX()', () => {
+        const failing = pdfx
+            .map(abs => ({ file: relative(OUTPUT_DIR, abs).replace(/\\/g, '/'), result: validatePdfX(new Uint8Array(readFileSync(abs))) }))
+            .filter(({ result }) => !result.valid)
+            .map(({ file, result }) => `${file}: ${result.errors.join(' | ')}`);
+        expect(failing).toEqual([]);
+    });
+
+    it('no sample claims PDF/UA (no validator runs for it — add one before a sample claims it)', () => {
+        const ua = samples.filter(abs => /pdfuaid:part/.test(text(abs)));
+        expect(ua).toEqual([]);
     });
 });
 

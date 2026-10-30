@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The native family: pdfnative, zipnative and pkinative — pdfnative</title>
+  <meta name="description" content="How the three zero-dependency native engines compose through public APIs: sign a PDF with pdfnative, prove the signature with pkinative (CMS over the /ByteRange digest, chain validation with CRL and OCSP, timestamp-aware), archive the dossier deterministically with zipnative — three cases with a diagram and the honest limits of each seam.">
+  <link rel="canonical" href="https://pdfnative.dev/guides/native-family.html">
+  <link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/native-family.html">
+  <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/native-family.html">
+  <link rel="alternate" type="text/markdown" href="native-family.md">
+  <link rel="alternate" type="text/plain" href="../llms.txt" title="llms.txt — machine-readable documentation index">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="pdfnative">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:url" content="https://pdfnative.dev/guides/native-family.html">
+  <meta property="og:title" content="The native family: pdfnative, zipnative and pkinative — pdfnative">
+  <meta property="og:description" content="How the three zero-dependency native engines compose through public APIs: sign a PDF with pdfnative, prove the signature with pkinative (CMS over the /ByteRange digest, chain validation with CRL and OCSP, timestamp-aware), archive the dossier deterministically with zipnative — three cases with a diagram and the honest limits of each seam.">
+  <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
+  <meta property="og:image:alt" content="pdfnative — pure native PDF generation, zero dependencies">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="The native family: pdfnative, zipnative and pkinative — pdfnative">
+  <meta name="twitter:description" content="Sign with pdfnative, prove it with pkinative, archive it with zipnative — three zero-dependency engines, one doctrine.">
+  <meta name="twitter:image" content="https://pdfnative.dev/assets/og-image.png">
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="guide.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
+  <!-- guide:ld:start -->
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://pdfnative.dev/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://pdfnative.dev/guides/"},{"@type":"ListItem","position":3,"name":"The native family: pdfnative, zipnative and pkinative","item":"https://pdfnative.dev/guides/native-family.html"}]},{"@type":"TechArticle","headline":"The native family: pdfnative, zipnative and pkinative","description":"How the three zero-dependency native engines compose through public APIs: sign a PDF with pdfnative, prove the signature with pkinative (CMS over the /ByteRange digest, chain validation with CRL and OCSP, timestamp-aware), archive the dossier deterministically with zipnative — three cases with a diagram and the honest limits of each seam.","inLanguage":"en","author":{"@type":"Organization","name":"Nizoka","url":"https://github.com/Nizoka"},"publisher":{"@type":"Organization","name":"pdfnative","url":"https://pdfnative.dev","logo":{"@type":"ImageObject","url":"https://pdfnative.dev/assets/logo.svg"}},"mainEntityOfPage":{"@type":"WebPage","@id":"https://pdfnative.dev/guides/native-family.html"},"isPartOf":{"@type":"WebSite","name":"pdfnative","url":"https://pdfnative.dev"}}]}</script>
+  <!-- guide:ld:end -->
+</head>
+<body>
+
+<a class="skip-link" href="#main-content">Skip to main content</a>
+
+<nav class="nav" role="navigation" aria-label="Main navigation">
+  <div class="nav-inner">
+    <a class="nav-brand" href="../">
+      <img src="../assets/logo.svg" alt="" width="28" height="28">
+      pdfnative
+    </a>
+    <button class="nav-hamburger" aria-label="Toggle menu" aria-expanded="false">☰</button>
+    <ul class="nav-links" role="list">
+      <li><a href="../#features">Features</a></li>
+      <li><a href="../#examples">Examples</a></li>
+      <li><a href="../#demo">Demo</a></li>
+      <li><a href="../#mcp">MCP</a></li>
+      <li><a href="../#cli">CLI</a></li>
+      <li><a href="../#react">React</a></li>
+      <li><a href="../learn/">Learn</a></li>
+      <li><a href="./">Guides</a></li>
+      <li><a href="../playgrounds/">Playgrounds</a></li>
+      <li><a href="../responsibility.html">Responsibility</a></li>
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
+      <li><button class="theme-toggle" aria-label="Toggle dark mode">🌙</button></li>
+    </ul>
+  </div>
+</nav>
+
+<main class="guide-shell" id="main-content" tabindex="-1">
+  <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Guides</a> &nbsp;›&nbsp; The native family</p>
+  <article id="guide-content" class="guide-content" data-md="native-family.md" data-prerendered="true">
+<!-- guide:render:start -->
+<h1 id="the-native-family-pdfnative-zipnative-and-pkinative">The native family: pdfnative, zipnative and pkinative</h1>
+<blockquote>
+<p><strong>Three zero-dependency engines, one doctrine.</strong> pdfnative writes and reads
+the document, <a href="https://zipnative.dev" target="_blank" rel="noopener">zipnative</a> packs it into a
+deterministic archive, <a href="https://pkinative.dev" target="_blank" rel="noopener">pkinative</a> holds the keys and
+the trust that make a signature mean something. Each is a strict,
+pure-TypeScript implementation of its ISO or IETF standard with an empty
+runtime dependency tree, and the three compose through public APIs only:
+sign with pdfnative, prove it with pkinative, archive it with zipnative.</p>
+</blockquote>
+<p>pdfnative is the oldest of the three. zipnative applied the same rules — no
+runtime dependency, no native code, bytes that are identical for identical
+inputs, every refusal a named error — to the ZIP format, and pkinative began
+as pdfnative&#39;s own PAdES signature stack before it grew into a standalone
+X.509, CMS and RFC 3161 library. The family shares an author, a licence
+(MIT), a release discipline (a reference validator at the gate, provenance on
+every package) and a vocabulary: an <em>engine</em> is the library, its <em>satellites</em>
+are a command-line tool and a Model Context Protocol server built on it.</p>
+<p><img src="../assets/use-case-native-family.svg" alt="Architecture: three columns, one per engine. In the middle, pdfnative builds the document as PDF/A-2b with a pinned creationDate, signs it to PAdES B-T through a signature placeholder, the caller&#39;s synchronous crypto provider and an injected RFC 3161 timestamp provider, and writes the CMS into /Contents. On the left, pkinative holds the trust: trust anchors decoded from PEM with CRL and OCSP material, certificate-chain validation at the time the timestamp token proves, and the verifier that checks the CMS signature over the digest of the PDF&#39;s /ByteRange. On the right, zipnative packs the signed PDF with its evidence into a deterministic ZIP whose SHA-256 is the same for the same inputs, and reads it back lazily years later. Arrows: the signed PDF is proven by pkinative (its /ByteRange digest and CMS go to verifySignedData), the signed PDF is packed into the archive, and a dashed path from the archive back to the verifier shows the later verification: open the ZIP, read the signatures back with pdfnative, verify the signed data with pkinative."></p>
+<h2 id="what-each-engine-owns">What each engine owns<a class="heading-anchor" href="#what-each-engine-owns" aria-label="Link to this section">#</a></h2>
+<table>
+<thead>
+<tr>
+<th>Engine</th>
+<th>Standard</th>
+<th>It does</th>
+<th>It deliberately does not</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>pdfnative</strong></td>
+<td>ISO 32000-1, ISO 19005 (PDF/A), ISO 15930-7 (PDF/X-4), ETSI PAdES</td>
+<td>Writes PDFs from blocks, shapes 32 scripts, embeds fonts, signs to PAdES B-LTA, reads text, forms and signatures back</td>
+<td>Verify a signature end to end, rasterise, decode JPEG 2000</td>
+</tr>
+<tr>
+<td><strong>zipnative</strong></td>
+<td>PKWARE APPNOTE, RFC 1951 DEFLATE, Zip64</td>
+<td>Reads archives lazily, writes them deterministically, modifies them incrementally, streams with bounded memory</td>
+<td>Encrypt or decrypt entries (it detects and labels encryption)</td>
+</tr>
+<tr>
+<td><strong>pkinative</strong></td>
+<td>RFC 5280 X.509, RFC 5652 CMS, RFC 3161 timestamps, PKCS#8 / PKCS#12</td>
+<td>Parses and verifies certificates, builds and validates chains with CRL and OCSP, creates and verifies CMS signatures and timestamp tokens, opens key stores into non-extractable Web Crypto keys</td>
+<td>Generate keys, store anything, make a network request</td>
+</tr>
+</tbody></table>
+<p>The column on the right is the point of the family: each engine stops where
+another standard begins, so none of them re-implements a neighbour badly. The
+cases below are the three seams where they meet.</p>
+<h2 id="case-1--sign-with-pdfnative-prove-it-with-pkinative">Case 1 — Sign with pdfnative, prove it with pkinative<a class="heading-anchor" href="#case-1--sign-with-pdfnative-prove-it-with-pkinative" aria-label="Link to this section">#</a></h2>
+<p>pdfnative signs a PDF to PAdES B-B or B-T: <code>addSignaturePlaceholder()</code>
+reserves the <code>/Contents</code> slot, <code>signPdfBytes()</code> hashes the <code>/ByteRange</code>,
+builds the CMS SignedData and writes it in. What the engine does <strong>not</strong> ship
+is a verifier — the <a href="signatures.html#3-verifying">signatures guide</a> says so and
+points at the CLI. pkinative is that verifier: a CMS implementation whose
+<code>verifySignedData</code> call takes the digest you computed over the document&#39;s
+byte ranges, so the PDF is never handed over, and judges the signer&#39;s chain
+against your trust anchors, with CRL and OCSP material and, for a B-T
+signature, at the time the timestamp token proves.</p>
+<pre><code class="language-ts">import { createPrivateKey, sign as nodeSign } from &#39;node:crypto&#39;;
+import { addSignaturePlaceholder, signPdfBytes, parseCertificate, listSignatures, buildDocumentPDFBytes } from &#39;pdfnative&#39;;
+import { verifySignedData, decodePem } from &#39;pkinative&#39;;
+
+// 1. pdfnative: build, reserve the slot, sign. The private key never leaves
+//    node:crypto — the provider receives the DER-encoded signedAttrs and
+//    returns the signature; pdfnative&#39;s own RSA/ECDSA code is bypassed.
+const key = createPrivateKey(pemPrivateKey);
+const unsigned = buildDocumentPDFBytes(
+  { title: &#39;Service agreement&#39;, blocks: [{ type: &#39;paragraph&#39;, text: &#39;Signed, then proven.&#39; }] },
+  { creationDate: new Date(&#39;2026-10-28T00:00:00Z&#39;) },
+);
+const signed = signPdfBytes(addSignaturePlaceholder(unsigned, { fieldName: &#39;Author&#39; }), {
+  signerCert: parseCertificate(signerDer),
+  certChain: [issuerDer].map(parseCertificate),
+  algorithm: &#39;rsa-sha256&#39;,
+  profile: &#39;pades&#39;,
+  provider: { sign: (tbs) =&gt; new Uint8Array(nodeSign(&#39;sha256&#39;, tbs, key)) },
+});
+
+// 2. The verifier&#39;s input: the signature bytes and the digest of what they cover.
+const [sig] = listSignatures(signed);                        // byteRange + the /Contents bytes
+const [a, aLen, b, bLen] = sig.byteRange;
+const covered = new Uint8Array(aLen + bLen);
+covered.set(signed.subarray(a, a + aLen), 0);
+covered.set(signed.subarray(b, b + bLen), aLen);
+const contentDigest = new Uint8Array(await crypto.subtle.digest(&#39;SHA-256&#39;, covered));
+const cms = sig.contents.subarray(0, derLength(sig.contents));  // drop the placeholder&#39;s zero padding
+
+// 3. pkinative: verify the CMS over that digest and the chain against your roots.
+const report = await verifySignedData({
+  signedData: cms,
+  contentDigest,                                               // detached, PDF-style: the document stays with you
+  trustAnchors: decodePem(rootsPem),
+  atTimeStamp: true,                                           // a B-T signature is judged at its token&#39;s time
+});
+if (!report.valid) for (const r of report.reasons) console.error(r.code, r.path, r.message);
+
+/** Length of one DER element from its header (the CMS is the first and only element in /Contents). */
+function derLength(der: Uint8Array): number {
+  const first = der[1]!;
+  if (first &lt; 0x80) return 2 + first;
+  const n = first &amp; 0x7f;
+  let len = 0;
+  for (let i = 0; i &lt; n; i++) len = (len &lt;&lt; 8) | der[2 + i]!;
+  return 2 + n + len;
+}
+</code></pre>
+<p><strong>What you gain</strong></p>
+<ul>
+<li><strong>A real verification verdict, in the same runtime as the signer.</strong> The
+CLI&#39;s <code>pdfnative verify</code> and the MCP <code>verify_pdf</code> tool cover the shell and
+the assistant; pkinative covers the library and the browser, with every
+failure a coded reason rather than a boolean.</li>
+<li><strong>The document never crosses into the verifier.</strong> <code>contentDigest</code> is the
+PDF-style path pkinative documents for exactly this: you hash the two byte
+ranges, pkinative checks the signature over the hash.</li>
+<li><strong>One trust policy for every artefact.</strong> The roots, the revocation material
+and the <code>atTimeStamp</code> rule you pass here are the same objects pkinative uses
+to validate a TLS chain or a CMS message elsewhere in your system.</li>
+</ul>
+<p><strong>Honest limits</strong></p>
+<ul>
+<li>pdfnative&#39;s <code>CryptoProvider</code> is synchronous (<code>sign(tbs, algorithm)</code> returns
+bytes), which <code>node:crypto</code>, an HSM binding or a smart-card library
+satisfy and the Web Crypto API does not. A non-extractable key that
+pkinative opened with <code>openPkcs12</code> therefore cannot drive <code>signPdfBytes()</code>
+directly; in a browser, keep pdfnative&#39;s pure-TypeScript RSA or ECDSA with a
+key you hold, or sign on a server.</li>
+<li>pkinative&#39;s <code>createSignedData</code> with <code>contentDigest</code> and an <code>ExternalSigner</code>
+can produce a PAdES-shaped CMS over pdfnative&#39;s <code>/ByteRange</code> digest with a
+key that never exists in JavaScript — but pdfnative does not yet export the
+writer that places an externally produced CMS into the placeholder. It is
+on the roadmap; until then, that composition goes through the CLI&#39;s
+external-signer flow.</li>
+<li><code>allowTrailingData</code> on pkinative&#39;s parser accepts the placeholder&#39;s zero
+padding directly; the <code>derLength</code> helper above does the same trimming on
+pdfnative&#39;s side so the snippet runs against the documented options only.</li>
+</ul>
+<h2 id="case-2--archive-deterministically-with-zipnative">Case 2 — Archive deterministically with zipnative<a class="heading-anchor" href="#case-2--archive-deterministically-with-zipnative" aria-label="Link to this section">#</a></h2>
+<p>A signed PDF is rarely the only artefact: the invoice travels with its JSON
+source, the contract with its evidence, the batch with its manifest. ZIP is
+the container everyone opens, and zipnative is a ZIP writer whose output is a
+pure function of its input — <code>compression: { deterministic: true }</code> pins the
+pure-TypeScript encoder and every date and attribute field, so the archive
+built on a Linux runner today and on a Windows laptop in five years has the
+same SHA-256. The document has had the same property since 1.8.0 through a
+pinned <code>creationDate</code>, so the whole dossier is reproducible, not just the PDF.</p>
+<pre><code class="language-ts">import { buildDocumentPDFBytes, extractText } from &#39;pdfnative&#39;;
+import { createZip, openZip } from &#39;zipnative&#39;;
+
+const creationDate = new Date(&#39;2026-10-28T00:00:00Z&#39;);       // the only time the PDF would otherwise read from the clock
+const pdf = buildDocumentPDFBytes(
+  { title: &#39;Invoice 2026-0412&#39;, blocks: [{ type: &#39;paragraph&#39;, text: &#39;Total due: 1,250.00 EUR&#39; }] },
+  { creationDate, tagged: &#39;pdfa2b&#39;, fontEntries },
+);
+
+const zip = createZip({ compression: { deterministic: true } });
+zip.add(&#39;invoice-2026-0412.pdf&#39;, pdf);
+zip.add(&#39;invoice-2026-0412.json&#39;, JSON.stringify(source));
+zip.add(&#39;manifest.json&#39;, JSON.stringify({ pdf: &#39;invoice-2026-0412.pdf&#39;, source: &#39;invoice-2026-0412.json&#39; }));
+const archive = zip.toBytes();                               // identical bytes for identical inputs, on every runtime
+
+// Years later, on whatever runtime is current: read lazily, trust the CRC, re-read the text.
+const stored = openZip(archive);
+const again = stored.readEntry(&#39;invoice-2026-0412.pdf&#39;);
+console.log(extractText(again)[0]?.text);                    // &quot;Total due: 1,250.00 EUR&quot;
+</code></pre>
+<p><strong>What you gain</strong></p>
+<ul>
+<li><strong>A digest you can commit.</strong> The archive&#39;s SHA-256 is stable, so a CI job
+can regenerate the dossier and fail on any difference — the
+<a href="use-cases.html#case-3--a-document-regression-gate-in-ci">CI document-regression gate</a>
+extended from one PDF to the whole package.</li>
+<li><strong>Bounded memory on both ends.</strong> zipnative streams the archive in chunks
+and reads one entry at a time; pdfnative streams page trees the same way
+(<a href="streaming.html">streaming guide</a>).</li>
+<li><strong>The compressor is the same code.</strong> With zipnative&#39;s DEFLATE encoder also
+installed as pdfnative&#39;s codec through <code>setDeflateRawImpl()</code>
+(<a href="use-cases.html#case-5--swap-the-compressor-zipnative-as-pdfnatives-deflate-codec">use cases, Case 5</a>),
+the PDF&#39;s streams and the ZIP&#39;s entries are compressed by one implementation
+and one determinism contract.</li>
+</ul>
+<p><strong>Honest limits</strong></p>
+<ul>
+<li>zipnative does not encrypt. Confidentiality is pdfnative&#39;s job — encrypt the
+PDF (AES-256, <code>layout.encryption</code>) before it goes into the archive; zipnative
+documents that order as its own
+<a href="https://zipnative.dev/guides/use-cases.html#case-5--encrypt-first-then-archive" target="_blank" rel="noopener">encrypt-first case</a>.</li>
+<li>Reproducibility is per compressor. A dossier built with the deterministic
+pure encoder and one built with the runtime&#39;s native zlib are both valid and
+differ in bytes; choose one per pipeline and rebaseline once.</li>
+</ul>
+<h2 id="case-3--the-whole-chain-build-sign-pack-verify">Case 3 — The whole chain: build, sign, pack, verify<a class="heading-anchor" href="#case-3--the-whole-chain-build-sign-pack-verify" aria-label="Link to this section">#</a></h2>
+<p>Put the two seams together and the pipeline a regulated archive needs is four
+calls, each in the engine that owns its standard — and each with a terminal
+and an assistant surface for the people who will not write TypeScript.</p>
+<pre><code class="language-ts">// build — pdfnative
+const pdf = buildDocumentPDFBytes(params, { creationDate, tagged: &#39;pdfa2b&#39;, fontEntries });
+// sign to B-T — pdfnative, the token fetched through an injected transport
+const signed = await signPdfBytesWithTimestamp(addSignaturePlaceholder(pdf), { ...signer, timestampProvider });
+// pack — zipnative
+const zip = createZip({ compression: { deterministic: true } });
+zip.add(&#39;contract.pdf&#39;, signed);
+zip.add(&#39;evidence/roots.pem&#39;, rootsPem);
+const dossier = zip.toBytes();
+// verify, any time later — pkinative, over what pdfnative reads back
+const [sig] = listSignatures(openZip(dossier).readEntry(&#39;contract.pdf&#39;));
+const verdict = await verifySignedData({ signedData: trim(sig.contents), contentDigest, trustAnchors, atTimeStamp: true });
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Step</th>
+<th>Library call</th>
+<th>Terminal</th>
+<th>Assistant (MCP)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Build</td>
+<td>pdfnative <code>buildDocumentPDFBytes()</code></td>
+<td><code>pdfnative render</code></td>
+<td>pdfnative-mcp <code>generate_basic_pdf</code></td>
+</tr>
+<tr>
+<td>Sign, timestamp, LTV</td>
+<td>pdfnative <code>signPdfBytesWithTimestamp()</code>, <code>composeLtvData()</code></td>
+<td><code>pdfnative sign --timestamp</code>, <code>pdfnative ltv</code></td>
+<td>pdfnative-mcp <code>sign_pdf</code>, <code>add_ltv</code></td>
+</tr>
+<tr>
+<td>Pack</td>
+<td>zipnative <code>createZip</code></td>
+<td>zipnative-cli</td>
+<td>zipnative-mcp</td>
+</tr>
+<tr>
+<td>Verify the chain and the CMS</td>
+<td>pkinative <code>verifyCertificateChain</code>, <code>verifySignedData</code></td>
+<td>pkinative-cli</td>
+<td>pkinative-mcp</td>
+</tr>
+<tr>
+<td>Read back</td>
+<td>pdfnative <code>listSignatures()</code>, <code>extractText()</code></td>
+<td><code>pdfnative inspect</code>, <code>pdfnative verify</code></td>
+<td>pdfnative-mcp <code>inspect_pdf</code>, <code>verify_pdf</code></td>
+</tr>
+</tbody></table>
+<p><strong>What you gain</strong></p>
+<ul>
+<li><strong>Three lockfiles with nothing in them.</strong> <code>npm ls --omit=dev</code> on any of the
+three engines prints the package alone; the toolchain SBOM each release
+attests says the same. Supply-chain review of the whole pipeline is a review
+of three repositories.</li>
+<li><strong>One failure vocabulary.</strong> Every refusal is a coded error — pdfnative&#39;s
+build errors and diagnostics, zipnative&#39;s and pkinative&#39;s reason codes — so
+the pipeline&#39;s error handling is a switch, not a regex over messages.</li>
+<li><strong>Runtime independence.</strong> Node, Deno, Bun, browsers and Workers run all
+three; the pipeline that signs on a server can verify in a browser.</li>
+</ul>
+<p><strong>Honest limits</strong></p>
+<ul>
+<li>Three packages are three release trains. Each pins the others nowhere — the
+seams are plain <code>Uint8Array</code> values — so an upgrade of one never forces
+another, but it also never carries another along.</li>
+<li>The terminal and assistant columns are separate installs
+(<code>pdfnative-cli</code>, <code>zipnative-cli</code>, <code>pkinative-cli</code> and their MCP servers);
+there is no umbrella binary, by design.</li>
+</ul>
+<h2 id="picking-parts-not-a-platform">Picking parts, not a platform<a class="heading-anchor" href="#picking-parts-not-a-platform" aria-label="Link to this section">#</a></h2>
+<p>Nothing here locks you in. A PDF signed by pdfnative verifies in Adobe
+Acrobat and in any CMS library, not only in pkinative; a zipnative archive
+opens in every unzip tool ever written; pkinative validates certificates that
+have nothing to do with PDFs. Use the engine whose standard you need, and
+borrow its neighbours when the pipeline reaches their standard.</p>
+<h2 id="see-also">See also<a class="heading-anchor" href="#see-also" aria-label="Link to this section">#</a></h2>
+<ul>
+<li><a href="use-cases.html">Ecosystem use cases</a> — the five pdfnative architectures,
+Case 5 of which plugs zipnative in as the DEFLATE codec.</li>
+<li><a href="signatures.html">Digital signatures</a> and <a href="ltv.html">Long-term validation</a> —
+the PAdES ladder in engine terms, and <code>composeLtvData()</code> for offline
+evidence.</li>
+<li><a href="../playgrounds/reproducible.html">Reproducible output</a> — the pinned
+<code>creationDate</code> behind Case 2, in the browser.</li>
+<li><a href="https://zipnative.dev" target="_blank" rel="noopener">zipnative</a> · <a href="https://zipnative.dev/guides/use-cases.html" target="_blank" rel="noopener">zipnative use cases</a> —
+the archive engine and its own architectures.</li>
+<li><a href="https://pkinative.dev" target="_blank" rel="noopener">pkinative</a> · <a href="https://pkinative.dev/guides/use-cases.html" target="_blank" rel="noopener">pkinative use cases</a> —
+the X.509 and CMS engine, including the PKCS#12 and timestamp cases this
+guide builds on.</li>
+</ul>
+<!-- guide:render:end -->
+  </article>
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <span>MIT License · © 2026 Nizoka</span>
+    <ul class="footer-links" role="list">
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
+      <li><a href="https://www.npmjs.com/package/pdfnative" target="_blank" rel="noopener">npm</a></li>
+      <li><a href="https://github.com/Nizoka/pdfnative/blob/main/CHANGELOG.md" target="_blank" rel="noopener">Changelog</a></li>
+      <li><a href="./">All guides</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js" integrity="sha384-/TQbtLCAerC3jgaim+N78RZSDYV7ryeoBCVqTuzRrFec2akfBkHS7ACQ3PQhvMVi" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.5/dist/purify.min.js" integrity="sha384-nszIONF2FGC59kn+pPFaRa6WUNGwsZgXZiJxJwQbym+TzcH7smolUviLgpPbNx7V" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" integrity="sha384-BGaNxfftg+9+TtC098wxawPFVEUpKYvaiCgbB0iqAMjK/4jDdmUY+oGxrPNvnXEf" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js" integrity="sha384-PeOqKNW/piETaCg8rqKFy+Pm6KEk7e36/5YZE5XO/OaFdO+/Aw3O8qZ9qDPKVUgx" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-bash.min.js" integrity="sha384-9WmlN8ABpoFSSHvBGGjhvB3E/D8UkNB9HpLJjBQFC2VSQsM1odiQDv4NbEo+7l15" crossorigin="anonymous" defer></script>
+<script src="guide.js" defer></script>
+</body>
+</html>

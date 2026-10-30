@@ -47,16 +47,23 @@ export { KHMER_START, KHMER_END, containsKhmer };
 const COENG = KHMER_COENG; // 0x17D2
 
 /**
- * Decomposition of Khmer two-part dependent vowels into
- * [pre-base (left) part, ...post-base parts].
+ * Decomposition of the Khmer two-part dependent vowels, as HarfBuzz's
+ * `decompose_khmer` does it (Unicode gives them no decomposition): the
+ * pre-base េ, then the sign itself. The font's cmap glyph of the sign is its
+ * presentation form over a dotted circle; the `abvf` / `psts` single
+ * substitutions of the module's flat `gsub` table turn it into the right
+ * piece the shaper draws after the base — ី for ើ, the hooks of ឿ ៀ ៅ, ា
+ * for ោ (1.9.0, C24; until then ើ ៅ ឿ ៀ were drawn with the right part of
+ * ោ, ី, ឹ).
  */
 const TWO_PART_VOWELS: Record<number, number[]> = {
-    0x17BE: [0x17C1, 0x17B6], // ើ
-    0x17BF: [0x17C1, 0x17B8], // ឿ  (approx: e + y-like)
-    0x17C0: [0x17C1, 0x17B9], // ៀ  (approx)
-    0x17C4: [0x17C1, 0x17B6], // ោ  (e + aa)
-    0x17C5: [0x17C1, 0x17B6], // ៅ  (e + aa-like)
+    0x17BE: [0x17C1, 0x17BE], // ើ
+    0x17BF: [0x17C1, 0x17BF], // ឿ
+    0x17C0: [0x17C1, 0x17C0], // ៀ
+    0x17C4: [0x17C1, 0x17C4], // ោ
+    0x17C5: [0x17C1, 0x17C5], // ៅ
 };
+const isTwoPartRightPiece = (cp: number): boolean => cp >= 0x17BE && cp <= 0x17C5 && cp !== 0x17C1 && cp !== 0x17C2 && cp !== 0x17C3;
 
 /**
  * Khmer character type classification.
@@ -76,13 +83,13 @@ function khmerCharType(cp: number): number {
     if (cp >= 0x17A3 && cp <= 0x17B5) return 1;
     // Pre-base vowels (left)
     if (cp === 0x17C1 || cp === 0x17C2 || cp === 0x17C3) return 4;
-    // Above vowels
+    // Above vowels (ើ's right piece is the above mark ី once substituted)
     if (cp === 0x17B7 || cp === 0x17B8 || cp === 0x17B9 || cp === 0x17BA ||
-        cp === 0x17BB || cp === 0x17BD) return 2;
+        cp === 0x17BB || cp === 0x17BD || cp === 0x17BE) return 2;
     // Below vowels
     if (cp === 0x17BC) return 3;
-    // Post-base spacing vowels
-    if (cp === 0x17B6 || cp === 0x17C4 || cp === 0x17C5) return 5;
+    // Post-base spacing vowels, the right pieces of ឿ ៀ ោ ៅ among them
+    if (cp === 0x17B6 || cp === 0x17BF || cp === 0x17C0 || cp === 0x17C4 || cp === 0x17C5) return 5;
     // Signs / diacritics (above): nikahit, reahmuk, etc.
     if (cp >= 0x17C6 && cp <= 0x17D1) return 6;
     if (cp === 0x17CB || cp === 0x17CD || cp === 0x17CE || cp === 0x17CF ||
@@ -173,7 +180,14 @@ export function shapeKhmerText(str: string, fontData: FontData): ShapedGlyph[] {
 
     function resolveGid(cp: number): number {
         const normCp = (cp === 0x202F || cp === 0xA0) ? 0x20 : cp;
-        return cmap[normCp] || 0;
+        const gid = cmap[normCp] || 0;
+        // The right piece of a two-part vowel: the font's single substitution
+        // (abvf / psts) of its presentation form, when the font has one.
+        if (gid !== 0 && isTwoPartRightPiece(cp) && fontData.gsub) {
+            const sub = fontData.gsub[gid];
+            if (sub !== undefined && sub !== 0) return sub;
+        }
+        return gid;
     }
 
     function tryLig(gids: number[]) {
@@ -184,18 +198,6 @@ export function shapeKhmerText(str: string, fontData: FontData): ShapedGlyph[] {
         return widths[gid] !== undefined ? widths[gid] : defaultWidth;
     }
 
-    function getBaseAnchor(baseGid: number, markClass: number): [number, number] | null {
-        const base = markAnchors && markAnchors.bases && markAnchors.bases[baseGid];
-        if (!base) return null;
-        return base[markClass] ?? null;
-    }
-
-    function getMarkAnchor(markGid: number): { classIdx: number; x: number; y: number } | null {
-        const mark = markAnchors && markAnchors.marks && markAnchors.marks[markGid];
-        if (!mark) return null;
-        return { classIdx: mark[0], x: mark[1], y: mark[2] };
-    }
-
     /**
      * Place a mark, stacking it on the previous mark of the same cluster when
      * the font carries a mark-to-mark anchor for the pair. Without that, two
@@ -204,39 +206,39 @@ export function shapeKhmerText(str: string, fontData: FontData): ShapedGlyph[] {
      */
     function emitMark(
         gid: number,
+        cps: readonly number[],
         baseGid: number,
         prev: { gid: number; dx: number; dy: number } | null,
     ): { gid: number; dx: number; dy: number } {
         const stacked = prev ? positionMarkOnMark(fontData.mark2mark, prev.gid, gid) : null;
         if (stacked && prev) {
             const placed = { gid, dx: prev.dx + stacked.dx, dy: prev.dy + stacked.dy };
-            shaped.push({ gid, dx: placed.dx, dy: placed.dy, isZeroAdvance: true });
+            shaped.push({ gid, dx: placed.dx, dy: placed.dy, isZeroAdvance: true, cps });
             return placed;
         }
         const onBase = positionMarkOnBase(markAnchors, gid, baseGid, getAdv(baseGid));
         const dx = onBase ? onBase.dx : 0;
         const dy = onBase ? onBase.dy : 0;
-        shaped.push({ gid, dx, dy, isZeroAdvance: true });
+        shaped.push({ gid, dx, dy, isZeroAdvance: true, cps });
         return { gid, dx, dy };
     }
 
-    function emitGlyph(gid: number, isZero: boolean, baseGid?: number): void {
+    /**
+     * Emit a glyph that names its source code points (1.9.0): a spacing glyph
+     * at the pen, or a mark anchored on `baseGid` through every anchor triple
+     * the font gives it (the first-triple read of earlier releases missed
+     * the pairs a font anchors through a later subtable, #81).
+     */
+    function emitGlyph(gid: number, cps: readonly number[], isZero: boolean, baseGid?: number): void {
         if (isZero && baseGid !== undefined) {
-            const markAnchor = getMarkAnchor(gid);
-            if (markAnchor) {
-                const baseAnchorPt = getBaseAnchor(baseGid, markAnchor.classIdx);
-                if (baseAnchorPt) {
-                    const baseAdv = getAdv(baseGid);
-                    shaped.push({
-                        gid, dx: baseAnchorPt[0] - markAnchor.x - baseAdv,
-                        dy: baseAnchorPt[1] - markAnchor.y, isZeroAdvance: true,
-                    });
-                    return;
-                }
+            const onBase = positionMarkOnBase(markAnchors, gid, baseGid, getAdv(baseGid));
+            if (onBase) {
+                shaped.push({ gid, dx: onBase.dx, dy: onBase.dy, isZeroAdvance: true, cps });
+                return;
             }
-            shaped.push({ gid, dx: 0, dy: 0, isZeroAdvance: true });
+            shaped.push({ gid, dx: 0, dy: 0, isZeroAdvance: true, cps });
         } else {
-            shaped.push({ gid, dx: 0, dy: 0, isZeroAdvance: false });
+            shaped.push({ gid, dx: 0, dy: 0, isZeroAdvance: false, cps });
         }
     }
 
@@ -254,7 +256,7 @@ export function shapeKhmerText(str: string, fontData: FontData): ShapedGlyph[] {
 
         // Emit pre-base (left) vowels first.
         for (let ci = 0; ci < codepoints.length; ci++) {
-            if (khmerCharType(codepoints[ci]) === 4) emitGlyph(resolveGid(codepoints[ci]), false);
+            if (khmerCharType(codepoints[ci]) === 4) emitGlyph(resolveGid(codepoints[ci]), [codepoints[ci]], false);
         }
 
         // Build base + coeng-consonant GID run for ligature lookup.
@@ -271,7 +273,7 @@ export function shapeKhmerText(str: string, fontData: FontData): ShapedGlyph[] {
                 markStart = ci;
                 break;
             } else {
-                emitGlyph(resolveGid(cp), false);
+                emitGlyph(resolveGid(cp), [cp], false);
             }
         }
 
@@ -287,14 +289,15 @@ export function shapeKhmerText(str: string, fontData: FontData): ShapedGlyph[] {
         while (gi < stackGids.length) {
             const lig = tryLig(stackGids.slice(gi));
             const gid = lig ? lig.resultGid : stackGids[gi];
+            const cps = stackEndIdx.slice(gi, gi + (lig ? lig.consumed : 1)).map(ci => codepoints[ci]);
             if (first) {
-                emitGlyph(gid, false);
+                emitGlyph(gid, cps, false);
                 if (lig) baseGid = gid;
                 first = false;
             } else {
                 // Everything after the base hangs off it, coeng sign and
                 // subscript consonant alike.
-                emitGlyph(gid, true, baseGid);
+                emitGlyph(gid, cps, true, baseGid);
             }
             gi += lig ? lig.consumed : 1;
         }
@@ -306,10 +309,10 @@ export function shapeKhmerText(str: string, fontData: FontData): ShapedGlyph[] {
             const cp = codepoints[ci];
             const ct = khmerCharType(cp);
             if (ct === 2 || ct === 3 || ct === 6) {
-                prevMark = emitMark(resolveGid(cp), baseGid, prevMark);
-            } else if (ct === 5) { emitGlyph(resolveGid(cp), false); prevMark = null; }
+                prevMark = emitMark(resolveGid(cp), [cp], baseGid, prevMark);
+            } else if (ct === 5) { emitGlyph(resolveGid(cp), [cp], false); prevMark = null; }
             else if (ct === 4) { /* already emitted pre-base */ }
-            else { emitGlyph(resolveGid(cp), false); prevMark = null; }
+            else { emitGlyph(resolveGid(cp), [cp], false); prevMark = null; }
         }
     }
 

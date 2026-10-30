@@ -1,0 +1,102 @@
+{
+  "$comment": "Files of the v1.8.0 test suite that scripts/run-compat.ts does not run against the current sources. Every entry carries a reason; a behaviour change also names the compatibility-ledger entry (release-notes/v1.9.0.md, Upgrade section) that documents and justifies it. A file listed here without a ledger entry tests the repository tree rather than the engine. Keep this list as short as the ledger: an exclusion that outlives its ledger entry is a hidden breaking change. Exclusions are per file (vitest --exclude); the tests of each file that still hold run in the current suite.",
+  "tag": "v1.8.0",
+  "exclude": [
+    {
+      "pattern": "tests/docs/**",
+      "reason": "Repository-tree tests (verify-docs over the site, recipes index, playground inventory, prose language), not engine behaviour — the current suite covers today's tree."
+    },
+    {
+      "pattern": "tests/tools/**",
+      "reason": "Repository-tree tests (workflow pins, font manifest, generator parity against the committed modules, diagram geometry, agent configuration), not engine behaviour — the current suite covers today's tree."
+    },
+    {
+      "pattern": "tests/regression/samples.test.ts",
+      "reason": "Reads the sample PDFs the 1.8.0 generators wrote into test-output/ and the 1.8.0 byte manifest; the current suite holds the current generators to the current chain, whose carried-forward entries are the 1.8.0 bytes."
+    },
+    {
+      "pattern": "tests/shaping/shaper-registry.test.ts",
+      "reason": "Pins the exact list of registered shapers (twelve in 1.8.0); five Indic scripts were added in 1.9.0, an inventory change the current suite pins at seventeen — no 1.8.0 shaper moved or left."
+    },
+    {
+      "pattern": "tests/shaping/indic-real-font.test.ts",
+      "reason": "Three 1.8.0 golden tests assert that the first glyph of a split vowel sign (Tamil கொ, Bengali কো, Sinhala කො) reports the precomposed code point and the second part none; since 1.9.0 each part names its code point of the canonical decomposition so every glyph is in /ToUnicode and level U never finds a glyph without a Unicode value (the extracted NFD text normalises back to the source). The current suite holds every other assertion of the file to the same glyph sequences.",
+      "ledger": "C4"
+    },
+    {
+      "pattern": "tests/visual/**",
+      "reason": "Compares glyph positions and rendered pixels with the 1.8.0 baselines; mark anchors (Tibetan, Khmer, Myanmar, USE), per-paragraph BiDi and the lean subsets move them on purpose, and the regenerated baselines are reviewed in the current suite.",
+      "ledger": "C7"
+    },
+    {
+      "pattern": "tests/shaping/bidi.test.ts",
+      "reason": "Three tests pin the pre-1.9.0 lite algorithm: General Punctuation and whitespace classes that UAX #9 assigns differently (U+2030/U+2032 are ET, TAB is S), and brackets inside an LTR run of an RTL paragraph that N0 now pairs and L4 mirrors. The full UAX #9 resolver passes BidiCharacterTest.",
+      "ledger": "C1"
+    },
+    {
+      "pattern": "tests/shaping/bidi-embeddings.test.ts",
+      "reason": "Three tests pin the 1.3.0 'lite forcing' of LRO/RLO overrides (inner controls stripped, Arabic kept in logical order); X1–X8 now resolve overrides as the standard does, with the override's level and direction.",
+      "ledger": "C2"
+    },
+    {
+      "pattern": "tests/shaping/phase2-shaping.test.ts",
+      "reason": "Six tests pin the 1.4.0 isolate handling (isolates re-resolved as separate segments, unmatched PDI/LRI dropped); BD9 matching and X5a–X6a now give isolates their own level inside the paragraph's resolution.",
+      "ledger": "C3"
+    },
+    {
+      "pattern": "tests/fonts/font-embedder.test.ts",
+      "reason": "One test pins the 1.8.0 ToUnicode rule 'the smallest code point of the cmap wins'; the encoded code point now has priority over the inverted cmap, so shaper-produced glyphs are named with the text they came from.",
+      "ledger": "C4"
+    },
+    {
+      "pattern": "tests/parser/pdf-text-extract.test.ts",
+      "reason": "Two tests pin the decomposed extraction of Thai and Lao sara am in untagged documents; the untagged path now writes /Span /ActualText per cluster, so extraction restores U+0E33 and U+0EB3 as typed.",
+      "ledger": "C4"
+    },
+    {
+      "pattern": "tests/core/typography-text.test.ts",
+      "reason": "Two tests pin the degraded base-14 rendering of U+202F (narrow no-break space) as an ordinary space; the Latin path now emits a TJ adjustment that keeps its width and extraction.",
+      "ledger": "C10"
+    },
+    {
+      "pattern": "tests/core/pdf-x4.test.ts",
+      "reason": "Two tests pin the single refusal of layout.pdfx with any layout.tagged; the joint PDF/A-2b/2u + PDF/X-4 claim is allowed, and the refusal is now one message per excluded level (1b, 3b).",
+      "ledger": "C14"
+    },
+    {
+      "pattern": "tests/core/pdf-content-colour.test.ts",
+      "reason": "Six tests compare scanDeviceColour's result with toEqual; the result gained the `named` list (the /Separation and /DeviceN names a content stream selects) so spot-colour resources can be written. An added field, every 1.8.0 field unchanged.",
+      "ledger": "C16"
+    },
+    {
+      "pattern": "tests/core/pdf-text.test.ts",
+      "reason": "Three tests pin one `BT … ET` text object per shaped glyph (txtShaped) and one per run of a multi-font line; a line is one text object now, a shaped run one TJ array, so a /ActualText span never wraps more than one text object and Acrobat pastes a cell's text once instead of once per glyph. Every other assertion of the file holds in the current suite.",
+      "ledger": "C25"
+    },
+    {
+      "pattern": "tests/integration/persian-rendering.test.ts",
+      "reason": "Three tests look for presentation-form glyph ids in the content stream and one expects a bracketed Latin island to extract as one piece of a visual-order line; glyph codes are the document's CIDs now (C28) and every right-to-left run carries its logical text as /ActualText, each bracket with its own run (C27). The current suite holds the same joining and extraction facts through the encoding context and the spans.",
+      "ledger": "C27"
+    },
+    {
+      "pattern": "tests/fonts/encoding.test.ts",
+      "reason": "Five tests read source glyph ids out of textRuns() and ps() hex strings (the space as <0003>, Thai ก as <000A>, Hebrew mem-final as <0021>); the hex strings carry CIDs allotted in order of first use since C28, and the current suite asserts the same facts through getCidMaps().",
+      "ledger": "C28"
+    },
+    {
+      "pattern": "tests/fonts/font-features.test.ts",
+      "reason": "Thirteen tests look glyph codes up in the font module's widths and outlines and call applyFeaturesToRuns() on CID-coded runs without the code → glyph resolver the wrappers take since C28; the current suite checks the same embedding, width and outline facts against the compact subset.",
+      "ledger": "C28"
+    },
+    {
+      "pattern": "tests/fonts/font-kerning.test.ts",
+      "reason": "One test calls applyKerningToRuns() on CID-coded runs without the code → glyph resolver (C28); kerning through the context (layout.typography.kerning) is held by the rest of the file and the current suite.",
+      "ledger": "C28"
+    },
+    {
+      "pattern": "tests/core/typography-align.test.ts",
+      "reason": "One test sums a justified line's advances by looking its hex codes up in the font module's widths; the codes are CIDs since C28 and the current suite resolves them through getCidMaps().",
+      "ledger": "C28"
+    }
+  ]
+}

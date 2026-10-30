@@ -53,9 +53,10 @@ interface ChartBlock {
   chartType: 'bar' | 'barH' | 'line' | 'pie' | 'donut'
     | 'stackedBar' | 'stackedBarH' | 'area' | 'scatter';    // last four: v1.7.0
   series: {
-    label: string;
+    label?: string;              // optional since v1.9.0 — an unlabelled series is listed as "Series N"
     values: number[];
     color?: PdfColor;
+    colors?: PdfColor[];         // one colour per value on bar charts — the legend keeps `color` (v1.9.0)
     xValues?: (number | string)[]; // x positions for scatter / linear / time x-axes (v1.7.0)
     yAxis?: 'left' | 'right';      // bind the series to the secondary right axis (v1.7.0)
   }[];
@@ -85,6 +86,11 @@ interface ChartBlock {
 Colours accept the same forms as the rest of pdfnative — `'#4e79a7'`,
 `[78, 121, 167]`, or a PDF RGB string — and are validated (injection-safe). When
 omitted, a built-in 8-colour categorical palette is used deterministically.
+On the four bar types a series may also carry `colors`, one entry per value, so
+each category's bar takes its own ink — an ink-coverage chart paints the C, M, Y
+and K plates in their process colours and the fifth plate in its spot colour
+(`{ spot: 'PANTONE 300 C' }`). The legend swatch keeps the series `color`; the
+array must be as long as `values` or the build throws.
 
 ## Examples
 

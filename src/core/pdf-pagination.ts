@@ -18,10 +18,11 @@
  * @module core/pdf-pagination
  */
 
-import type { DocumentBlock, TableBlock, ParagraphBlock } from '../types/pdf-document-types.js';
+import type { DocumentBlock, TableBlock, ParagraphBlock, TocBlock } from '../types/pdf-document-types.js';
 import type { EncodingContext, TypographyOptions } from '../types/pdf-types.js';
 import type { StructElement, MCRef } from './pdf-tags.js';
-import type { TableSlice, ParagraphSlice, HeadingDestination } from './pdf-renderers.js';
+import type { TableSlice, ParagraphSlice, TocSlice, HeadingDestination } from './pdf-renderers.js';
+import { tocEntries, tocMetrics } from './pdf-renderers.js';
 import { estimateBlockHeight, planTable, planParagraph } from './pdf-renderers.js';
 import { FT_H } from './pdf-layout.js';
 
@@ -49,8 +50,21 @@ export interface ParagraphSliceItem {
     readonly slice: ParagraphSlice;
 }
 
+/**
+ * Synthetic block produced when a table of contents runs past the foot of
+ * its page: the entries continue on the following pages, each slice holding
+ * `[fromIndex, toIndex)` of the headings the block lists (#83).
+ *
+ * @since 1.9.0
+ */
+export interface TocSliceItem {
+    readonly type: '__tocSlice';
+    readonly block: TocBlock;
+    readonly slice: TocSlice;
+}
+
 /** Any item the paginator can place on a page. */
-export type PaginatedItem = DocumentBlock | TableSliceItem | ParagraphSliceItem;
+export type PaginatedItem = DocumentBlock | TableSliceItem | ParagraphSliceItem | TocSliceItem;
 
 /** A placement plus the geometry the inspector reports. */
 export interface PlannedItem {
@@ -145,6 +159,7 @@ export function paginatePass(
     const headings: HeadingDestination[] = [];
     let remainH = availableH;
     let headingIdx = 0;
+    let tableIdx = 0;
     // Y of the next item's top edge on the current page.
     let curY = pgH - mg.t - headerH;
 
@@ -238,6 +253,7 @@ export function paginatePass(
             const plan = planTable(block, enc, mg.l, cw);
             const repeatHeader = block.repeatHeader !== false; // default true
             const sharedAccum: (StructElement | MCRef)[] = [];
+            const tableIndex = tableIdx++;
             const totalRows = block.rows.length;
             let rowIdx = 0;
             let isFirstSlice = true;
@@ -257,6 +273,7 @@ export function paginatePass(
                         drawHeader: true,
                         isFinalSlice: true,
                         tableStructAccum: sharedAccum,
+                        tableIndex,
                     },
                 }, 'table', totalH);
                 continue;
@@ -305,6 +322,7 @@ export function paginatePass(
                         drawHeader,
                         isFinalSlice,
                         tableStructAccum: sharedAccum,
+                        tableIndex,
                     },
                 }, 'table', sliceH);
 
@@ -371,6 +389,49 @@ export function paginatePass(
             continue;
         }
 
+        // A table of contents breaks at entry boundaries once its headings
+        // are known (pass 2 onwards) and it does not fit the page (#83). A
+        // fitting one takes the atomic path below, byte-identical to 1.8.0.
+        if (block.type === 'toc' && headingsIn !== undefined) {
+            const entries = tocEntries(block, headingsIn);
+            const { titleH, lineH, bottomH } = tocMetrics(block);
+            const wholeH = titleH + entries.length * lineH + bottomH;
+            if (entries.length > 0 && wholeH > remainH + EPS && wholeH > availableH + EPS) {
+                const accum: (StructElement | MCRef)[] = [];
+                let idx = 0;
+                let first = true;
+                while (idx < entries.length) {
+                    const remaining = entries.length - idx;
+                    const headH = first ? titleH : 0;
+                    const hasPrior = pages[pages.length - 1].length > 0;
+                    let fit = Math.max(0, Math.floor((remainH - headH + EPS) / lineH));
+                    if (fit >= remaining && remainH + EPS >= headH + remaining * lineH + bottomH) {
+                        place({
+                            type: '__tocSlice',
+                            block,
+                            slice: { fromIndex: idx, toIndex: entries.length, drawTitle: first, isFinalSlice: true, tocStructAccum: accum },
+                        }, 'toc', headH + remaining * lineH + bottomH);
+                        idx = entries.length;
+                        break;
+                    }
+                    if (fit >= remaining) fit = remaining - 1; // carry the last entry so the trailer fits
+                    if (fit <= 0) {
+                        if (hasPrior) { newPage(); continue; }
+                        fit = 1; // a fresh page takes at least one entry
+                    }
+                    place({
+                        type: '__tocSlice',
+                        block,
+                        slice: { fromIndex: idx, toIndex: idx + fit, drawTitle: first, isFinalSlice: false, tocStructAccum: accum },
+                    }, 'toc', headH + fit * lineH);
+                    idx += fit;
+                    first = false;
+                    newPage();
+                }
+                continue;
+            }
+        }
+
         const blockH = estimateBlockHeight(block, enc, cw, headingsIn);
 
         // Keep-with-next: a block that would be stranded as the last item on
@@ -415,13 +476,21 @@ export function paginateDocument(input: PaginationInput): PaginationResult {
     const hasToc = input.blocks.some(b => b.type === 'toc');
     if (!hasToc) return paginatePass(input);
 
-    const pass1 = paginatePass(input);
-    const pass2 = paginatePass(input, pass1.headings);
-
-    const pagesChanged = pass2.headings.some((h, i) =>
-        i < pass1.headings.length && h.pageIndex !== pass1.headings[i].pageIndex,
-    );
-    if (!pagesChanged) return pass2;
-
-    return paginatePass(input, pass2.headings);
+    // Iterate to a fixed point of the headings' page numbers: a table of
+    // contents that paginates over several pages (#83) can shift headings
+    // more than once. Bounded at MAX_TOC_PASSES; the last pass is kept when
+    // the bound is reached (the TOC height depends on the entry count only,
+    // so convergence takes two or three passes in practice).
+    let previous = paginatePass(input);
+    for (let pass = 1; pass < MAX_TOC_PASSES; pass++) {
+        const next = paginatePass(input, previous.headings);
+        const pagesChanged = next.headings.length !== previous.headings.length
+            || next.headings.some((h, i) => h.pageIndex !== previous.headings[i].pageIndex);
+        if (!pagesChanged) return next;
+        previous = next;
+    }
+    return previous;
 }
+
+/** Upper bound on the TOC convergence loop of {@link paginateDocument}. */
+const MAX_TOC_PASSES = 5;

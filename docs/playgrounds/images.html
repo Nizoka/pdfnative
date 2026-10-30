@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Images Playground — pdfnative</title>
+  <meta name="description" content="Embed JPEG, PNG and JPEG 2000 images in a PDF in your browser with pdfnative: a JPXDecode pass-through with the colour and opacity the codestream declares, the three formats on one PDF/A-2b page, your own file, and what PDF/A-1 refuses. Zero install.">
+  <link rel="canonical" href="https://pdfnative.dev/playgrounds/images.html">
+  <link rel="alternate" hreflang="en" href="https://pdfnative.dev/playgrounds/images.html">
+  <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/playgrounds/images.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="pdfnative">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:url" content="https://pdfnative.dev/playgrounds/images.html">
+  <meta property="og:title" content="Images Playground — pdfnative">
+  <meta property="og:description" content="JPEG, PNG and JPEG 2000 embedded without decoding or recompression — including a PDF/A-2b page and the PDF/A-1 refusal.">
+  <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
+  <meta property="og:image:alt" content="pdfnative — pure native PDF generation, zero dependencies">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Images Playground — pdfnative">
+  <meta name="twitter:description" content="JPEG, PNG and JPEG 2000 in a PDF, in the browser: pass-through, PDF/A rules, your own file.">
+  <meta name="twitter:image" content="https://pdfnative.dev/assets/og-image.png">
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="../guides/guide.css">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebApplication",
+        "inLanguage": "en",
+        "name": "pdfnative Images Playground",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "Any (browser-based)",
+        "browserRequirements": "Requires JavaScript and ES modules",
+        "url": "https://pdfnative.dev/playgrounds/images.html",
+        "description": "Embed JPEG, PNG and JPEG 2000 images in a PDF without decoding them: a JPXDecode pass-through that leaves colour and opacity to the codestream, the three formats on one PDF/A-2b page, a file from your disk, and the PDF/A-1 refusal of JPEG 2000, with the diagnostics each build raised.",
+        "isAccessibleForFree": true,
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "isPartOf": {
+          "@type": "WebSite",
+          "name": "pdfnative",
+          "url": "https://pdfnative.dev"
+        },
+        "author": {
+          "@type": "Organization",
+          "name": "Nizoka",
+          "url": "https://github.com/Nizoka"
+        }
+      },
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Home",
+            "item": "https://pdfnative.dev/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Playgrounds",
+            "item": "https://pdfnative.dev/playgrounds/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 3,
+            "name": "Images"
+          }
+        ]
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+
+<a class="skip-link" href="#main-content">Skip to main content</a>
+
+<nav class="nav" role="navigation" aria-label="Main navigation">
+  <div class="nav-inner">
+    <a class="nav-brand" href="../">
+      <img src="../assets/logo.svg" alt="" width="28" height="28">
+      pdfnative
+    </a>
+    <button class="nav-hamburger" aria-label="Toggle menu" aria-expanded="false">☰</button>
+    <ul class="nav-links" role="list">
+      <li><a href="../#features">Features</a></li>
+      <li><a href="../#examples">Examples</a></li>
+      <li><a href="../#demo">Demo</a></li>
+      <li><a href="../#mcp">MCP</a></li>
+      <li><a href="../#cli">CLI</a></li>
+      <li><a href="../#react">React</a></li>
+      <li><a href="../guides/">Guides</a></li>
+      <li><a href="./">Playgrounds</a></li>
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
+      <li><button class="theme-toggle" aria-label="Toggle dark mode">🌙</button></li>
+    </ul>
+  </div>
+</nav>
+
+<main class="guide-shell" id="main-content" tabindex="-1">
+  <p class="guide-breadcrumb"><a href="../">Home</a> &nbsp;›&nbsp; <a href="./">Playgrounds</a> &nbsp;›&nbsp; Images (v1.9.0)</p>
+  <nav class="playground-switcher" aria-label="Playground switcher">
+    <span class="playground-switcher-label">Playgrounds:</span>
+    <a href="./extreme-scripts.html">Extreme scripts</a>
+    <a href="./all-scripts.html">All 32 scripts</a>
+    <a href="./toolkit.html">PDF Toolkit</a>
+    <a href="./inspect.html">Inspect &amp; verify</a>
+    <a href="./charts.html">Charts</a>
+    <a href="./authoring-plus.html">Authoring+</a>
+    <a href="./scale.html">Scale</a>
+    <a href="./cli.html">CLI builder</a>
+    <a href="./mcp.html">MCP explorer</a>
+    <a href="./react.html">React renderer</a>
+    <a href="./typography.html">Typography</a>
+    <a href="./print.html">Print &amp; PDF/X</a>
+    <a href="./reproducible.html">Reproducible output</a>
+    <a href="./docspec-lint.html">DocSpec lint</a>
+    <a href="./images.html" aria-current="page">Images</a>
+    <a href="./" style="margin-left:auto;">All →</a>
+  </nav>
+  <article class="guide-content">
+    <h1>Images — JPEG, PNG and JPEG 2000, since 1.9.0 for JPEG 2000</h1>
+    <p>An <code>image</code> block embeds the file's own bytes: a JPEG as <code>/DCTDecode</code>, a PNG as <code>/FlateDecode</code> with its alpha channel split into a soft mask, and since 1.9.0 a JPEG 2000 file as <code>/JPXDecode</code> — colour space and bit depth left to the codestream when its header declares them, an opacity channel as <code>/SMaskInData 1</code>, the header raised to PDF 1.5. Nothing is decoded or recompressed. The fixtures are tiny images inlined in this page; pick a file of your own for the last preset.</p>
+
+    <div id="status" style="display:none;padding:10px 14px;border-radius:6px;margin:16px 0;font-size:14px;"></div>
+
+    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:24px;">
+      <label for="preset"><strong>Preset:</strong></label>
+      <select id="preset" style="padding:6px 10px;border-radius:6px;border:1px solid #cbd5e1;font-size:14px;">
+        <option value="jpx">JPEG 2000 pass-through (JP2 with a colr box and an alpha channel)</option>
+        <option value="formats">JPEG, PNG and JPEG 2000 on one page</option>
+        <option value="pdfa2b">The three formats under PDF/A-2b (embedded Noto Sans)</option>
+        <option value="pdfa1">PDF/A-1b refuses JPEG 2000 under strict — what the builder throws (no PDF)</option>
+        <option value="watermark">JPEG 2000 as a page watermark — layout.watermark.image</option>
+        <option value="upload">Your own image (JPEG, PNG or JPEG 2000 from disk)</option>
+      </select>
+      <label for="file" style="font-size:14px;">Image file (upload preset):</label>
+      <input type="file" id="file" accept=".jpg,.jpeg,.png,.jp2,.j2k,.jpx,image/jpeg,image/png,image/jp2" style="font-size:13px;">
+      <button id="generate" class="btn btn-primary" style="padding:8px 18px;">Generate PDF</button>
+      <span id="timer" style="font-size:13px;color:#64748b;"></span>
+    </div>
+
+    <p id="desc" style="margin-top:20px;color:#475569;font-size:15px;line-height:1.6;"></p>
+
+    <pre id="report" style="display:none;margin-top:12px;white-space:pre-wrap;"></pre>
+
+    <details style="margin-top:16px;" open>
+      <summary style="cursor:pointer;font-weight:600;">View underlying code</summary>
+      <div style="display:flex;justify-content:flex-end;margin-top:8px;"><button class="copy-btn" id="copy" type="button" style="padding:4px 10px;font-size:12px;background:var(--c-primary);color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:600;">Copy</button></div>
+      <pre style="margin-top:8px;"><code id="code-view" class="language-typescript"></code></pre>
+    </details>
+
+    <p style="margin-top:16px;font-weight:600;">Diagnostics (<code>layout.onDiagnostic</code>)</p>
+    <pre id="diagnostics" style="margin-top:8px;white-space:pre-wrap;font-size:13px;line-height:1.5;">Generate a PDF to see the diagnostics its build raised. Every preset wires layout.onDiagnostic; a plain document raises none, and PDF/A-2b with the embedded font raises none either — the JPEG 2000 fixture has three colour channels and an opacity channel, which ISO 19005-2 §6.2.8.3 does not allow, so the PDF/A-2b preset raises PDFA_JPX_IMAGE and still writes the file.</pre>
+
+    <div style="margin-top:32px;padding:16px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px;">
+      <strong style="color:#065f46;">Worth knowing:</strong>
+      <ul style="margin-top:8px;color:#065f46;">
+        <li><strong>What is read:</strong> the JPEG SOF marker (dimensions, components), the PNG IHDR and IDAT chunks (8-bit, non-interlaced), the JP2 <code>ihdr</code>/<code>colr</code>/<code>cdef</code> boxes or the codestream's SIZ marker. <code>parseImage()</code>, <code>parseJPX()</code> and <code>detectImageFormat()</code> expose the same readers.</li>
+        <li><strong>JPEG 2000 is not decoded.</strong> pdfnative has no wavelet decoder; the viewer draws the codestream (Acrobat, Chrome's PDFium and Firefox's pdf.js do). The header becomes <code>%PDF-1.5</code>, the version that introduced <code>/JPXDecode</code>.</li>
+        <li><strong>PDF/A-1</strong> (PDF 1.4) has no JPXDecode: <code>tagged: 'pdfa1b'</code> with a JPEG 2000 image raises <code>PDFA1_JPX_IMAGE</code> — a warning by default, a thrown error under <code>strict</code>. <strong>PDF/A-2 and 3</strong> accept one, three or four colour channels and no opacity channel; anything else raises <code>PDFA_JPX_IMAGE</code> (a warning, an error under <code>strict</code>).</li>
+        <li><strong>Alpha:</strong> a PNG's alpha channel becomes a separate <code>/SMask</code> image; a JPEG 2000 opacity channel stays in the codestream and the XObject says <code>/SMaskInData 1</code>.</li>
+        <li><strong>Sizing:</strong> <code>width</code> and <code>height</code> are points; give one and the aspect ratio supplies the other. <code>alt</code> becomes the <code>/Figure</code>'s <code>/Alt</code> in tagged mode.</li>
+      </ul>
+      <p style="color:#065f46;margin-top:8px;font-size:14px;">See the <a href="../guides/images.html">Images guide</a> for the full rules.</p>
+    </div>
+  </article>
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <span>MIT License · © 2026 Nizoka</span>
+    <ul class="footer-links" role="list">
+      <li><a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener">GitHub</a></li>
+      <li><a href="../guides/images.html">Images guide →</a></li>
+      <li><a href="./">All playgrounds →</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" integrity="sha384-BGaNxfftg+9+TtC098wxawPFVEUpKYvaiCgbB0iqAMjK/4jDdmUY+oGxrPNvnXEf" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js" integrity="sha384-PeOqKNW/piETaCg8rqKFy+Pm6KEk7e36/5YZE5XO/OaFdO+/Aw3O8qZ9qDPKVUgx" crossorigin="anonymous" defer></script>
+<script type="module">
+const $ = (id) => document.getElementById(id);
+const status = $('status');
+const codeView = $('code-view');
+const report = $('report');
+
+function setStatus(msg, kind) {
+  status.style.display = 'block';
+  status.textContent = msg;
+  if (kind === 'error') { status.style.background = '#fee2e2'; status.style.color = '#991b1b'; status.style.border = '1px solid #fca5a5'; }
+  else if (kind === 'success') { status.style.background = '#d1fae5'; status.style.color = '#065f46'; status.style.border = '1px solid #6ee7b7'; }
+  else { status.style.background = '#dbeafe'; status.style.color = '#1e3a8a'; status.style.border = '1px solid #93c5fd'; }
+}
+
+// ── The fixtures: an 8 × 8 JP2 (RGB + alpha, colr box), a 4 × 4 RGB PNG, a 2 × 2 JPEG — all inlined. ──
+const JP2_B64 = 'AAAADGpQICANCocKAAAAFGZ0eXBqcDIgAAAAAGpwMiAAAABJanAyaAAAABZpaGRyAAAACAAAAAgAAwcHAAAAAAAPY29scgEAAAAAABAAAAAcY2RlZgADAAAAAAABAAEAAAACAAIAAQAAAAAAYmpwMmP/T/9RAC8AAAAAAAgAAAAIAAAAAAAAAAAAAAAIAAAACAAAAAAAAAAAAAMHAQEHAQEHAQH/UgAMAAAAAQEABAQAAf9cAARAQP+QAAoAAAAAABEAAf+TAAAA/9k=';
+const PNG_B64 = 'iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAAP0lEQVR4AQE0AMv/AAAAgD8AgH8AgL8AgAAAP4A/P4B/P4C/P4AAAH+AP3+Af3+Av3+AAAC/gD+/gH+/gL+/gLQnE+nmsuDtAAAAAElFTkSuQmCC';
+const JPEG_B64 = '/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/wAARCAACAAIDAREAAhEAAxEA/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAwDAQACAAMAAD8AAH//2Q==';
+const fromBase64 = (b64) => { const bin = atob(b64); const out = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i); return out; };
+
+// ── Every build reports through layout.onDiagnostic; the box under the code shows what it raised. ──
+let diagnostics = [];
+const onDiagnostic = (d) => { diagnostics.push(d); };
+function renderDiagnostics() {
+  $('diagnostics').textContent = diagnostics.length === 0
+    ? 'onDiagnostic: no diagnostics for this build.'
+    : diagnostics.map(d => '[' + d.severity + '] ' + d.code + '\n' + d.message).join('\n\n');
+}
+
+const DESCRIPTIONS = {
+  jpx: 'An 8 × 8 JPEG 2000 file (JP2 container, RGB with an alpha channel declared in its cdef box) embedded as a /JPXDecode stream. The XObject omits /ColorSpace and /BitsPerComponent — the colr box carries them — and sets /SMaskInData 1; the header is %PDF-1.5. The report below shows what parseImage() read from the file.',
+  formats: 'The three formats on one page: a baseline JPEG as /DCTDecode, a PNG as /FlateDecode with a PNG predictor, and the JPEG 2000 file as /JPXDecode. Each is scaled to the same width; the aspect ratio supplies the height.',
+  pdfa2b: 'The same page claimed as PDF/A-2b with Noto Sans embedded. ISO 19005-2 §6.2.8.3 accepts JPEG 2000 with one, three or four colour channels and no opacity channel: the fixture carries an alpha channel, so the build raises PDFA_JPX_IMAGE (a warning — an error under strict) and still writes the file. A JPEG or a PNG raises nothing.',
+  pdfa1: 'No PDF is produced. PDF/A-1 is PDF 1.4, which has no JPXDecode filter (ISO 19005-1 §6.1.10): tagged: \'pdfa1b\' with a JPEG 2000 image raises PDFA1_JPX_IMAGE — a warning by default, so the file would still be written with a 1.4 header that veraPDF rejects — and under strict: true, as here, the builder throws before any byte is written. The thrown message is reported below.',
+  watermark: 'The same JPEG 2000 fixture drawn behind every page through layout.watermark.image — the codestream is embedded once as a /JPXDecode XObject and painted at 25 % opacity under the content, with the page text on top. watermark.image accepts a JP2 file or a raw codestream like an image block does, next to or instead of a text watermark.',
+  upload: 'Pick a JPEG, PNG or JPEG 2000 file; detectImageFormat() names the format, parseImage() reads its header, and the page embeds it at 400 pt wide. The code view shows the same call with the inlined PNG, so what the Copy button hands over runs anywhere.',
+};
+
+// Every view is self-contained: it inlines its image and imports only from 'pdfnative', so what the
+// Copy button hands over runs unchanged in Node, Deno, Bun or a bundler.
+// tests/docs/playgrounds.test.ts runs each one outside the browser.
+const CODE = {
+  jpx: `import { buildDocumentPDFBytes, parseImage, parseJPX, downloadBlob } from 'pdfnative';
+
+// An 8 × 8 JPEG 2000 file: JP2 container, RGB with an alpha channel (cdef box).
+const JP2_B64 = 'AAAADGpQICANCocKAAAAFGZ0eXBqcDIgAAAAAGpwMiAAAABJanAyaAAAABZpaGRyAAAACAAAAAgAAwcHAAAAAAAPY29scgEAAAAAABAAAAAcY2RlZgADAAAAAAABAAEAAAACAAIAAQAAAAAAYmpwMmP/T/9RAC8AAAAAAAgAAAAIAAAAAAAAAAAAAAAIAAAACAAAAAAAAAAAAAMHAQEHAQEHAQH/UgAMAAAAAQEABAQAAf9cAARAQP+QAAoAAAAAABEAAf+TAAAA/9k=';
+const fromBase64 = (b64) => {
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+};
+
+const image = fromBase64(JP2_B64);
+const parsed = parseImage(image);
+console.log('format /JPXDecode, channels', parsed.jpx?.channels, 'alpha', parsed.jpx?.alpha, 'colour declared', parsed.jpx?.colourSpecified);
+const info = parseJPX(image);   // the JpxInfo reader on its own: ihdr/colr/cdef boxes or the SIZ marker (1.9.0)
+console.log('parseJPX:', info.channels, 'channels,', info.bitDepth, 'bits, alpha', info.alpha, 'colour declared', info.colourSpecified);
+
+const bytes = buildDocumentPDFBytes(
+  {
+    title: 'JPEG 2000 pass-through',
+    blocks: [
+      { type: 'heading', text: 'A JPEG 2000 image, passed through', level: 1 },
+      { type: 'image', data: image, width: 160, height: 160, alt: 'An 8 by 8 JPEG 2000 test image with an opacity channel' },
+      { type: 'paragraph', text: 'The codestream is embedded as written: /JPXDecode, /SMaskInData 1, no /ColorSpace of its own — the colr box carries it. The header is %PDF-1.5.' },
+    ],
+  },
+  { onDiagnostic: (d) => console.warn(d.code, d.message) },
+);
+downloadBlob(bytes, 'image-jpx.pdf');`,
+
+  formats: `import { buildDocumentPDFBytes, downloadBlob } from 'pdfnative';
+
+const JP2_B64 = 'AAAADGpQICANCocKAAAAFGZ0eXBqcDIgAAAAAGpwMiAAAABJanAyaAAAABZpaGRyAAAACAAAAAgAAwcHAAAAAAAPY29scgEAAAAAABAAAAAcY2RlZgADAAAAAAABAAEAAAACAAIAAQAAAAAAYmpwMmP/T/9RAC8AAAAAAAgAAAAIAAAAAAAAAAAAAAAIAAAACAAAAAAAAAAAAAMHAQEHAQEHAQH/UgAMAAAAAQEABAQAAf9cAARAQP+QAAoAAAAAABEAAf+TAAAA/9k=';
+const PNG_B64 = 'iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAAP0lEQVR4AQE0AMv/AAAAgD8AgH8AgL8AgAAAP4A/P4B/P4C/P4AAAH+AP3+Af3+Av3+AAAC/gD+/gH+/gL+/gLQnE+nmsuDtAAAAAElFTkSuQmCC';
+const JPEG_B64 = '/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/wAARCAACAAIDAREAAhEAAxEA/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAwDAQACAAMAAD8AAH//2Q==';
+const fromBase64 = (b64) => {
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+};
+
+const bytes = buildDocumentPDFBytes(
+  {
+    title: 'Three image formats',
+    blocks: [
+      { type: 'heading', text: 'JPEG, PNG and JPEG 2000', level: 1 },
+      { type: 'paragraph', text: 'JPEG is written as /DCTDecode: the file is the stream.' },
+      { type: 'image', data: fromBase64(JPEG_B64), width: 120, alt: 'A 2 by 2 baseline JPEG' },
+      { type: 'paragraph', text: 'PNG is written as /FlateDecode with a PNG predictor; an alpha channel would become an /SMask image.' },
+      { type: 'image', data: fromBase64(PNG_B64), width: 120, alt: 'A 4 by 4 RGB PNG' },
+      { type: 'paragraph', text: 'JPEG 2000 is written as /JPXDecode; colour and opacity come from the codestream.' },
+      { type: 'image', data: fromBase64(JP2_B64), width: 120, alt: 'An 8 by 8 JPEG 2000 with an opacity channel' },
+    ],
+  },
+  { onDiagnostic: (d) => console.warn(d.code, d.message) },
+);
+downloadBlob(bytes, 'image-formats.pdf');`,
+
+  pdfa2b: `import { registerFonts, loadFontData, buildDocumentPDFBytes, downloadBlob } from 'pdfnative';
+
+registerFonts({ latin: () => import('pdfnative/fonts/noto-sans-data.js') });
+const fontData = await loadFontData('latin'); // PDF/A needs every font embedded
+
+const JP2_B64 = 'AAAADGpQICANCocKAAAAFGZ0eXBqcDIgAAAAAGpwMiAAAABJanAyaAAAABZpaGRyAAAACAAAAAgAAwcHAAAAAAAPY29scgEAAAAAABAAAAAcY2RlZgADAAAAAAABAAEAAAACAAIAAQAAAAAAYmpwMmP/T/9RAC8AAAAAAAgAAAAIAAAAAAAAAAAAAAAIAAAACAAAAAAAAAAAAAMHAQEHAQEHAQH/UgAMAAAAAQEABAQAAf9cAARAQP+QAAoAAAAAABEAAf+TAAAA/9k=';
+const PNG_B64 = 'iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAAP0lEQVR4AQE0AMv/AAAAgD8AgH8AgL8AgAAAP4A/P4B/P4C/P4AAAH+AP3+Af3+Av3+AAAC/gD+/gH+/gL+/gLQnE+nmsuDtAAAAAElFTkSuQmCC';
+const JPEG_B64 = '/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/wAARCAACAAIDAREAAhEAAxEA/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAwDAQACAAMAAD8AAH//2Q==';
+const fromBase64 = (b64) => {
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+};
+
+// PDF/A-2 accepts JPEG 2000 with 1, 3 or 4 colour channels and no opacity channel (ISO 19005-2 §6.2.8.3).
+// This fixture has an alpha channel: PDFA_JPX_IMAGE is raised (a warning; an error under strict) and the file is still written.
+const bytes = buildDocumentPDFBytes(
+  {
+    title: 'Three image formats, PDF/A-2b',
+    fontEntries: [{ fontData, fontRef: '/F3', lang: 'latin' }],
+    blocks: [
+      { type: 'heading', text: 'JPEG, PNG and JPEG 2000 under PDF/A-2b', level: 1 },
+      { type: 'image', data: fromBase64(JPEG_B64), width: 120, alt: 'A 2 by 2 baseline JPEG' },
+      { type: 'image', data: fromBase64(PNG_B64), width: 120, alt: 'A 4 by 4 RGB PNG' },
+      { type: 'image', data: fromBase64(JP2_B64), width: 120, alt: 'An 8 by 8 JPEG 2000 with an opacity channel' },
+    ],
+  },
+  { tagged: 'pdfa2b', onDiagnostic: (d) => console.warn(d.code, d.message) },
+);
+downloadBlob(bytes, 'image-formats-pdfa2b.pdf');`,
+
+  pdfa1: `import { registerFonts, loadFontData, buildDocumentPDFBytes } from 'pdfnative';
+
+registerFonts({ latin: () => import('pdfnative/fonts/noto-sans-data.js') });
+const fontData = await loadFontData('latin');
+
+const JP2_B64 = 'AAAADGpQICANCocKAAAAFGZ0eXBqcDIgAAAAAGpwMiAAAABJanAyaAAAABZpaGRyAAAACAAAAAgAAwcHAAAAAAAPY29scgEAAAAAABAAAAAcY2RlZgADAAAAAAABAAEAAAACAAIAAQAAAAAAYmpwMmP/T/9RAC8AAAAAAAgAAAAIAAAAAAAAAAAAAAAIAAAACAAAAAAAAAAAAAMHAQEHAQEHAQH/UgAMAAAAAQEABAQAAf9cAARAQP+QAAoAAAAAABEAAf+TAAAA/9k=';
+const fromBase64 = (b64) => {
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+};
+
+// PDF/A-1 is PDF 1.4: no JPXDecode filter (ISO 19005-1 §6.1.10). PDFA1_JPX_IMAGE is a warning by default — the file is
+// written with a 1.4 header veraPDF rejects — and an error under strict, where the builder refuses before writing a byte.
+try {
+  buildDocumentPDFBytes(
+    {
+      title: 'JPEG 2000 under PDF/A-1b',
+      fontEntries: [{ fontData, fontRef: '/F3', lang: 'latin' }],
+      blocks: [{ type: 'image', data: fromBase64(JP2_B64), width: 120, alt: 'A JPEG 2000 image' }],
+    },
+    { tagged: 'pdfa1b', strict: true, onDiagnostic: (d) => console.warn(d.code, d.message) },
+  );
+  console.error("tagged: 'pdfa1b' + JPEG 2000 → built without an error (unexpected — please report it)");
+} catch (err) {
+  console.error("tagged: 'pdfa1b' + JPEG 2000 →", err.message);
+}`,
+
+  watermark: `import { buildDocumentPDFBytes, downloadBlob } from 'pdfnative';
+
+// The 8 × 8 JPEG 2000 fixture again (JP2 container, RGB + alpha).
+const JP2_B64 = 'AAAADGpQICANCocKAAAAFGZ0eXBqcDIgAAAAAGpwMiAAAABJanAyaAAAABZpaGRyAAAACAAAAAgAAwcHAAAAAAAPY29scgEAAAAAABAAAAAcY2RlZgADAAAAAAABAAEAAAACAAIAAQAAAAAAYmpwMmP/T/9RAC8AAAAAAAgAAAAIAAAAAAAAAAAAAAAIAAAACAAAAAAAAAAAAAMHAQEHAQEHAQH/UgAMAAAAAQEABAQAAf9cAARAQP+QAAoAAAAAABEAAf+TAAAA/9k=';
+const fromBase64 = (b64) => {
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+};
+
+const bytes = buildDocumentPDFBytes(
+  {
+    title: 'JPEG 2000 watermark',
+    blocks: [
+      { type: 'heading', text: 'A JPEG 2000 watermark behind the page', level: 1 },
+      { type: 'paragraph', text: 'The image is embedded once as a /JPXDecode XObject and drawn under the content of every page.' },
+      { type: 'pageBreak' },
+      { type: 'heading', text: 'Second page', level: 1 },
+      { type: 'paragraph', text: 'Same watermark, same XObject.' },
+    ],
+  },
+  {
+    watermark: { image: { data: fromBase64(JP2_B64), width: 300, height: 300, opacity: 0.25 }, position: 'background' },   // JP2 or raw codestream, as an image block
+    onDiagnostic: (d) => console.warn(d.code, d.message),
+  },
+);
+downloadBlob(bytes, 'image-watermark.pdf');`,
+
+  upload: `import { buildDocumentPDFBytes, detectImageFormat, parseImage, downloadBlob } from 'pdfnative';
+
+// In the browser this page reads the file you picked; here the inlined PNG stands in for it.
+const PNG_B64 = 'iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAAP0lEQVR4AQE0AMv/AAAAgD8AgH8AgL8AgAAAP4A/P4B/P4C/P4AAAH+AP3+Af3+Av3+AAAC/gD+/gH+/gL+/gLQnE+nmsuDtAAAAAElFTkSuQmCC';
+const fromBase64 = (b64) => {
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+};
+const image = fromBase64(PNG_B64);
+
+const format = detectImageFormat(image); // 'jpeg' | 'png' | 'jpx' | null
+if (format === null) throw new Error('not a JPEG, PNG or JPEG 2000 file');
+const parsed = parseImage(image);
+console.log(format, parsed.width + ' × ' + parsed.height, parsed.colorSpace, parsed.filter);
+
+const bytes = buildDocumentPDFBytes(
+  {
+    title: 'Your image',
+    blocks: [
+      { type: 'heading', text: 'Your image, ' + format.toUpperCase(), level: 1 },
+      { type: 'image', data: image, width: 400, alt: 'The image you picked' },
+    ],
+  },
+  { onDiagnostic: (d) => console.warn(d.code, d.message) },
+);
+downloadBlob(bytes, 'image-' + format + '.pdf');`,
+};
+
+function applyPreset(id) {
+  $('desc').textContent = DESCRIPTIONS[id];
+  codeView.textContent = CODE[id];
+  if (window.Prism) window.Prism.highlightElement(codeView);
+  report.style.display = 'none';
+}
+
+const CDN_URLS = ['https://esm.sh/pdfnative@1.9.0', 'https://cdn.jsdelivr.net/npm/pdfnative@1.9.0/+esm'];
+let pdfMod = null;
+async function loadPdfnative() {
+  if (pdfMod) return pdfMod;
+  let lastErr = null;
+  for (const url of CDN_URLS) {
+    try {
+      const m = await import(url);
+      const mod = (typeof m.buildDocumentPDFBytes === 'function') ? m
+                : (m.default && typeof m.default.buildDocumentPDFBytes === 'function') ? m.default
+                : Object.assign({}, m, m.default || {});
+      if (typeof mod.buildDocumentPDFBytes === 'function') { pdfMod = mod; return mod; }
+    } catch (e) { lastErr = e; }
+  }
+  throw new Error('Could not load pdfnative from CDN. ' + (lastErr ? lastErr.message : ''));
+}
+
+async function latinEntries(m) {
+  m.registerFonts({ latin: () => import('https://esm.sh/pdfnative@1.9.0/fonts/noto-sans-data.js') });
+  const fontData = await m.loadFontData('latin');
+  return [{ fontData, fontRef: '/F3', lang: 'latin' }];
+}
+
+function describeImage(m, image) {
+  const parsed = m.parseImage(image);
+  const lines = ['parseImage: ' + parsed.width + ' × ' + parsed.height + ', ' + parsed.colorSpace + ', ' + parsed.bitsPerComponent + ' bits, ' + parsed.filter];
+  if (parsed.jpx) lines.push('JPEG 2000: ' + parsed.jpx.channels + ' channel(s), ' + parsed.jpx.bitDepth + '-bit, alpha ' + parsed.jpx.alpha + ', colour declared ' + parsed.jpx.colourSpecified);
+  if (parsed.smask) lines.push('PNG alpha → /SMask ' + parsed.smaskWidth + ' × ' + parsed.smaskHeight);
+  return lines.join('\n');
+}
+
+const BUILDERS = {
+  jpx: (m) => {
+    const image = fromBase64(JP2_B64);
+    const bytes = m.buildDocumentPDFBytes(
+      { title: 'JPEG 2000 pass-through', blocks: [
+        { type: 'heading', text: 'A JPEG 2000 image, passed through', level: 1 },
+        { type: 'image', data: image, width: 160, height: 160, alt: 'An 8 by 8 JPEG 2000 test image with an opacity channel' },
+        { type: 'paragraph', text: 'The codestream is embedded as written: /JPXDecode, /SMaskInData 1, no /ColorSpace of its own — the colr box carries it. The header is %PDF-1.5.' },
+      ] },
+      { onDiagnostic },
+    );
+    return { bytes, report: describeImage(m, image) + '\nheader: ' + String.fromCharCode(...bytes.subarray(0, 8)) };
+  },
+  formats: (m) => m.buildDocumentPDFBytes(
+    { title: 'Three image formats', blocks: [
+      { type: 'heading', text: 'JPEG, PNG and JPEG 2000', level: 1 },
+      { type: 'paragraph', text: 'JPEG is written as /DCTDecode: the file is the stream.' },
+      { type: 'image', data: fromBase64(JPEG_B64), width: 120, alt: 'A 2 by 2 baseline JPEG' },
+      { type: 'paragraph', text: 'PNG is written as /FlateDecode with a PNG predictor; an alpha channel would become an /SMask image.' },
+      { type: 'image', data: fromBase64(PNG_B64), width: 120, alt: 'A 4 by 4 RGB PNG' },
+      { type: 'paragraph', text: 'JPEG 2000 is written as /JPXDecode; colour and opacity come from the codestream.' },
+      { type: 'image', data: fromBase64(JP2_B64), width: 120, alt: 'An 8 by 8 JPEG 2000 with an opacity channel' },
+    ] },
+    { onDiagnostic },
+  ),
+  pdfa2b: async (m) => m.buildDocumentPDFBytes(
+    { title: 'Three image formats, PDF/A-2b', fontEntries: await latinEntries(m), blocks: [
+      { type: 'heading', text: 'JPEG, PNG and JPEG 2000 under PDF/A-2b', level: 1 },
+      { type: 'image', data: fromBase64(JPEG_B64), width: 120, alt: 'A 2 by 2 baseline JPEG' },
+      { type: 'image', data: fromBase64(PNG_B64), width: 120, alt: 'A 4 by 4 RGB PNG' },
+      { type: 'image', data: fromBase64(JP2_B64), width: 120, alt: 'An 8 by 8 JPEG 2000 with an opacity channel' },
+    ] },
+    { tagged: 'pdfa2b', onDiagnostic },
+  ),
+  // No PDF: the refusal is reported.
+  pdfa1: async (m) => {
+    try {
+      m.buildDocumentPDFBytes(
+        { title: 'JPEG 2000 under PDF/A-1b', fontEntries: await latinEntries(m), blocks: [{ type: 'image', data: fromBase64(JP2_B64), width: 120, alt: 'A JPEG 2000 image' }] },
+        { tagged: 'pdfa1b', strict: true, onDiagnostic },
+      );
+      return { report: "tagged: 'pdfa1b' + JPEG 2000 → built without an error (unexpected — please report it)" };
+    } catch (err) {
+      return { report: "buildDocumentPDFBytes() under strict: true refuses before writing a byte:\n\ntagged: 'pdfa1b' + JPEG 2000\n  → Error: " + (err && err.message ? err.message : err) };
+    }
+  },
+  watermark: (m) => m.buildDocumentPDFBytes(
+    { title: 'JPEG 2000 watermark', blocks: [
+      { type: 'heading', text: 'A JPEG 2000 watermark behind the page', level: 1 },
+      { type: 'paragraph', text: 'The image is embedded once as a /JPXDecode XObject and drawn under the content of every page.' },
+      { type: 'pageBreak' },
+      { type: 'heading', text: 'Second page', level: 1 },
+      { type: 'paragraph', text: 'Same watermark, same XObject.' },
+    ] },
+    { watermark: { image: { data: fromBase64(JP2_B64), width: 300, height: 300, opacity: 0.25 }, position: 'background' }, onDiagnostic },
+  ),
+  upload: async (m) => {
+    const file = $('file').files && $('file').files[0];
+    if (!file) throw new Error('Pick a JPEG, PNG or JPEG 2000 file first.');
+    const image = new Uint8Array(await file.arrayBuffer());
+    const format = m.detectImageFormat(image);
+    if (format === null) throw new Error(file.name + ' is not a JPEG, PNG or JPEG 2000 file.');
+    const bytes = m.buildDocumentPDFBytes(
+      { title: 'Your image', blocks: [
+        { type: 'heading', text: 'Your image, ' + format.toUpperCase(), level: 1 },
+        { type: 'image', data: image, width: 400, alt: 'The image you picked' },
+      ] },
+      { onDiagnostic },
+    );
+    return { bytes, report: file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)\n' + describeImage(m, image), note: 'Embedded ' + file.name + ' as ' + format.toUpperCase() + '.' };
+  },
+};
+
+async function generate() {
+  const id = $('preset').value;
+  const t0 = performance.now();
+  report.style.display = 'none';
+  diagnostics = [];
+  try {
+    setStatus('Loading pdfnative from CDN…', 'info');
+    const mod = await loadPdfnative();
+    setStatus(id === 'pdfa1' ? 'Trying the PDF/A-1b build…' : 'Generating PDF…', 'info');
+    const result = await BUILDERS[id](mod);
+    renderDiagnostics();
+    const ms = (performance.now() - t0).toFixed(0);
+    const bytes = result instanceof Uint8Array ? result : result.bytes;
+    if (result && result.report !== undefined) {
+      report.style.display = 'block';
+      report.textContent = result.report;
+    }
+    if (!bytes) {
+      $('timer').textContent = ms + ' ms';
+      setStatus('PDF/A-1b refused the JPEG 2000 image, as expected — the thrown message is below. No PDF was produced.', 'success');
+      return;
+    }
+    mod.downloadBlob(bytes, 'image-' + id + '.pdf');
+    $('timer').textContent = (bytes.length / 1024).toFixed(1) + ' KB · ' + ms + ' ms';
+    setStatus('PDF generated and downloaded.' + (result.note ? ' ' + result.note : '')
+      + (diagnostics.length ? ' ' + diagnostics.length + ' diagnostic(s) raised, see below.' : ''), 'success');
+  } catch (err) {
+    renderDiagnostics();
+    setStatus('Error: ' + (err.message || err), 'error');
+    console.error(err);
+  }
+}
+
+$('preset').addEventListener('change', e => applyPreset(e.target.value));
+$('generate').addEventListener('click', generate);
+$('copy').addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText(codeView.textContent);
+    const btn = $('copy'); const old = btn.textContent;
+    btn.textContent = 'Copied!'; setTimeout(() => { btn.textContent = old; }, 1500);
+  } catch (e) { alert('Clipboard write failed: ' + (e && e.message ? e.message : e)); }
+});
+applyPreset('jpx');
+
+const themeBtn = document.querySelector('.theme-toggle');
+if (themeBtn) {
+  const stored = localStorage.getItem('theme');
+  if (stored) document.documentElement.setAttribute('data-theme', stored);
+  themeBtn.addEventListener('click', () => {
+    const cur = document.documentElement.getAttribute('data-theme') === 'dark' ? '' : 'dark';
+    if (cur) document.documentElement.setAttribute('data-theme', cur);
+    else     document.documentElement.removeAttribute('data-theme');
+    localStorage.setItem('theme', cur);
+  });
+}
+const hb = document.querySelector('.nav-hamburger');
+if (hb) hb.addEventListener('click', () => {
+  const nav = document.querySelector('.nav-links');
+  if (nav) nav.classList.toggle('open');
+  hb.setAttribute('aria-expanded', String(nav && nav.classList.contains('open')));
+});
+</script>
+</body>
+</html>

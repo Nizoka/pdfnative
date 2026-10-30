@@ -70,17 +70,30 @@ export type IndicRephMode =
     | 'implicit'
     /** Only Ra + virama + ZWJ becomes a reph (Telugu, Sinhala). */
     | 'explicit'
+    /**
+     * The reph is a character of its own — the dot reph U+0D4E — written
+     * before the consonant it sits on (Malayalam). @since 1.9.0
+     */
+    | 'logical'
     /** The script has no reph. */
     | 'none';
 
 /** Where the reph glyph lands once the syllable is shaped. */
 export type IndicRephPosition =
-    /** After the base and its above-base signs, before post-base signs (Devanagari). */
+    /** After the base and its above-base signs, before post-base signs (Devanagari, Gujarati). */
     | 'beforePost'
     /** After the subjoined consonants, before every vowel sign (Bengali). */
     | 'afterSub'
-    /** After every vowel sign, before the syllable modifiers. */
-    | 'afterPost';
+    /** After every vowel sign, before the syllable modifiers (Telugu, Kannada, Sinhala). */
+    | 'afterPost'
+    /** Right after the base, before the subjoined consonants (Gurmukhi). @since 1.9.0 */
+    | 'beforeSub'
+    /**
+     * Right after the base consonant, before everything that follows it
+     * (Odia, Malayalam). The engine has no separate above-base consonant
+     * position, so this is the same slot as `beforeSub`. @since 1.9.0
+     */
+    | 'afterMain';
 
 /**
  * The per-script facts the engine needs. Everything else — which glyphs
@@ -111,11 +124,22 @@ export interface IndicScriptConfig {
     readonly splitMatras: Readonly<Record<number, readonly number[]>>;
     /** Consonants join into a conjunct only across virama + ZWJ (Sinhala). */
     readonly conjunctsNeedZwj?: boolean;
+    /**
+     * Vowel signs that sit right after the base, before its subjoined
+     * consonants (HarfBuzz `POS_BEFORE_SUB`, `gen-indic-table.py`): Kannada
+     * and Telugu place every above and below sign and the short right signs
+     * there, so the font's `psts` ligature of consonant + sign (ಕಿ) still
+     * forms when the consonant carries a subscript (ಕ್ಕಿ). Called with the
+     * sign's code point; absent for the scripts that keep the signs after
+     * the subjoined consonants.
+     * @since 1.9.0
+     */
+    readonly matraBeforeSub?: (cp: number) => boolean;
 }
 
 // ── Character classes ────────────────────────────────────────────────
 
-type Cat = 'C' | 'V' | 'H' | 'N' | 'ZWJ' | 'ZWNJ' | 'MPre' | 'MAbv' | 'MBlw' | 'MPst' | 'SM' | 'O';
+type Cat = 'C' | 'V' | 'H' | 'N' | 'R' | 'ZWJ' | 'ZWNJ' | 'MPre' | 'MAbv' | 'MBlw' | 'MPst' | 'SM' | 'O';
 
 function isConsonant(cp: number, cfg: IndicScriptConfig): boolean {
     for (const [a, b] of cfg.consonants) if (cp >= a && cp <= b) return true;
@@ -126,11 +150,19 @@ function isConsonant(cp: number, cfg: IndicScriptConfig): boolean {
 function classify(cp: number, cfg: IndicScriptConfig): Cat {
     if (cp === 0x200D) return 'ZWJ';
     if (cp === 0x200C) return 'ZWNJ';
+    // A consonant the script config names is one whatever its USE category:
+    // the Malayalam chillus (U+0D7A–U+0D7F) are Consonant_Dead to the UCD.
+    if (isConsonant(cp, cfg)) return 'C';
     switch (useCategory(cp)) {
-        case 'B': return isConsonant(cp, cfg) ? 'C' : 'V';
+        case 'B': return 'V';
         case 'GB': return 'V';
         case 'H': case 'HVM': return 'H';
         case 'CMBlw': case 'CMAbv': return 'N';
+        // A medial consonant (Gurmukhi yakash U+0A75) attaches to the
+        // consonant before it exactly as a nukta does.
+        case 'MAbv': case 'MBlw': case 'MPre': case 'MPst': return 'N';
+        // The dot reph (U+0D4E): a reph written as a character of its own.
+        case 'R': return 'R';
         case 'VPre': return 'MPre';
         case 'VAbv': return 'MAbv';
         case 'VBlw': return 'MBlw';
@@ -163,8 +195,11 @@ export interface IndicSyllable {
 /**
  * Split code points into Indic syllables:
  *
- *   consonant_syllable := (C N? (H ZWJ? | ZWJ? H))* C N? H? ZWNJ? matras* modifiers*
+ *   consonant_syllable := R? (C N? (H ZWJ? | ZWJ? H))* C N? H? ZWNJ? matras* modifiers*
  *   vowel_syllable     := V N? (H C N?)* H? matras* modifiers*
+ *
+ * `R` is the dot reph of a script with `rephMode: 'logical'` (Malayalam);
+ * elsewhere it is a stray sign.
  *
  * A virama followed by ZWNJ, or a virama not followed by a consonant, closes
  * the syllable. With `conjunctsNeedZwj` a virama continues the syllable only
@@ -178,7 +213,8 @@ export function splitIndicSyllables(cps: readonly number[], cfg: IndicScriptConf
     let i = 0;
     while (i < cps.length) {
         const start = i;
-        const c = cats[i];
+        let c = cats[i];
+        if (c === 'R' && cfg.rephMode === 'logical' && cats[i + 1] === 'C') { i++; c = cats[i]; }
         if (c !== 'C' && c !== 'V') {
             // A stray sign is its own syllable, shaped over a dotted circle
             // by a full engine; here it rides on the previous glyph.
@@ -197,7 +233,11 @@ export function splitIndicSyllables(cps: readonly number[], cfg: IndicScriptConf
             if (cats[j] === 'ZWNJ') { i = j + 1; break; }          // explicit halant, no conjunct
             const viaZwj = cats[j] === 'ZWJ';
             if (viaZwj) j++;
-            if (cats[j] !== 'C' || (cfg.conjunctsNeedZwj && !viaZwj)) { i = j - (viaZwj ? 1 : 0); break; } // dead consonant closes the syllable
+            // A dead consonant closes the syllable. A ZWJ after that virama
+            // stays inside it (HarfBuzz `halant_group = z? H (ZWJ N?)?`): it
+            // asks the font for the half form or, in Malayalam, the chillu
+            // that `akhn` builds from C + virama + ZWJ (1.9.0, C19).
+            if (cats[j] !== 'C' || (cfg.conjunctsNeedZwj && !viaZwj)) { i = j; break; }
             i = j + 1;
             if (cats[i] === 'N') i++;
         }
@@ -542,9 +582,13 @@ function applyAt(items: Item[], li: number, i: number, mask: number, layout: Lay
     if (lk.t === 2) {
         const seq = lk.m[it.gid];
         if (seq === undefined) return i;
+        // Every piece of a multiple substitution names the source code
+        // points (Devanagari ई is drawn as इ + a hook by Noto): a piece left
+        // unnamed would be a glyph without a Unicode value under level U, and
+        // the repeated name makes the run carry its text as /ActualText.
         const parts: Item[] = seq.map((g, k) => ({
             gid: g, cat: it.cat, pos: it.pos, mask: it.mask,
-            cps: k === 0 ? it.cps : [], reph: k === 0 && it.reph, pref: k === 0 && it.pref,
+            cps: [...it.cps], reph: k === 0 && it.reph, pref: k === 0 && it.pref,
         }));
         items.splice(i, 1, ...parts);
         return i + parts.length - 1;
@@ -565,9 +609,17 @@ function applyAt(items: Item[], li: number, i: number, mask: number, layout: Lay
             }
             if (!ok) continue;
             const cps = [...it.cps];
-            for (const m of matched) cps.push(...items[m].cps);
+            let swallowedBase = false;
+            for (const m of matched) {
+                cps.push(...items[m].cps);
+                if (items[m].pos === POS_BASE) swallowedBase = true;
+            }
             it.gid = lig[0];
             it.cps = cps;
+            // A ligature that takes the base in (a half form + the base, the
+            // dot-reph syllable's conjunct) is the base from now on: the reph
+            // and the signs position themselves against it.
+            if (swallowedBase) it.pos = POS_BASE;
             for (let k = matched.length - 1; k >= 0; k--) items.splice(matched[k], 1);
             return i;
         }
@@ -657,7 +709,14 @@ function applyPlan(items: Item[], layout: Layout, plan: readonly PlanStep[]): vo
     for (let k = 0; k < plan.length; k++) {
         const step = plan[k];
         const before = trace ? items.map(it => it.gid).join(' ') : '';
+        // `pref` substitutes the pre-base-reordering Ra: whatever glyph it
+        // produces moves in front of the base at final reordering (Malayalam
+        // ്ര, Khmer-style scripts). Remember the items as they were.
+        const prior = step.tag === 'pref' ? new Map<Item, number>(items.map(it => [it, it.gid])) : null;
         applyLookup(items, step.li, step.mask, layout);
+        if (prior !== null) {
+            for (const it of items) if (prior.get(it) !== it.gid) it.pref = true;
+        }
         if (trace) {
             const after = items.map(it => it.gid).join(' ');
             if (after !== before) trace(`${step.tag} lookup ${step.li} (t${layout.lookups[step.li]?.t ?? 0}): ${before} -> ${after}`);
@@ -768,16 +827,27 @@ function shapeWithLayout(str: string, fontData: FontData, cfg: IndicScriptConfig
     return attachMarks(out, fontData);
 }
 
-/** Items of one syllable, two-part vowel signs decomposed. */
+/**
+ * Items of one syllable, two-part vowel signs decomposed. Each part names
+ * its own code point of the canonical decomposition (`splitMatras` are the
+ * UCD's NFD mappings: ୋ → U+0B47 U+0B3E), so every glyph has a Unicode
+ * value in the ToUnicode CMap — one glyph id standing for several
+ * precomposed signs would otherwise map to the first one seen, and the
+ * second part had none at all (`PDFA_GLYPH_WITHOUT_UNICODE` under level U).
+ * Extracted text is the NFD form, which normalises back to the source.
+ */
 function buildItems(cps: readonly number[], cfg: IndicScriptConfig, gidOf: (cp: number) => number): Item[] {
     const items: Item[] = [];
     for (const cp of cps) {
         const parts = cfg.splitMatras[cp];
         if (parts && parts.every(p => gidOf(p) > 0)) {
-            parts.forEach((p, k) => items.push({
-                gid: gidOf(p), cat: k === 0 ? 'MPre' : 'MPst', pos: 0, mask: ALL_FEATURES,
-                cps: k === 0 ? [cp] : [], reph: false, pref: false,
-            }));
+            parts.forEach((p, k) => {
+                const own = classify(p, cfg);
+                items.push({
+                    gid: gidOf(p), cat: isMatra(own) ? own : (k === 0 ? 'MPre' : 'MPst'), pos: 0, mask: ALL_FEATURES,
+                    cps: [p], reph: false, pref: false,
+                });
+            });
             continue;
         }
         items.push({ gid: gidOf(cp), cat: classify(cp, cfg), pos: 0, mask: ALL_FEATURES, cps: [cp], reph: false, pref: false });
@@ -789,7 +859,11 @@ function shapeSyllable(items: Item[], cfg: IndicScriptConfig, layout: Layout, vi
     // ── Reph ─────────────────────────────────────────────────────────
     let firstC = 0;
     let hasReph = false;
-    if (cfg.rephMode !== 'none' && items.length >= 3 && items[0].cat === 'C' && items[0].cps[0] === cfg.ra && items[1].cat === 'H') {
+    if (cfg.rephMode === 'logical' && items.length >= 2 && items[0].cat === 'R' && items[1].cat === 'C') {
+        // The dot reph is already the reph glyph: no `rphf` needed, it only
+        // moves to the script's reph position once the syllable is shaped.
+        hasReph = true; firstC = 1;
+    } else if (cfg.rephMode !== 'none' && cfg.rephMode !== 'logical' && items.length >= 3 && items[0].cat === 'C' && items[0].cps[0] === cfg.ra && items[1].cat === 'H') {
         const ra = items[0].gid;
         let forms = layout.rephForms.get(ra);
         if (forms === undefined) {
@@ -809,6 +883,14 @@ function shapeSyllable(items: Item[], cfg: IndicScriptConfig, layout: Layout, vi
     const consonants: number[] = [];
     for (let i = firstC; i < items.length; i++) if (items[i].cat === 'C' || items[i].cat === 'V') consonants.push(i);
     let base = consonants.length > 0 ? consonants[0] : -1;
+    // `C H ZWJ` at the end of the syllable requests the explicit half form:
+    // HarfBuzz stops its base search there and leaves the syllable baseless,
+    // so every consonant takes the pre-base masks (half, and akhn through
+    // GENERAL, which is how Noto Sans Malayalam draws a legacy chillu). C19.
+    const n = items.length;
+    const lastC = consonants.length > 0 ? consonants[consonants.length - 1] : -1;
+    const explicitHalf = lastC >= 0 && n >= 3 && items[n - 1].cat === 'ZWJ' && items[n - 2].cat === 'H'
+        && (lastC === n - 3 || (n >= 4 && items[n - 3].cat === 'N' && lastC === n - 4)); // a nukta may sit between
     const subjoinable = (i: number): boolean => {
         const gid = items[i].gid;
         const memo = layout.subjoinable.get(gid);
@@ -823,9 +905,18 @@ function shapeSyllable(items: Item[], cfg: IndicScriptConfig, layout: Layout, vi
         layout.subjoinable.set(gid, answer);
         return answer;
     };
-    for (let k = consonants.length - 1; k >= 0; k--) {
+    if (explicitHalf) base = n;
+    for (let k = explicitHalf ? -1 : consonants.length - 1; k >= 0; k--) {
         const i = consonants[k];
         if (k === 0 || items[i].cat === 'V') { base = i; break; }
+        // A ZWJ after the halant stops the search and requests the explicit
+        // half form of what precedes: this consonant is the base (HarfBuzz;
+        // a ZWJ before the halant asks for a subjoined form and the search
+        // goes on).
+        // (Sinhala joins only through virama + ZWJ, so there the joiner is
+        // the conjunct request itself and the search goes on — HarfBuzz's
+        // BASE_POS_LAST_SINHALA branch.)
+        if (!cfg.conjunctsNeedZwj && items[i - 1].cat === 'ZWJ' && i >= 2 && items[i - 2].cat === 'H') { base = i; break; }
         const prev = items[i - 1].cat === 'ZWJ' ? i - 2 : i - 1;
         if (prev >= 0 && items[prev].cat === 'H' && subjoinable(i)) continue;
         base = i;
@@ -871,6 +962,23 @@ function shapeSyllable(items: Item[], cfg: IndicScriptConfig, layout: Layout, vi
     }
     // Initial reordering: pre-base vowel signs move to the front, after the reph pair.
     stableSortByPos(items, [POS_PRE_M]);
+    // Kannada and Telugu: above, below and short right signs sit right after
+    // the base, before its subjoined consonants (HarfBuzz POS_BEFORE_SUB),
+    // so `psts` can ligate base + sign while `blwf` still sees H + C.
+    if (cfg.matraBeforeSub) {
+        const b = items.findIndex(it => it.pos === POS_BASE);
+        if (b >= 0) {
+            const early: Item[] = [];
+            for (let i = items.length - 1; i > b; i--) {
+                const it = items[i];
+                if ((it.pos === POS_ABV_M || it.pos === POS_BLW_M || it.pos === POS_PST_M) && it.cps.length > 0 && cfg.matraBeforeSub(it.cps[0])) {
+                    early.unshift(it);
+                    items.splice(i, 1);
+                }
+            }
+            if (early.length > 0) items.splice(b + 1, 0, ...early);
+        }
+    }
     if (layout.trace) layout.trace(`syllable base=${base} reph=${hasReph}: ${items.map(it => `${it.gid}@${it.pos}/${it.mask.toString(16)}`).join(' ')}`);
 
     // ── Basic features, one stage each ───────────────────────────────
@@ -908,7 +1016,14 @@ function finalReorder(items: Item[], cfg: IndicScriptConfig, hasReph: boolean): 
             b = baseIdx();
             let at = 0;
             for (let i = b - 1; i >= 0; i--) {
-                if (items[i].cat === 'H' && items[i].pos !== POS_REPH) { at = i + 1; if (items[at] && (items[at].cat === 'ZWJ' || items[at].cat === 'ZWNJ')) at++; break; }
+                if (items[i].cat !== 'H' || items[i].pos === POS_REPH) continue;
+                // A halant followed by ZWJ requested a half form: the sign
+                // is not placed after it, the search goes on (HarfBuzz);
+                // after a halant + ZWNJ it lands past the joiner.
+                if (items[i + 1] && items[i + 1].cat === 'ZWJ') continue;
+                at = i + 1;
+                if (items[at] && items[at].cat === 'ZWNJ') at++;
+                break;
             }
             items.splice(at, 0, ...pre);
         }
@@ -926,6 +1041,8 @@ function finalReorder(items: Item[], cfg: IndicScriptConfig, hasReph: boolean): 
                 at = b2 + 1;
                 if (cfg.rephPosition === 'afterSub') {
                     while (at < items.length && items[at].pos === POS_AFTER_BASE) at++;
+                } else if (cfg.rephPosition === 'beforeSub' || cfg.rephPosition === 'afterMain') {
+                    // Right after the base: before its subjoined consonants and signs.
                 } else if (cfg.rephPosition === 'beforePost') {
                     while (at < items.length && items[at].pos !== POS_PST_M && items[at].pos !== POS_SM) at++;
                 } else {

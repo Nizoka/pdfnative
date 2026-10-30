@@ -10,11 +10,11 @@
 
 import {
     derDecode, derSequence, derOid, derNull, derOctetString, derInteger,
-    derContextExplicit, derRawBytes, asn1OidBytes, asn1Time,
+    derContextExplicit, derRawBytes, asn1OidBytes, asn1Integer, asn1Time,
     oidEquals,
     ASN1_SEQUENCE, ASN1_GENERALIZED_TIME,
 } from './asn1.js';
-import { sha1 } from './sha.js';
+import { sha1, sha256 } from './sha.js';
 import type { X509Certificate } from './x509.js';
 
 // ── OID Constants ────────────────────────────────────────────────────
@@ -26,6 +26,8 @@ const OID_SHA1 = /*#__PURE__*/ new Uint8Array([0x2b, 0x0e, 0x03, 0x02, 0x1a]);
 const OID_OCSP_BASIC = /*#__PURE__*/ new Uint8Array([0x2b, 0x06, 0x01, 0x05, 0x05, 0x07, 0x30, 0x01, 0x01]);
 // id-pkix-ocsp-nonce — 1.3.6.1.5.5.7.48.1.2
 const OID_OCSP_NONCE = /*#__PURE__*/ new Uint8Array([0x2b, 0x06, 0x01, 0x05, 0x05, 0x07, 0x30, 0x01, 0x02]);
+// SHA-256 — 2.16.840.1.101.3.4.2.1 (the other CertID digest responders use).
+const OID_SHA256 = /*#__PURE__*/ new Uint8Array([0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01]);
 
 const TAG_ENUMERATED = 0x0a;
 const TAG_CERT_STATUS_GOOD = 0x80;      // [0] IMPLICIT NULL (primitive)
@@ -60,8 +62,27 @@ export interface OcspResponse {
     readonly revocationTime?: Date;
     /** Certificates embedded in the BasicOCSPResponse (raw DER each). */
     readonly responderCertificates: readonly Uint8Array[];
+    /**
+     * The CertID of the first SingleResponse (RFC 6960 §4.1.1): which
+     * certificate this response speaks about. Absent unless successful.
+     * Lets {@link ocspResponseMatchesCertificate} attribute out-of-band
+     * responses to a chain (`composeLtvData`, `match: 'chain'`). @since 1.9.0
+     */
+    readonly certId?: OcspCertId;
     /** The complete OCSPResponse DER (what /DSS /OCSPs streams store). */
     readonly raw: Uint8Array;
+}
+
+/** CertID of a SingleResponse (RFC 6960 §4.1.1). @since 1.9.0 */
+export interface OcspCertId {
+    /** Hash algorithm OID content bytes (`1.3.14.3.2.26` SHA-1 is the norm). */
+    readonly hashAlgorithm: Uint8Array;
+    /** Hash of the issuer's DER-encoded Name. */
+    readonly issuerNameHash: Uint8Array;
+    /** Hash of the issuer's public key (the BIT STRING value, tag and length excluded). */
+    readonly issuerKeyHash: Uint8Array;
+    /** The certificate's serial number. */
+    readonly serialNumber: bigint;
 }
 
 // ── Request builder ──────────────────────────────────────────────────
@@ -214,6 +235,19 @@ export function parseOcspResponse(der: Uint8Array): OcspResponse {
         nextUpdate = asn1Time(nu.children[0]);
     }
 
+    // CertID ::= SEQUENCE { hashAlgorithm AlgorithmIdentifier,
+    //   issuerNameHash OCTET STRING, issuerKeyHash OCTET STRING, serialNumber INTEGER }
+    let certId: OcspCertId | undefined;
+    const idNode = single.children[0];
+    if (idNode.tag === ASN1_SEQUENCE && idNode.children.length >= 4 && idNode.children[0].children.length >= 1) {
+        certId = {
+            hashAlgorithm: asn1OidBytes(idNode.children[0].children[0]),
+            issuerNameHash: idNode.children[1].value,
+            issuerKeyHash: idNode.children[2].value,
+            serialNumber: asn1Integer(idNode.children[3]),
+        };
+    }
+
     return {
         responseStatus,
         certStatus,
@@ -222,6 +256,31 @@ export function parseOcspResponse(der: Uint8Array): OcspResponse {
         nextUpdate,
         revocationTime,
         responderCertificates,
+        ...(certId !== undefined ? { certId } : {}),
         raw: der,
     };
+}
+
+/**
+ * Does this OCSP response speak about `cert`, issued by `issuer`? Compares
+ * the SingleResponse CertID (serial number and the hashes of the issuer
+ * Name and public key, under the response's own hash algorithm — SHA-1 or
+ * SHA-256) with the pair. Unsuccessful responses never match.
+ *
+ * @since 1.9.0
+ */
+export function ocspResponseMatchesCertificate(response: OcspResponse, cert: X509Certificate, issuer: X509Certificate): boolean {
+    const id = response.certId;
+    if (id === undefined || id.serialNumber !== cert.serialNumber) return false;
+    let hash: (bytes: Uint8Array) => Uint8Array;
+    if (oidEquals(id.hashAlgorithm, OID_SHA1)) hash = sha1;
+    else if (oidEquals(id.hashAlgorithm, OID_SHA256)) hash = sha256;
+    else return false;
+    return bytesEqual(hash(cert.issuer.raw), id.issuerNameHash) && bytesEqual(hash(issuer.publicKeyBytes), id.issuerKeyHash);
+}
+
+function bytesEqual(a: Uint8Array, b: Uint8Array): boolean {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+    return true;
 }

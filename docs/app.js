@@ -278,7 +278,7 @@
         "    { type: 'paragraph', text: 'This PDF was generated entirely in your browser — zero server calls, zero dependencies.' },",
         "    { type: 'list', style: 'bullet', items: [",
         "      'ISO 32000-1 compliant',",
-        "      '27 Unicode scripts',",
+        "      '32 Unicode scripts',",
         "      'PDF/A, encryption, signatures',",
         '    ] },',
         "    { type: 'heading', text: 'A Simple Table', level: 2 },",
@@ -485,7 +485,7 @@
         '// PDF/A requires EVERY font embedded (ISO 19005-2 §6.2.11.4.1). `tagged` writes',
         '// the XMP claim but embeds nothing by itself — without fontEntries the document',
         '// falls back to unembedded Helvetica and veraPDF rejects it.',
-        "registerFonts({ latin: () => import('https://esm.sh/pdfnative@1.8.0/fonts/noto-sans-data.js') });",
+        "registerFonts({ latin: () => import('https://esm.sh/pdfnative@1.9.0/fonts/noto-sans-data.js') });",
         "const fontData = await loadFontData('latin');",
         "if (!fontData) throw new Error('latin font failed to load');",
         '',
@@ -525,9 +525,9 @@
         '',
         '// Lazy font registration — only loaded when needed',
         'registerFonts({',
-        "  th: () => import('https://esm.sh/pdfnative@1.8.0/fonts/noto-thai-data.js'),",
-        "  ar: () => import('https://esm.sh/pdfnative@1.8.0/fonts/noto-arabic-data.js'),",
-        "  ja: () => import('https://esm.sh/pdfnative@1.8.0/fonts/noto-jp-data.js'),",
+        "  th: () => import('https://esm.sh/pdfnative@1.9.0/fonts/noto-thai-data.js'),",
+        "  ar: () => import('https://esm.sh/pdfnative@1.9.0/fonts/noto-arabic-data.js'),",
+        "  ja: () => import('https://esm.sh/pdfnative@1.9.0/fonts/noto-jp-data.js'),",
         '});',
         '',
         "const langs = ['th', 'ar', 'ja'];",
@@ -660,13 +660,78 @@
         '',
         "downloadBlob(secured, 'report-reencrypted.pdf'); // opens with 'rotated'"
       ].join('\n')
+    },
+    {
+      id: 'rtl',
+      label: 'Right-to-left paragraphs (v1.9.0)',
+      description: 'The whole UAX #9 algorithm since 1.9.0: with direction: \'auto\' every paragraph takes its direction from its first strong letter — Arabic and Hebrew paragraphs are aligned right and justified in visual order, the Latin one stays left — and every reordered run carries its logical text as /ActualText, so extractText() returns it as typed.',
+      source: GENERATORS_BASE + 'bidi-algorithm.ts',
+      code: [
+        "import { registerFonts, loadFontData, buildDocumentPDFBytes, downloadBlob } from 'pdfnative';",
+        '',
+        '// Arabic and Hebrew modules load lazily; the Latin paragraph uses the base-14 Helvetica.',
+        'registerFonts({',
+        "  ar: () => import('https://esm.sh/pdfnative@1.9.0/fonts/noto-arabic-data.js'),",
+        "  he: () => import('https://esm.sh/pdfnative@1.9.0/fonts/noto-hebrew-data.js'),",
+        '});',
+        "const langs = ['ar', 'he'];",
+        'const fonts = await Promise.all(langs.map(loadFontData));',
+        'const fontEntries = fonts',
+        '  .map((fd, i) => fd ? { fontData: fd, fontRef: `/F${3 + i}`, lang: langs[i] } : null)',
+        '  .filter(Boolean);',
+        '',
+        "// direction: 'auto' — each paragraph takes its direction from its first strong letter (UAX #9 P2–P3).",
+        'const pdf = buildDocumentPDFBytes({',
+        "  title: 'Right-to-left paragraphs',",
+        '  blocks: [',
+        "    { type: 'heading', text: 'الفصل الأول — פרק ראשון', level: 1 },",
+        "    { type: 'paragraph', text: 'بلغت الإيرادات 1,250 مليون ريال في عام 2026، أي بزيادة 12% مقارنة بالعام السابق.', align: 'justify' },",
+        "    { type: 'paragraph', text: 'דוח רבעוני לשנת 2026 (כולל נספח A ו-B) מציג גידול של 12% בהכנסות.', align: 'justify' },",
+        "    { type: 'paragraph', text: 'A Latin paragraph in the same document keeps its left alignment.' },",
+        '  ],',
+        '  fontEntries,',
+        "}, { direction: 'auto' });",
+        '',
+        "downloadBlob(pdf, 'right-to-left.pdf');"
+      ].join('\n')
+    },
+    {
+      id: 'spot',
+      label: 'Spot colours — /Separation inks (v1.9.0)',
+      description: 'Two spot inks declared in print.spotColours, each with a CMYK alternate for proofing: painted solid, at a 40 % tint, and mixed through a /DeviceN space; the chart paints one bar per ink with ChartSeries.colors. A RIP separates the inks onto their own plates while a screen viewer draws the alternates. No conformance claim, so no ICC profile is needed.',
+      source: GENERATORS_BASE + 'print-showcase.ts',
+      code: [
+        "import { buildDocumentPDFBytes, downloadBlob } from 'pdfnative';",
+        '',
+        'const pdf = buildDocumentPDFBytes({',
+        "  title: 'Spot colours',",
+        '  blocks: [',
+        "    { type: 'heading', text: 'Brand blue and gold, as /Separation inks', level: 1, color: { spot: 'PANTONE 300 C' } },",
+        "    { type: 'paragraph', text: 'Solid ink.', color: { spot: 'PANTONE 300 C' } },",
+        "    { type: 'paragraph', text: 'A 40 % tint of the same ink.', color: { spot: 'PANTONE 300 C', tint: 0.4 } },",
+        "    { type: 'paragraph', text: 'A duotone mix: 60 % blue over 30 % gold, one /DeviceN space.', color: { inks: { 'PANTONE 300 C': 0.6, Gold: 0.3 } } },",
+        "    { type: 'chart', chartType: 'bar', title: 'Ink coverage per plate', categories: ['Blue', 'Gold', 'Duotone'],",
+        "      series: [{ label: 'Coverage %', values: [40, 25, 18],",
+        "                 colors: [{ spot: 'PANTONE 300 C' }, { spot: 'Gold' }, { inks: { 'PANTONE 300 C': 0.6, Gold: 0.3 } }] }] },",
+        '  ],',
+        '}, {',
+        '  print: {',
+        '    spotColours: [                                       // every ink the content names, with its alternate for proofing',
+        "      { name: 'PANTONE 300 C', alternate: [100, 44, 0, 0] }, // CMYK percent",
+        "      { name: 'Gold', alternate: [0, 17, 74, 17] },",
+        '    ],',
+        '  },',
+        '});',
+        '',
+        "downloadBlob(pdf, 'spot-colours.pdf');"
+      ].join('\n')
     }
   ];
 
   // CDN URLs to try in order (esm.sh, then unpkg as fallback)
   var CDN_URLS = [
-    'https://esm.sh/pdfnative@1.8.0',
-    'https://cdn.jsdelivr.net/npm/pdfnative@1.8.0/+esm'
+    'https://esm.sh/pdfnative@1.9.0',
+    'https://cdn.jsdelivr.net/npm/pdfnative@1.9.0/+esm'
   ];
 
   async function loadPdfnative() {

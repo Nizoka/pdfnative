@@ -13,6 +13,7 @@
  */
 
 import { openPdf, type PdfReader } from '../parser/pdf-reader.js';
+import { decodePdfTextString } from '../parser/pdf-text-string.js';
 import {
     isDict, isArray, isRef, isName,
     type PdfDict, type PdfValue,
@@ -78,7 +79,7 @@ function collectSigFields(reader: PdfReader): SigFieldEntry[] {
                 if (sig && isDict(sig)) {
                     const t = field.get('T');
                     out.push({
-                        fieldName: typeof t === 'string' ? t : undefined,
+                        fieldName: typeof t === 'string' ? decodePdfTextString(t) : undefined,
                         sigDict: sig,
                         sigObjNum: vRef.num,
                     });

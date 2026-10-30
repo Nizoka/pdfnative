@@ -15,6 +15,7 @@
   <meta property="og:title" content="Extreme Scripts Playground — pdfnative">
   <meta property="og:description" content="Interactive playground for extreme-script shaping: Arabic + Hebrew + Thai BiDi, Tamil deep conjuncts, Bengali + Devanagari reph and ligatures. Edit the inputs and generate a PDF in your browser.">
   <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
+  <meta property="og:image:alt" content="pdfnative — pure native PDF generation, zero dependencies">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
@@ -73,7 +74,7 @@
   <nav class="playground-switcher" aria-label="Playground switcher">
     <span class="playground-switcher-label">Playgrounds:</span>
     <a href="./extreme-scripts.html" aria-current="page">Extreme scripts</a>
-    <a href="./all-scripts.html">All 27 scripts</a>
+    <a href="./all-scripts.html">All 32 scripts</a>
     <a href="./toolkit.html">PDF Toolkit</a>
     <a href="./inspect.html">Inspect &amp; verify</a>
     <a href="./charts.html">Charts</a>
@@ -86,11 +87,12 @@
     <a href="./print.html">Print &amp; PDF/X</a>
     <a href="./reproducible.html">Reproducible output</a>
     <a href="./docspec-lint.html">DocSpec lint</a>
+    <a href="./images.html">Images</a>
     <a href="./" style="margin-left:auto;">All →</a>
   </nav>
   <article class="guide-content">
     <h1>Extreme Scripts Playground</h1>
-    <p>Stress-test the pdfnative shaping pipeline against the most demanding inputs: deep BiDi mixing across 3+ scripts, Tamil ultra-conjuncts, Bengali &amp; Devanagari with reph + multi-halant ligature chains, isolated Arabic harakat, and — since 1.8.0 — Tai Tham and Cham, the two scripts shaped by the Universal Shaping Engine. Pick a preset, edit the text, and click <strong>Generate PDF</strong>.</p>
+    <p>Stress-test the pdfnative shaping pipeline against the most demanding inputs: deep BiDi mixing across 3+ scripts, Tamil ultra-conjuncts, Bengali &amp; Devanagari with reph + multi-halant ligature chains, isolated Arabic harakat, since 1.8.0 Tai Tham and Cham, the two scripts shaped by the Universal Shaping Engine, and — since 1.9.0 — right-to-left paragraphs under the whole of UAX #9: <code>direction: 'auto'</code> aligns them to the right, justifies them in visual order, pairs their brackets and honours isolates. Pick a preset, edit the text, and click <strong>Generate PDF</strong>.</p>
 
     <div id="status" style="display:none;padding:10px 14px;border-radius:6px;margin:16px 0;font-size:14px;"></div>
 
@@ -104,6 +106,7 @@
         <option value="bengali">Bengali + Devanagari — reph &amp; ligature chains</option>
         <option value="harakat">Arabic harakat — isolated diacritics</option>
         <option value="use">Universal Shaping Engine — Tai Tham and Cham (1.8.0)</option>
+        <option value="rtl">Right-to-left paragraphs — direction: 'auto', justified, isolates and bracket pairs (1.9.0)</option>
       </select>
       <button id="generate" class="btn btn-primary" style="padding:8px 18px;">Generate PDF</button>
       <span id="timer" style="font-size:13px;color:#64748b;"></span>
@@ -116,7 +119,7 @@
     <input id="heading" type="text" style="width:100%;padding:10px;border-radius:6px;border:1px solid #cbd5e1;font-size:14px;font-family:monospace;">
 
     <h2 style="margin-top:24px;">Body paragraphs <span style="font-weight:400;color:#64748b;font-size:14px;">(one per line; blank line for a new paragraph)</span></h2>
-    <p style="margin:4px 0 8px;color:#64748b;font-size:13px;">Each line takes the direction of its first strong letter (UAX #9 P2/P3), the rule the engine applies to each rendered line; glyph order follows it, and lines stay left-aligned unless the block sets <code>align: 'right'</code>.</p>
+    <p style="margin:4px 0 8px;color:#64748b;font-size:13px;">Each paragraph takes the direction of its first strong letter (UAX #9 P2/P3) and its lines are resolved once over the whole paragraph; glyph order follows it. Under <code>direction: 'auto'</code> (1.9.0) a right-to-left paragraph is also aligned to the right and justified in visual order — the <em>rtl</em> preset sets it; the other presets keep the left alignment of a document built without the option.</p>
     <textarea id="body" rows="14" dir="auto" style="unicode-bidi:plaintext;text-align:left;width:100%;padding:10px;border-radius:6px;border:1px solid #cbd5e1;font-size:14px;font-family:monospace;line-height:1.5;"></textarea>
 
     <details style="margin-top:24px;">
@@ -153,6 +156,23 @@
 <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js" integrity="sha384-PeOqKNW/piETaCg8rqKFy+Pm6KEk7e36/5YZE5XO/OaFdO+/Aw3O8qZ9qDPKVUgx" crossorigin="anonymous" defer></script>
 <script type="module">
 const PRESETS = {
+  // 1.9.0 — layout.direction: 'auto' + align: 'justify'. Isolates (FSI … PDI, U+2068 / U+2069) and
+  // bracket pairs (N0) are resolved by the full UAX #9 implementation; the Hebrew paragraph carries a
+  // nested Latin parenthesis and the Arabic one an isolated English product name.
+  rtl: {
+    title: 'Right-to-left paragraphs',
+    heading: 'الفصل الأول (المقدمة) — פרק ראשון',
+    langs: ['ar', 'he'],
+    layout: { direction: 'auto' },
+    paragraph: { align: 'justify' },
+    body: [
+      'بلغت الإيرادات 1,250 مليون ريال في عام 2026، أي بزيادة 12% مقارنة بالعام السابق. المنتج \u2068pdfnative\u2069 يعمل بلا تبعيات في المتصفح وفي Node وفي Deno، ويكتب كل فقرة من اليمين إلى اليسار مع محاذاة يمنى وتوزيع للمسافات بالترتيب البصري.',
+      '',
+      'שלום עולם. דוח רבעוני לשנת 2026 (כולל נספח A ו-B) מציג גידול של 12% בהכנסות; הסוגריים והמקפים נשארים במקומם הנכון, והשורה האחרונה של הפסקה אינה מיושרת.',
+      '',
+      'A Latin paragraph in the same document keeps its left alignment: direction: \'auto\' decides per paragraph, from the first strong letter — this one is left-to-right, the two above are right-to-left.'
+    ].join('\n')
+  },
   bidi: {
     title: 'Extreme BiDi',
     heading: 'Extreme BiDi — Arabic + Hebrew + Thai + Latin + Numerals',
@@ -300,10 +320,12 @@ function applyPreset(id) {
 function updateCodeView(id) {
   const p = PRESETS[id];
   const code = [
-    "import { registerFonts, loadFontData, buildDocumentPDFBytes, downloadBlob } from 'pdfnative';",
+    p.layout
+      ? "import { registerFonts, loadFontData, buildDocumentPDFBytes, resolveBidiLevels, downloadBlob } from 'pdfnative';"
+      : "import { registerFonts, loadFontData, buildDocumentPDFBytes, downloadBlob } from 'pdfnative';",
     '',
     'registerFonts({',
-    ...p.langs.map(l => `  ${l}: () => import('https://esm.sh/pdfnative@1.8.0/fonts/${FONT_MODULE_BY_LANG[l]}'),`),
+    ...p.langs.map(l => `  ${l}: () => import('https://esm.sh/pdfnative@1.9.0/fonts/${FONT_MODULE_BY_LANG[l]}'),`),
     '});',
     '',
     `const langs = ${JSON.stringify(p.langs)};`,
@@ -314,10 +336,16 @@ function updateCodeView(id) {
     `  title: ${JSON.stringify(p.title)},`,
     '  blocks: [',
     `    { type: 'heading', text: ${JSON.stringify(p.heading)}, level: 1 },`,
-    ...p.body.split(/\n\s*\n/).map(par => `    { type: 'paragraph', text: ${JSON.stringify(par.trim())} },`).filter(s => !s.includes('text: ""')),
+    ...p.body.split(/\n\s*\n/).map(par => `    { type: 'paragraph', text: ${JSON.stringify(par.trim())}${p.paragraph ? ', ' + JSON.stringify(p.paragraph).slice(1, -1).replace(/"(\w+)":/g, '$1: ').replace(/"/g, "'") : ''} },`).filter(s => !s.includes('text: ""')),
     '  ],',
     '  fontEntries,',
-    '});',
+    ...(p.layout ? ['}, ' + JSON.stringify(p.layout).replace(/"(\w+)":/g, '$1: ').replace(/"/g, "'") + ');   // 1.9.0: right-to-left paragraphs aligned right and justified in visual order'] : ['});']),
+    ...(p.layout ? [
+      '',
+      '// The resolver the layout ran, on its own: the paragraph level (1 = right-to-left) and one embedding level per character (UAX #9).',
+      `const levels = resolveBidiLevels(${JSON.stringify(p.body.split(/\n\s*\n/)[0].trim())}, 'auto');`,
+      "console.log(levels.paraLevel, levels.levels);",
+    ] : []),
     '',
     "downloadBlob(pdf, 'extreme.pdf');"
   ].join('\n');
@@ -325,7 +353,7 @@ function updateCodeView(id) {
   if (window.Prism) window.Prism.highlightElement(codeView);
 }
 
-const CDN_URLS = ['https://esm.sh/pdfnative@1.8.0', 'https://cdn.jsdelivr.net/npm/pdfnative@1.8.0/+esm'];
+const CDN_URLS = ['https://esm.sh/pdfnative@1.9.0', 'https://cdn.jsdelivr.net/npm/pdfnative@1.9.0/+esm'];
 let pdfMod = null;
 
 async function loadPdfnative() {
@@ -353,7 +381,7 @@ async function generate() {
     setStatus('Loading fonts: ' + p.langs.join(', ') + '…', 'info');
     const registry = {};
     for (const lang of p.langs) {
-      registry[lang] = () => import(`https://esm.sh/pdfnative@1.8.0/fonts/${FONT_MODULE_BY_LANG[lang]}`);
+      registry[lang] = () => import(`https://esm.sh/pdfnative@1.9.0/fonts/${FONT_MODULE_BY_LANG[lang]}`);
     }
     mod.registerFonts(registry);
     const fonts = await Promise.all(p.langs.map(mod.loadFontData));
@@ -366,13 +394,23 @@ async function generate() {
     const body = $('body').value;
     for (const par of body.split(/\n\s*\n/)) {
       const t = par.trim();
-      if (t) blocks.push({ type: 'paragraph', text: t });
+      if (t) blocks.push({ type: 'paragraph', text: t, ...(p.paragraph || {}) });
     }
-    const pdf = mod.buildDocumentPDFBytes({ title: $('title').value, blocks, fontEntries });
+    const pdf = p.layout
+      ? mod.buildDocumentPDFBytes({ title: $('title').value, blocks, fontEntries }, p.layout)
+      : mod.buildDocumentPDFBytes({ title: $('title').value, blocks, fontEntries });
     mod.downloadBlob(pdf, `extreme-${id}.pdf`);
     const ms = (performance.now() - t0).toFixed(0);
     $('timer').textContent = `Generated ${(pdf.length / 1024).toFixed(1)} KB in ${ms} ms`;
-    setStatus('PDF generated and downloaded.', 'success');
+    if (p.layout && typeof mod.resolveBidiLevels === 'function') {
+      // 1.9.0: the same resolver the layout ran, called on the first paragraph — the status line shows its verdict.
+      const first = body.split(/\n\s*\n/)[0].trim();
+      const levels = mod.resolveBidiLevels(first, 'auto');
+      console.log('resolveBidiLevels', levels);
+      setStatus(`PDF generated and downloaded. resolveBidiLevels(first paragraph): paragraph level ${levels.paraLevel} (${levels.paraLevel % 2 ? 'right-to-left' : 'left-to-right'}), ${levels.levels.length} character levels — see the console.`, 'success');
+    } else {
+      setStatus('PDF generated and downloaded.', 'success');
+    }
   } catch (err) {
     setStatus('Error: ' + (err.message || err), 'error');
     console.error(err);

@@ -86,7 +86,7 @@ export async function generate(ctx: GenerateContext): Promise<void> {
 
                 { type: 'heading', text: '/Prev Chain (Incremental Updates)', level: 2 },
                 { type: 'paragraph', text: `This showcase created a PDF, then modified it twice. The final file contains 3 xref sections linked by /Prev pointers. The parser follows the chain to reconstruct the complete object table.` },
-                { type: 'paragraph', text: `Original: ${original.length} bytes → Rev 2: ${rev2.length} bytes → Rev 3: ${rev3.length} bytes. Each revision appends objects + a new xref section — the original data is never modified (non-destructive save).` },
+                { type: 'paragraph', text: `Original: ${original.length} bytes, Rev 2: ${rev2.length} bytes, Rev 3: ${rev3.length} bytes. Each revision appends objects + a new xref section — the original data is never modified (non-destructive save).` },
 
                 { type: 'heading', text: 'FlateDecode Decompression', level: 2 },
                 { type: 'paragraph', text: 'Streams with /Filter /FlateDecode are decompressed using a pure-JS inflate implementation (zlib/DEFLATE). On Node.js, native zlib is used for performance if initNodeCompression() was called.' },

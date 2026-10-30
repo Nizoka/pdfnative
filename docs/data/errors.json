@@ -1,7 +1,7 @@
 {
   "$comment": "Machine-readable registry of the diagnostic codes the pdfnative ENGINE emits (src/core/pdf-diagnostics.ts). Meanings and remedies are restated from the source messages; the error-parity rule of scripts/verify-docs.ts checks that every code named in the documentation exists here and in src/, and vice versa. The CLI's E_* codes and the MCP server's tool error codes belong to their own repositories (pdfnative-cli llms.txt / schema manifest, and the MCP guide's error table, checked against the published package by the weekly --online run) and are deliberately not mirrored here.",
   "package": "pdfnative",
-  "verifiedOn": "2026-09-27",
+  "verifiedOn": "2026-10-30",
   "diagnostics": [
     {
       "code": "PDFA_NO_FONT_ENTRIES",
@@ -34,7 +34,7 @@
       "code": "PDFA_DEVICE_CMYK_CONTENT",
       "severity": "warning",
       "since": "1.8.0",
-      "raisedWhen": "A CMYK colour ([c, m, y, k] or \"C M Y K\") is painted under a PDF/A claim whose OutputIntent is not CMYK. The reverse case, RGB colours under a CMYK intent, raises nothing: pdfnative remaps them through a calibrated /DefaultRGB.",
+      "raisedWhen": "A CMYK colour ([c, m, y, k] or \"C M Y K\"), or a spot colour whose declared alternate is CMYK (1.9.0), is painted under a PDF/A claim whose OutputIntent is not CMYK. The reverse case, RGB colours under a CMYK intent, raises nothing: pdfnative remaps them through a calibrated /DefaultRGB.",
       "standard": "ISO 19005-2 §6.2.4.3 (device colour must match the output intent; veraPDF rejects the file)",
       "remedy": "Supply a CMYK layout.outputIntent, use RGB colours, or drop the PDF/A level.",
       "guide": "https://pdfnative.dev/guides/pdfa.md"
@@ -61,7 +61,7 @@
       "code": "PDFX_DEVICE_CMYK",
       "severity": "warning",
       "since": "1.8.0",
-      "raisedWhen": "A CMYK colour or a DeviceCMYK image is painted under a PDF/X-4 claim whose OutputIntent is RGB or Gray. RGB colours under a CMYK intent raise nothing: they are remapped through a calibrated /DefaultRGB.",
+      "raisedWhen": "A CMYK colour, a DeviceCMYK image, or a spot colour whose declared alternate is CMYK is painted under a PDF/X-4 claim whose OutputIntent is RGB or Gray. RGB colours under a CMYK intent raise nothing: they are remapped through a calibrated /DefaultRGB.",
       "standard": "ISO 15930-7 (device colour must match the output intent)",
       "remedy": "Supply a CMYK layout.outputIntent, use RGB colours and images, or drop layout.pdfx.",
       "guide": "https://pdfnative.dev/guides/pdfa.md"
@@ -83,6 +83,42 @@
       "standard": "Not a conformance rule — an authoring diagnostic (OpenType feature tags, ISO/IEC 14496-22 §6.2)",
       "remedy": "Drop the tag, or register a font whose GSUB declares it for the characters you set; the effective tags are the keys of the font module's features table.",
       "guide": "https://pdfnative.dev/guides/typography.md"
+    },
+    {
+      "code": "PDFA1_JPX_IMAGE",
+      "severity": "warning",
+      "since": "1.9.0",
+      "raisedWhen": "A JPEG 2000 image (JP2 file or J2K codestream, embedded with /JPXDecode) appears in a document claiming PDF/A-1b. The header stays PDF 1.4 as the claim demands; the filter is what breaks it.",
+      "standard": "ISO 19005-1 §6.1.10 (only the filters of PDF 1.4; veraPDF rejects the file)",
+      "remedy": "Claim PDF/A-2 or later (tagged: 'pdfa2b'), or convert the image to JPEG or PNG.",
+      "guide": "https://pdfnative.dev/guides/images.md"
+    },
+    {
+      "code": "PDFA_JPX_IMAGE",
+      "severity": "warning",
+      "since": "1.9.0",
+      "raisedWhen": "A JPEG 2000 image under a PDF/A-2 or PDF/A-3 claim has a colour channel count other than 1, 3 or 4, or carries an opacity channel (the XObject would set /SMaskInData 1).",
+      "standard": "ISO 19005-2 §6.2.8.3 (JPEG 2000 image constraints; veraPDF rejects the file)",
+      "remedy": "Re-encode the image with 1, 3 or 4 colour channels and no alpha, or drop the PDF/A level.",
+      "guide": "https://pdfnative.dev/guides/images.md"
+    },
+    {
+      "code": "PDFA_GLYPH_WITHOUT_UNICODE",
+      "severity": "warning",
+      "since": "1.9.0",
+      "raisedWhen": "A document claims PDF/A-2u (tagged: 'pdfa2u') while a font's used glyphs are not all named by its ToUnicode CMap — a glyph id 0 (.notdef, a character the font does not cover) or a shaped form no shaper reported. Every bundled shaper reports its glyphs since 1.9.0, so the common cause is an uncovered character (#87).",
+      "standard": "ISO 19005-2 §6.2.11.7.2 (every used character code maps to Unicode; veraPDF fails the file)",
+      "remedy": "Register a font that covers the text, or claim 'pdfa2b' (no Unicode requirement); a shaped form left unreported is a bug — file an issue with the text.",
+      "guide": "https://pdfnative.dev/guides/pdfa.md"
+    },
+    {
+      "code": "TEXT_GLYPH_NOT_COVERED",
+      "severity": "warning",
+      "since": "1.9.0",
+      "raisedWhen": "A character of the document has no glyph in the font it was routed to: a CID font drew its .notdef box (glyph 0), or the base-14 WinAnsi path wrote '?' for a character outside Windows-1252 (an arrow, a mathematical operator, an emoji). One diagnostic per font, naming up to eight code points with the character. The output bytes are unchanged by the diagnostic.",
+      "standard": "Not a conformance rule — an authoring diagnostic (ISO 32000-1 §9.7.6.3 for .notdef, Annex D for WinAnsiEncoding); under 'pdfa2u' the same .notdef also raises PDFA_GLYPH_WITHOUT_UNICODE",
+      "remedy": "Register a font that covers the characters (registerFont('math', …) for arrows and operators, registerFont('latin', …) with fontEntries when no font is registered at all) or replace them with characters the fonts carry.",
+      "guide": "https://pdfnative.dev/guides/debugging.md"
     }
   ],
   "sink": {
@@ -99,11 +135,67 @@
       "remedy": "Use 'pdfx4'."
     },
     {
-      "message": "layout.pdfx and layout.tagged cannot be combined — pdfnative writes one conformance claim per file; drop one of them",
+      "message": "layout.pdfx cannot be combined with tagged: 'pdfa1b' — PDF/A-1 is PDF 1.4 and PDF/X-4 is PDF 1.6; claim 'pdfa2b' or 'pdfa2u' alongside PDF/X-4",
       "thrownBy": "buildDocumentPDFBytes / buildPDFBytes (resolvePdfXConfig)",
-      "since": "1.8.0",
-      "when": "A PDF/X claim and a PDF/A or tagged claim are requested together.",
-      "remedy": "Build the print file and the archival file as two documents."
+      "since": "1.9.0",
+      "when": "A PDF/X-4 claim is requested together with PDF/A-1b. Until 1.8.0 every PDF/A level was refused next to PDF/X; since 1.9.0 PDF/A-2b and PDF/A-2u combine with PDF/X-4 into one file with both claims.",
+      "remedy": "Use tagged: 'pdfa2b' or 'pdfa2u' with layout.pdfx, or build the PDF/A-1b file separately."
+    },
+    {
+      "message": "layout.pdfx cannot be combined with tagged: 'pdfa3b' — PDF/A-3 allows embedded files, which PDF/X-4 forbids; claim 'pdfa2b' or 'pdfa2u' alongside PDF/X-4",
+      "thrownBy": "buildDocumentPDFBytes / buildPDFBytes (resolvePdfXConfig)",
+      "since": "1.9.0",
+      "when": "A PDF/X-4 claim is requested together with PDF/A-3b.",
+      "remedy": "Use tagged: 'pdfa2b' or 'pdfa2u' with layout.pdfx; attachments and PDF/X do not mix."
+    },
+    {
+      "message": "Spot colour '${ink}' is not declared — add { name: '${ink}', alternate: [c, m, y, k] } to layout.print.spotColours",
+      "thrownBy": "buildDocumentPDFBytes / buildPDFBytes (spotColourResources)",
+      "since": "1.9.0",
+      "when": "A { spot } or { inks } colour names an ink that layout.print.spotColours does not declare.",
+      "remedy": "Declare the ink with its alternate process colour, or paint with a process colour."
+    },
+    {
+      "message": "Ink mix ${inks}: every ink of a mix needs the same alternate space (all CMYK or all RGB)",
+      "thrownBy": "buildDocumentPDFBytes / buildPDFBytes (spotColourResources)",
+      "since": "1.9.0",
+      "when": "An { inks } colour mixes an ink with a CMYK alternate and one with an RGB alternate; a DeviceN tint transform has one output space.",
+      "remedy": "Declare every ink of the mix in the same alternate space."
+    },
+    {
+      "message": "print.spotColours: every ink needs a non-empty name",
+      "thrownBy": "buildDocumentPDFBytes / buildPDFBytes (validatePrintOptions)",
+      "since": "1.9.0",
+      "when": "An entry of layout.print.spotColours has no name or a blank one.",
+      "remedy": "Name the ink as the plate should read it, e.g. 'PANTONE 300 C'."
+    },
+    {
+      "message": "print.spotColours: '${name}' has a CMYK alternate out of range — percentages 0–100",
+      "thrownBy": "buildDocumentPDFBytes / buildPDFBytes (validatePrintOptions)",
+      "since": "1.9.0",
+      "when": "A four-component alternate carries a value below 0 or above 100.",
+      "remedy": "State the alternate in ink percentages, 0–100."
+    },
+    {
+      "message": "print.spotColours: '${name}' has an RGB alternate out of range — 0–255",
+      "thrownBy": "buildDocumentPDFBytes / buildPDFBytes (validatePrintOptions)",
+      "since": "1.9.0",
+      "when": "A three-component alternate carries a value below 0 or above 255.",
+      "remedy": "State the alternate as RGB 0–255."
+    },
+    {
+      "message": "print.spotColours: '${name}' needs an alternate of four CMYK percentages or three RGB values",
+      "thrownBy": "buildDocumentPDFBytes / buildPDFBytes (validatePrintOptions)",
+      "since": "1.9.0",
+      "when": "An alternate has neither three nor four components.",
+      "remedy": "Give [c, m, y, k] (0–100) for a press job or [r, g, b] (0–255) under an RGB OutputIntent."
+    },
+    {
+      "message": "print.spotColours: ink '${name}' is declared twice",
+      "thrownBy": "buildDocumentPDFBytes / buildPDFBytes (validatePrintOptions)",
+      "since": "1.9.0",
+      "when": "Two entries of layout.print.spotColours carry the same name, or an entry has an empty name or an alternate outside 0–100 (CMYK) / 0–255 (RGB).",
+      "remedy": "Declare each ink once with a valid alternate."
     },
     {
       "message": "PDF/X forbids encryption (ISO 15930-7) — drop layout.encryption or layout.pdfx",
@@ -251,6 +343,20 @@
       "since": "1.7.0",
       "when": "print.userUnit is set together with tagged: 'pdfa1b'.",
       "remedy": "Claim PDF/A-2b or later, or drop userUnit."
+    },
+    {
+      "message": "Unknown annotation type \"${type}\" — expected one of: ${knownTypes}",
+      "thrownBy": "buildAnnotationBody / buildAnnotation",
+      "since": "1.9.0",
+      "when": "The annotation object carries a `type` outside the MarkupAnnotation union (a JS caller or a JSON document). Before 1.9.0 the builder serialised `/Subtype /undefined` without a word (#91).",
+      "remedy": "Use one of the listed types; `link` (URI link, since 1.9.0) covers the former gap."
+    },
+    {
+      "message": "${filter} output exceeds the ${limit}-byte limit (potential zip bomb) — ${hint}",
+      "thrownBy": "inflateSync / applyDecodeFilter, rethrown by extractText (onStreamError: 'limit' default), openPdf().decodeStream, validatePdfX, validatePdfUA (class PdfStreamLimitError, code PDF_STREAM_LIMIT)",
+      "since": "1.9.0",
+      "when": "A stream would decompress to more bytes than the safety cap (setMaxInflateOutputSize, default 100 MB, for FlateDecode; a fixed 256 MiB for ASCIIHex, ASCII85, LZW and RunLength). The hint names the remedy that applies to the filter: raising setMaxInflateOutputSize() for FlateDecode, onStreamError: 'skip' for the fixed caps. extractText used to skip the stream silently and return an empty page (#89).",
+      "remedy": "Classify by `code === 'PDF_STREAM_LIMIT'` (or `instanceof PdfStreamLimitError`). Raise the cap for trusted input, or pass `onStreamError: 'skip'` to extractText for the pre-1.9.0 behaviour."
     }
   ]
 }

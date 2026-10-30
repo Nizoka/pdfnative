@@ -15,6 +15,7 @@
   <meta property="og:title" content="Charts Playground — pdfnative">
   <meta property="og:description" content="Nine chart types — bar, horizontal bar, stacked bar, stacked horizontal bar, line, area, scatter, pie, donut — rendered as pure PDF path operators, zero install, right in your browser.">
   <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
+  <meta property="og:image:alt" content="pdfnative — pure native PDF generation, zero dependencies">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
@@ -111,7 +112,7 @@
   <nav class="playground-switcher" aria-label="Playground switcher">
     <span class="playground-switcher-label">Playgrounds:</span>
     <a href="./extreme-scripts.html">Extreme scripts</a>
-    <a href="./all-scripts.html">All 27 scripts</a>
+    <a href="./all-scripts.html">All 32 scripts</a>
     <a href="./toolkit.html">PDF Toolkit</a>
     <a href="./inspect.html">Inspect &amp; verify</a>
     <a href="./charts.html" aria-current="page">Charts</a>
@@ -124,6 +125,7 @@
     <a href="./print.html">Print &amp; PDF/X</a>
     <a href="./reproducible.html">Reproducible output</a>
     <a href="./docspec-lint.html">DocSpec lint</a>
+    <a href="./images.html">Images</a>
     <a href="./" style="margin-left:auto;">All →</a>
   </nav>
   <article class="guide-content">
@@ -141,6 +143,7 @@
         <option value="donut">Donut — budget split (PDF/A-2b tagged + alt text)</option>
         <option value="mixed">Dashboard — several charts on one page</option>
         <option value="v2">Charts v2 — stacked, area, scatter (1.7.0)</option>
+        <option value="colors">One colour per bar — ChartSeries.colors, optional label (1.9.0)</option>
       </select>
       <button id="generate" class="btn btn-primary" style="padding:8px 18px;">Generate PDF</button>
       <span id="timer" style="font-size:13px;color:#64748b;"></span>
@@ -203,6 +206,7 @@ const DESCRIPTIONS = {
   donut: 'A donut chart of a budget split, rendered in tagged mode with an /Alt description for accessibility.',
   mixed: 'A one-page dashboard combining a grouped bar, a horizontal bar, and a donut chart.',
   v2: 'New in 1.7.0 — a stacked bar with per-point data labels, an area chart, and a scatter plot with numeric x-values, all on one page.',
+  colors: 'New in 1.9.0 — a single-series bar chart whose bars take one colour each through ChartSeries.colors (one entry per value; a length mismatch throws), while the legend swatch keeps the series color. The second chart is a stacked bar whose series carry no label at all — label is optional since 1.9.0, and a series without one draws without a legend entry. A chart without colors is byte-identical to 1.8.0.',
 };
 
 const CODE = {
@@ -297,6 +301,28 @@ const pdf = buildDocumentPDFBytes({
   ],
 });
 downloadBlob(pdf, 'charts-v2.pdf');`,
+  colors: `import { buildDocumentPDFBytes, downloadBlob } from 'pdfnative';
+
+const pdf = buildDocumentPDFBytes({
+  title: 'Per-bar colours',
+  blocks: [
+    { type: 'heading', text: 'One colour per bar', level: 1 },
+    { type: 'chart', chartType: 'bar', title: 'Energy mix 2026 (per-category colours)',
+      categories: ['Solar', 'Wind', 'Hydro', 'Gas', 'Coal'],
+      series: [{
+        label: 'Share %', values: [28, 24, 16, 22, 10],
+        color: '#64748b',                                          // the legend swatch
+        colors: ['#f59e0b', '#38bdf8', '#2563eb', '#94a3b8', '#334155'],  // one per value — 1.9.0
+      }] },
+    { type: 'chart', chartType: 'stackedBar', title: 'Unlabelled series (no legend entry)',
+      categories: ['Q1', 'Q2', 'Q3'],
+      series: [
+        { values: [40, 45, 50], color: '#2563eb' },               // label is optional since 1.9.0
+        { values: [20, 18, 25], color: '#f59e0b' },
+      ] },
+  ],
+});
+downloadBlob(pdf, 'chart-colors.pdf');`,
 };
 
 function applyPreset(id) {
@@ -305,7 +331,7 @@ function applyPreset(id) {
   if (window.Prism) window.Prism.highlightElement(codeView);
 }
 
-const CDN_URLS = ['https://esm.sh/pdfnative@1.8.0', 'https://cdn.jsdelivr.net/npm/pdfnative@1.8.0/+esm'];
+const CDN_URLS = ['https://esm.sh/pdfnative@1.9.0', 'https://cdn.jsdelivr.net/npm/pdfnative@1.9.0/+esm'];
 let pdfMod = null;
 async function loadPdfnative() {
   if (pdfMod) return pdfMod;
@@ -329,7 +355,7 @@ const BUILDERS = {
   // PDF/A requires every font embedded, and tagged: true IS PDF/A-2b. Without
   // this the file would declare a conformance it does not have.
   donut: async (m) => {
-    m.registerFonts({ latin: () => import('https://esm.sh/pdfnative@1.8.0/fonts/noto-sans-data.js') });
+    m.registerFonts({ latin: () => import('https://esm.sh/pdfnative@1.9.0/fonts/noto-sans-data.js') });
     const fontData = await m.loadFontData('latin');
     return m.buildDocumentPDFBytes({ fontEntries: [{ fontData, fontRef: '/F3', lang: 'latin' }], title: 'Budget', blocks: [{ type: 'chart', chartType: 'donut', title: 'Budget split', altText: 'Donut chart: 50% engineering, 30% sales, 20% operations.', categories: ['Engineering', 'Sales', 'Operations'], series: [{ label: 'Budget', values: [50, 30, 20] }] }] }, { tagged: true });
   },
@@ -338,6 +364,11 @@ const BUILDERS = {
     { type: 'chart', chartType: 'bar', title: 'Revenue vs cost', categories: ['Oct', 'Nov', 'Dec'], series: [{ label: 'Revenue', values: [50, 62, 70] }, { label: 'Cost', values: [30, 34, 38] }] },
     { type: 'chart', chartType: 'barH', title: 'Sales by region', categories: ['N', 'S', 'E', 'W'], series: [{ label: 'Units', values: [40, 65, 30, 52] }] },
     { type: 'chart', chartType: 'donut', title: 'Traffic', categories: ['Organic', 'Direct', 'Social'], series: [{ label: 'Share', values: [60, 25, 15] }] },
+  ] }),
+  colors: (m) => m.buildDocumentPDFBytes({ title: 'Per-bar colours', blocks: [
+    { type: 'heading', text: 'One colour per bar', level: 1 },
+    { type: 'chart', chartType: 'bar', title: 'Energy mix 2026 (per-category colours)', categories: ['Solar', 'Wind', 'Hydro', 'Gas', 'Coal'], series: [{ label: 'Share %', values: [28, 24, 16, 22, 10], color: '#64748b', colors: ['#f59e0b', '#38bdf8', '#2563eb', '#94a3b8', '#334155'] }] },
+    { type: 'chart', chartType: 'stackedBar', title: 'Unlabelled series (no legend entry)', categories: ['Q1', 'Q2', 'Q3'], series: [{ values: [40, 45, 50], color: '#2563eb' }, { values: [20, 18, 25], color: '#f59e0b' }] },
   ] }),
   v2: (m) => m.buildDocumentPDFBytes({ title: 'Charts v2', blocks: [
     { type: 'heading', text: 'Charts v2 — stacked, area, scatter', level: 1 },

@@ -38,12 +38,12 @@ When `tagged` is enabled, the document gets:
   - `/H1`, `/H2`, `/H3` for headings
   - `/P` for paragraphs
   - `/L` → `/LI` for lists
-  - `/Table` → `/TR` → `/TH` / `/TD` for tables
+  - `/Table` → `/TR` → `/TH` / `/TD` for tables — since v1.9.0 every `/TH` carries `/A << /O /Table /Scope /Column >>` and an `/ID`, every `/TD` names its header in `/Headers`, and the `/StructTreeRoot` registers the ids in an `/IDTree` (ISO 14289-1 §7.5)
   - `/Figure` for images, barcodes, SVG (with `/Alt` text)
   - `/Link` for hyperlinks (with `/Contents` description)
   - `/Form` for AcroForm fields
   - `/TOC` → `/TOCI` for tables of contents
-- **Marked content** (`/Span << /MCID n /ActualText <hex> >> BDC`) wrapping every text run, so screen readers receive the original Unicode even when the visible glyph is a shaped Arabic ligature or Devanagari conjunct.
+- **Marked content** (`/Span << /MCID n /ActualText <hex> >> BDC`) wrapping every text run, so screen readers receive the original Unicode even when the visible glyph is a shaped Arabic ligature or Devanagari conjunct. Each span wraps a single text object — a line or cell is one `BT … ET`, a shaped run one `TJ` array (since v1.9.0) — because Acrobat applies `/ActualText` once per text object: a cell drawn as one text object per glyph pasted its text once per glyph.
 - **Per-page parent trees** (`/StructParents` + `/ParentTree`) — required by ISO 14289-1 §7.10.3.
 - **Document metadata** in XMP (PDF/A-required).
 - **sRGB ICC OutputIntent** so colors remain stable across viewers.
@@ -89,7 +89,7 @@ The `label` is drawn as a visible text label next to the widget. pdfnative does 
 docker run --rm -v "$PWD:/data" verapdf/cli --format text /data/my-document.pdf
 ```
 
-veraPDF is the reference PDF/A validator. The pdfnative test suite generates 292 sample PDFs and the PDF/A samples are validated against veraPDF on every release.
+veraPDF is the reference PDF/A validator. The pdfnative test suite generates 311 sample PDFs and the PDF/A samples are validated against veraPDF on every release.
 
 ### PAC 2024 (PDF/UA)
 

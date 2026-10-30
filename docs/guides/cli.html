@@ -18,6 +18,7 @@
   <meta property="og:title" content="pdfnative-cli — Command-Line Interface Guide">
   <meta property="og:description" content="21 commands from the terminal — the complete PAdES ladder, signature-safe metadata edits, a CI-grade compare diff, batch manifests. Zero extra runtime dependencies, streaming, PDF/A.">
   <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
+  <meta property="og:image:alt" content="pdfnative — pure native PDF generation, zero dependencies">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
@@ -655,6 +656,7 @@ pdfnative render --input report.json --inspect-layout &gt; layout.json
 <li><strong>Charts v2</strong> — the <code>chart</code> block now covers 9 types (adds <code>stackedBar</code>, <code>stackedBarH</code>, <code>area</code>, <code>scatter</code>), a secondary Y axis (<code>series.yAxis: &quot;right&quot;</code> + <code>axis2</code>), <code>category</code> / <code>linear</code> / <code>time</code> X axes, log scale, <code>dataLabels</code>, <code>labelStride</code>, and <code>labelRotation</code>.</li>
 </ul>
 <h4 id="typography-v150">Typography <em>(v1.5.0)</em><a class="heading-anchor" href="#typography-v150" aria-label="Link to this section">#</a></h4>
+<!-- verify-docs:allow version-token (historical: this companion release was built on pdfnative 1.8.0) -->
 <p>The pdfnative 1.8.0 typography engine is reachable through <code>layout.typography</code> — in the document JSON or a <code>--layout</code> file — and four flags that fill the same keys:</p>
 <table>
 <thead>
@@ -1707,7 +1709,7 @@ pdfnative doctor --format json --pretty
 <td>Indented JSON even under the global <code>--json</code></td>
 </tr>
 </tbody></table>
-<p>Since v1.5.0 the report also carries <code>fonts</code> (<code>31 modules / 27 scripts</code>, each bundled module probed on disk), <code>unicode</code> (the Universal Shaping Engine&#39;s Unicode version) and <code>conformance</code> (<code>pdfa1b,pdfa2b,pdfa2u,pdfa3b,pdfx4</code> — the <code>--tagged</code> / <code>--pdfx</code> targets). Fully offline.</p>
+<p>Since v1.5.0 the report also carries <code>fonts</code> (the bundled modules and scripts probed on disk), <code>unicode</code> (the Universal Shaping Engine&#39;s Unicode version) and <code>conformance</code> (<code>pdfa1b,pdfa2b,pdfa2u,pdfa3b,pdfx4</code> — the <code>--tagged</code> / <code>--pdfx</code> targets). Fully offline.</p>
 <h3 id="pdfnative-batch"><code>pdfnative batch</code><a class="heading-anchor" href="#pdfnative-batch" aria-label="Link to this section">#</a></h3>
 <p>Renders every JSON file in a directory to PDF <strong>in parallel</strong>, reusing the full <code>render</code> pipeline.</p>
 <table>
@@ -2048,7 +2050,7 @@ pdfnative inspect --input brochure.pdf --json --pdfx --fields pdfx.valid,pdfx.er
 <td>✅ <code>attachments: [...]</code></td>
 </tr>
 <tr>
-<td><strong>27 scripts + COLRv1 emoji + math</strong></td>
+<td><strong>Every bundled script + COLRv1 emoji + math</strong></td>
 <td>✅ <code>--font</code> / <code>--lang</code></td>
 <td>✅ <code>registerFont()</code> / <code>loadFontData()</code></td>
 </tr>
@@ -2251,6 +2253,7 @@ npm ci &amp;&amp; npm run build &amp;&amp; npm run test:generate
 <hr>
 <h2 id="release-history">Release history<a class="heading-anchor" href="#release-history" aria-label="Link to this section">#</a></h2>
 <h3 id="whats-new-in-v150">What&#39;s new in v1.5.0<a class="heading-anchor" href="#whats-new-in-v150" aria-label="Link to this section">#</a></h3>
+<!-- verify-docs:allow version-token (historical: this companion release was built on pdfnative 1.8.0) -->
 <p>v1.5.0 is built on <strong>pdfnative 1.8.0</strong> (pin <code>^1.8.0</code>) and exposes every 1.8.0 engine feature — the typography engine, CMYK colours and colour bars, PDF/X-4 output with a structural validator, five more scripts (27 in all) with <code>latin</code> aliases, custom fonts from disk, and UTC, pinnable creation dates that make output <strong>byte-reproducible</strong> — plus the roadmap items the engine unblocked. 21 commands, 19 schema subjects and 12 stable error codes are unchanged; the global flag count grows to 10 (<code>--creation-date</code>). <strong>100 % backward-compatible command surface</strong> — every envelope field is additive — but the <em>bytes</em> differ from v1.4.0 output (see <em>Compatibility</em>).</p>
 <table>
 <thead>
@@ -2298,7 +2301,7 @@ npm ci &amp;&amp; npm run build &amp;&amp; npm run test:generate
 <tr>
 <td><code>doctor</code></td>
 <td><code>node</code>, <code>webcrypto</code>, <code>pdfnative</code>, <code>cli</code>, <code>commands</code></td>
-<td>adds <code>fonts</code> (31 modules / 27 scripts, probed on disk), <code>unicode</code>, <code>conformance</code> (<code>pdfa1b,pdfa2b,pdfa2u,pdfa3b,pdfx4</code>)</td>
+<td>adds <code>fonts</code> (the bundled modules and scripts, probed on disk), <code>unicode</code>, <code>conformance</code> (<code>pdfa1b,pdfa2b,pdfa2u,pdfa3b,pdfx4</code>)</td>
 </tr>
 <tr>
 <td>Agent contract</td>
@@ -2493,7 +2496,7 @@ npm ci &amp;&amp; npm run build &amp;&amp; npm run test:generate
 <tbody><tr>
 <td>Fonts</td>
 <td><code>--font {latin,emoji}</code></td>
-<td><strong>27 Unicode scripts + COLRv1 colour emoji</strong> — <code>--font</code>/<code>--lang</code> allow-list covers every bundled font (<code>latin</code>, <code>emoji</code>, <code>color-emoji</code>, and the 22 script codes incl. Telugu <code>te</code>, Sinhala <code>si</code>, Tibetan <code>bo</code>, Khmer <code>km</code>, Myanmar <code>my</code>, Amharic <code>am</code>)</td>
+<td><strong>Every bundled Unicode script + COLRv1 colour emoji</strong> — <code>--font</code>/<code>--lang</code> allow-list covers every bundled font (<code>latin</code>, <code>emoji</code>, <code>color-emoji</code>, and the 22 script codes incl. Telugu <code>te</code>, Sinhala <code>si</code>, Tibetan <code>bo</code>, Khmer <code>km</code>, Myanmar <code>my</code>, Amharic <code>am</code>)</td>
 </tr>
 <tr>
 <td>Streaming</td>
@@ -2631,6 +2634,7 @@ npm ci &amp;&amp; npm run build &amp;&amp; npm run test:generate
 </tbody></table>
 <hr>
 <h2 id="migration-v140--v150">Migration v1.4.0 → v1.5.0<a class="heading-anchor" href="#migration-v140--v150" aria-label="Link to this section">#</a></h2>
+<!-- verify-docs:allow version-token (historical: this companion release was built on pdfnative 1.8.0) -->
 <p><strong>100 % backward-compatible command surface</strong> — no flag, default, exit code or error code changed. The <em>bytes</em> changed with the pdfnative 1.8.0 engine (UTC dates, hinting tables kept in TrueType subsets, corrected Thai and Lao mark ordering), so hash-based consumers rebaseline once and then pin the date:</p>
 <pre><code class="language-diff"># 1. Reproducible bytes: rebaseline once, then pin the creation instant (or SOURCE_DATE_EPOCH)
 - pdfnative render --input doc.json --output doc.pdf

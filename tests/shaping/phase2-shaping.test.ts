@@ -99,11 +99,11 @@ describe('GPOS positioner (Phase 2)', () => {
 });
 
 describe('BiDi isolate support (UAX #9 §3.3.2)', () => {
-    it('classifies LRI/RLI/FSI/PDI as boundary neutrals', () => {
-        expect(classifyBidiType(0x2066)).toBe('BN'); // LRI
-        expect(classifyBidiType(0x2067)).toBe('BN'); // RLI
-        expect(classifyBidiType(0x2068)).toBe('BN'); // FSI
-        expect(classifyBidiType(0x2069)).toBe('BN'); // PDI
+    it('classifies LRI/RLI/FSI/PDI as their own isolate types (UCD Bidi_Class)', () => {
+        expect(classifyBidiType(0x2066)).toBe('LRI');
+        expect(classifyBidiType(0x2067)).toBe('RLI');
+        expect(classifyBidiType(0x2068)).toBe('FSI');
+        expect(classifyBidiType(0x2069)).toBe('PDI');
     });
 
     it('produces a single LTR run when no isolates are present', () => {
@@ -118,9 +118,11 @@ describe('BiDi isolate support (UAX #9 §3.3.2)', () => {
         // With LRI, it remains LTR.
         const text = '\u05D0\u05D1\u2066ABC\u2069\u05D2\u05D3';
         const runs = resolveBidiRuns(text);
-        // Verify we get at least one LTR run carrying 'ABC' literally
-        const ltrAbc = runs.find(r => r.level === 0 && r.text === 'ABC');
+        // The isolate opens the next even level above the RTL paragraph (2):
+        // 'ABC' is one LTR run in logical order.
+        const ltrAbc = runs.find(r => r.level % 2 === 0 && r.text === 'ABC');
         expect(ltrAbc).toBeDefined();
+        expect(ltrAbc!.level).toBe(2);
     });
 
     it('seals an RLI...PDI inner content as RTL inside an LTR paragraph', () => {
@@ -135,33 +137,35 @@ describe('BiDi isolate support (UAX #9 §3.3.2)', () => {
 
     it('FSI auto-detects inner direction from first strong char', () => {
         const ltrInside = resolveBidiRuns('Outer \u2068Inner\u2069 tail');
-        // Inner first strong is L → inner is LTR
+        // Inner first strong is L → the FSI acts as an LRI and opens level 2
         const inner = ltrInside.find(r => r.text === 'Inner');
-        expect(inner?.level).toBe(0);
+        expect(inner?.level).toBe(2);
 
         const rtlInside = resolveBidiRuns('Outer \u2068\u05D0\u05D1\u2069 tail');
         const innerR = rtlInside.find(r => r.text === '\u05D1\u05D0' || r.text === '\u05D0\u05D1');
         expect(innerR?.level).toBe(1);
     });
 
-    it('ignores unmatched isolate openers', () => {
-        // LRI without PDI → treated as plain BN (no effect)
+    it('leaves the text of an unmatched isolate opener in order and drops the control', () => {
+        // LRI without PDI: the isolate runs to the end of the paragraph (BD9);
+        // the formatting character itself is never part of a run.
         const runs = resolveBidiRuns('A\u2066B');
-        expect(runs.map(r => r.text).join('')).toBe('A\u2066B');
+        expect(runs.map(r => r.text).join('')).toBe('AB');
     });
 
     it('ignores unmatched PDIs', () => {
         const runs = resolveBidiRuns('A\u2069B');
-        expect(runs.map(r => r.text).join('')).toBe('A\u2069B');
+        expect(runs.map(r => r.text).join('')).toBe('AB');
     });
 
     it('handles nested isolates by re-resolving inner segments', () => {
         // RLI <Hebrew> LRI <Latin> PDI <Hebrew> PDI
         const text = '\u2067\u05D0\u2066ABC\u2069\u05D1\u2069';
         const runs = resolveBidiRuns(text);
-        // Should produce both an LTR run with 'ABC' and an RTL run with hebrew
+        // RLI opens level 1, the LRI inside it level 2: an LTR run 'ABC' at
+        // level 2 between Hebrew runs at level 1.
         const ltr = runs.find(r => r.text === 'ABC');
-        expect(ltr?.level).toBe(0);
+        expect(ltr?.level).toBe(2);
         const rtl = runs.find(r => r.level === 1);
         expect(rtl).toBeDefined();
     });

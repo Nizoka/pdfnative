@@ -1,0 +1,88 @@
+name: Bench
+
+# A performance TREND, archived weekly. Never a gate, and never a required
+# check — `.github/rulesets/main.json` names the contexts that block a
+# merge and this is not one of them.
+#
+# Why it cannot be a threshold: shared runners vary 2-5x run to run. A
+# blocking budget either fires false-red every week or is loose enough to
+# miss a real regression, and both teach people to ignore it. The reference
+# numbers that mean something are in bench/RESULTS.md, measured on a named
+# machine at release time, with the machine written down — a number without
+# its run context is not evidence.
+#
+# There is deliberately no `continue-on-error: true`. It blocks nothing
+# already, so a green square over a crashed run would only hide the one
+# thing this workflow can still tell you: that the benchmarks stopped
+# running at all.
+
+on:
+  schedule:
+    # Monday 06:41 UTC. Off the hour, and a different day from fuzz.yml, so
+    # the two never queue behind each other on a Sunday-night backlog.
+    - cron: '41 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bench-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  bench:
+    name: benchmarks
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Harden the runner
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        with:
+          egress-policy: block
+          allowed-endpoints: >
+            github.com:443
+            api.github.com:443
+            registry.npmjs.org:443
+
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      # The run context goes into the artefact with the numbers, because the
+      # numbers are meaningless without it and a reader six months later will
+      # not have the run page open.
+      - name: Record the run context
+        run: |
+          {
+            echo "# pdfnative benchmark run"
+            echo
+            echo "- date: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "- commit: ${GITHUB_SHA}"
+            echo "- runner: ${RUNNER_OS} ${RUNNER_ARCH} (${GITHUB_RUNNER_NAME:-shared})"
+            echo "- node: $(node --version)"
+            echo "- cpu: $(grep -m1 'model name' /proc/cpuinfo | cut -d: -f2- | sed 's/^ //')"
+            echo "- cores: $(nproc)"
+            echo
+          } > bench-results.md
+
+      - name: Run benchmarks
+        run: npm run bench 2>&1 | tee -a bench-results.md
+
+      - name: Upload the results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: bench-results-${{ github.run_number }}
+          path: bench-results.md
+          retention-days: 90

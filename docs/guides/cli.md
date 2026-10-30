@@ -360,6 +360,7 @@ Everything here needs pdfnative ≥ 1.7.0 and is reachable through the existing 
 
 #### Typography _(v1.5.0)_
 
+<!-- verify-docs:allow version-token (historical: this companion release was built on pdfnative 1.8.0) -->
 The pdfnative 1.8.0 typography engine is reachable through `layout.typography` — in the document JSON or a `--layout` file — and four flags that fill the same keys:
 
 | Flag | Description |
@@ -803,7 +804,7 @@ pdfnative doctor --format json --pretty
 | `--format, -f <fmt>` | `text` | `text` or `json` |
 | `--pretty` | off | Indented JSON even under the global `--json` |
 
-Since v1.5.0 the report also carries `fonts` (`31 modules / 27 scripts`, each bundled module probed on disk), `unicode` (the Universal Shaping Engine's Unicode version) and `conformance` (`pdfa1b,pdfa2b,pdfa2u,pdfa3b,pdfx4` — the `--tagged` / `--pdfx` targets). Fully offline.
+Since v1.5.0 the report also carries `fonts` (the bundled modules and scripts probed on disk), `unicode` (the Universal Shaping Engine's Unicode version) and `conformance` (`pdfa1b,pdfa2b,pdfa2u,pdfa3b,pdfx4` — the `--tagged` / `--pdfx` targets). Fully offline.
 
 ### `pdfnative batch`
 
@@ -1051,7 +1052,7 @@ The CLI now covers nearly the full library surface; only Web Worker offloading r
 | **Encryption (AES-128/256)** | ✅ `--encrypt-*` | ✅ `encryption: {…}` |
 | **Watermarks** | ✅ `--watermark-*` | ✅ `watermark: {…}` |
 | **PDF/A-3 attachments** | ✅ `--attachment` | ✅ `attachments: [...]` |
-| **27 scripts + COLRv1 emoji + math** | ✅ `--font` / `--lang` | ✅ `registerFont()` / `loadFontData()` |
+| **Every bundled script + COLRv1 emoji + math** | ✅ `--font` / `--lang` | ✅ `registerFont()` / `loadFontData()` |
 | **Page-tree editing (merge / split / extract)** | ✅ `merge` / `split` / `extract` | ✅ `mergePdfs()` / `splitPdf()` / `extractPages()` |
 | **Markup annotations** | ✅ `annotate` | ✅ `PdfModifier.addAnnotation()` / `buildAnnotationBody()` |
 | **Bookmarks / outline** | ✅ `render --outline` | ✅ `outline: '…'` |
@@ -1118,6 +1119,7 @@ npm ci && npm run build && npm run test:generate
 
 ### What's new in v1.5.0
 
+<!-- verify-docs:allow version-token (historical: this companion release was built on pdfnative 1.8.0) -->
 v1.5.0 is built on **pdfnative 1.8.0** (pin `^1.8.0`) and exposes every 1.8.0 engine feature — the typography engine, CMYK colours and colour bars, PDF/X-4 output with a structural validator, five more scripts (27 in all) with `latin` aliases, custom fonts from disk, and UTC, pinnable creation dates that make output **byte-reproducible** — plus the roadmap items the engine unblocked. 21 commands, 19 schema subjects and 12 stable error codes are unchanged; the global flag count grows to 10 (`--creation-date`). **100 % backward-compatible command surface** — every envelope field is additive — but the *bytes* differ from v1.4.0 output (see *Compatibility*).
 
 | Area | v1.4.0 | v1.5.0 |
@@ -1129,7 +1131,7 @@ v1.5.0 is built on **pdfnative 1.8.0** (pin `^1.8.0`) and exposes every 1.8.0 en
 | Global flags | 9, after the command | 10; may **precede the command** (`pdfnative --json --dry-run render …`); arguments without a command exit 2 (`E_USAGE`) |
 | `inspect` | PDF/A, PDF/UA, signatures | **`--pdfx`**, **`--check pdfx`**, `pdfxConformance` (always present), **`--iso-dates`**, `metadata.modDate`, `--summary` gains `pdfx` |
 | `annotate` / `sign` / `verify` | markup types; `--timestamp` | `annotate` type **`link`** (`rect` + `url`, http/https/mailto); **`sign --timestamp-timeout <ms>`** (`timestamp.timeoutMs`); `verify` reports `timestampDigest` and flags a SHA-1 `messageImprint` as a weak digest (fails under `--strict`) |
-| `doctor` | `node`, `webcrypto`, `pdfnative`, `cli`, `commands` | adds `fonts` (31 modules / 27 scripts, probed on disk), `unicode`, `conformance` (`pdfa1b,pdfa2b,pdfa2u,pdfa3b,pdfx4`) |
+| `doctor` | `node`, `webcrypto`, `pdfnative`, `cli`, `commands` | adds `fonts` (the bundled modules and scripts, probed on disk), `unicode`, `conformance` (`pdfa1b,pdfa2b,pdfa2u,pdfa3b,pdfx4`) |
 | Agent contract | AGENTS.md, envelope partly pinned | **`docs/AGENT_CONTRACT.md`**; `schema status` pins all **31 envelope fields** (`pdfx`, `creationDate`, `timestamp.timeoutMs`, `dryRun` new); `.pdfnativerc.json` per-command sections apply to all 21 commands |
 | Fixes | — | `--layout` no longer clobbers a nested `typography` / `outputIntent` object from the document; `--font-file` derives the same default name on every platform; `inspect` / `compare` decode UTF-16BE `/Info` strings (an em dash in a title no longer yields `title: null`); an unknown `formField.fieldType` is refused with `E_INPUT` (the engine types are `text`, `multilineText`, `checkbox`, `radio`, `dropdown`, `listbox` — samples using `textarea` / `select` were renamed to `multilineText` / `dropdown`); a command flag before the command no longer swallows the command name |
 | Compatibility | `pdfnative ^1.7.0`, Node ≥ 22 | `pdfnative ^1.8.0`, Node ≥ 22. **Bytes differ from v1.4.0** (UTC dates, hinting tables kept in TrueType subsets, corrected Thai and Lao mark ordering): hash-based consumers rebaseline once, then pin with `--creation-date`. `samples/run-all.js` removed (`npm run test:generate` replaces it). SSRF guard also blocks `198.18.0.0/15`, `192.0.2.0/24` and `64:ff9b::/96`; `--layout` files share the 50 MB cap |
@@ -1196,7 +1198,7 @@ v1.1.0 is built on **pdfnative 1.3.0** and surfaces its new engine capabilities 
 
 | Area | v0.3.0 | v1.1.0 |
 |---|---|---|
-| Fonts | `--font {latin,emoji}` | **27 Unicode scripts + COLRv1 colour emoji** — `--font`/`--lang` allow-list covers every bundled font (`latin`, `emoji`, `color-emoji`, and the 22 script codes incl. Telugu `te`, Sinhala `si`, Tibetan `bo`, Khmer `km`, Myanmar `my`, Amharic `am`) |
+| Fonts | `--font {latin,emoji}` | **Every bundled Unicode script + COLRv1 colour emoji** — `--font`/`--lang` allow-list covers every bundled font (`latin`, `emoji`, `color-emoji`, and the 22 script codes incl. Telugu `te`, Sinhala `si`, Tibetan `bo`, Khmer `km`, Myanmar `my`, Amharic `am`) |
 | Streaming | `--stream` (single-pass), page-by-page | adds **`--stream-true`** — true constant-memory streaming via `buildDocumentPDFStreamTrue` / `buildPDFStreamTrue`; the joined binary never materialises |
 | Block cap | hard-coded ceiling | **`--max-blocks <n>`** exposes `layout.maxBlocks` (default 100 000) for very large reports |
 | Accessibility | — | **PDF/UA (ISO 14289-1) structural validator** — `inspect --pdfua` and `--check pdfua` as a CI accessibility gate |
@@ -1240,6 +1242,7 @@ The v0.2.0 release expanded the CLI from ~10 flags to a near-complete projection
 
 ## Migration v1.4.0 → v1.5.0
 
+<!-- verify-docs:allow version-token (historical: this companion release was built on pdfnative 1.8.0) -->
 **100 % backward-compatible command surface** — no flag, default, exit code or error code changed. The *bytes* changed with the pdfnative 1.8.0 engine (UTC dates, hinting tables kept in TrueType subsets, corrected Thai and Lao mark ordering), so hash-based consumers rebaseline once and then pin the date:
 
 ```diff

@@ -211,11 +211,11 @@ export function shapeThaiText(str: string, fontData: FontData): ShapedGlyph[] {
         // Leading vowels
         for (const lvCp of cluster.leadings) {
             const lvGid = cmap[lvCp] || 0;
-            shaped.push({ gid: lvGid, dx: 0, dy: 0, isZeroAdvance: false });
+            shaped.push({ gid: lvGid, dx: 0, dy: 0, isZeroAdvance: false, cps: [lvCp] });
         }
 
         // Base glyph
-        shaped.push({ gid: baseGid, dx: 0, dy: 0, isZeroAdvance: false });
+        shaped.push({ gid: baseGid, dx: 0, dy: 0, isZeroAdvance: false, cps: [cluster.base] });
 
         // Above marks with Mark-to-Mark stacking
         let prevAboveMarkGid: number | null = null;
@@ -250,7 +250,7 @@ export function shapeThaiText(str: string, fontData: FontData): ShapedGlyph[] {
                 }
             }
 
-            shaped.push({ gid: markGid, dx, dy, isZeroAdvance: true });
+            shaped.push({ gid: markGid, dx, dy, isZeroAdvance: true, cps: [abvCp] });
             prevAboveMarkGid = markGid;
             prevAboveMarkDx = dx;
             prevAboveMarkDy = dy;
@@ -271,7 +271,7 @@ export function shapeThaiText(str: string, fontData: FontData): ShapedGlyph[] {
                 }
             }
 
-            shaped.push({ gid: markGid, dx, dy, isZeroAdvance: true });
+            shaped.push({ gid: markGid, dx, dy, isZeroAdvance: true, cps: [blwCp] });
         }
     }
 

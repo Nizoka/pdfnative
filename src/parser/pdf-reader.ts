@@ -20,6 +20,7 @@ import { decodePNGPredictor } from './pdf-predictor.js';
 import { applyDecodeFilter, KNOWN_DECODE_FILTERS } from './pdf-decode-filters.js';
 import { authenticate, decryptObjectValue } from './pdf-decrypt.js';
 import type { DecryptionContext } from './pdf-decrypt.js';
+import { decodePdfTextString } from './pdf-text-string.js';
 import type { PageLabelRange, PageLabelStyle } from '../core/pdf-page-labels.js';
 
 // ── Types ────────────────────────────────────────────────────────────
@@ -372,7 +373,7 @@ export function openPdf(bytes: Uint8Array, options?: OpenPdfOptions): PdfReader 
                 range.style = sOp === undefined ? 'none' : (STYLE_FROM_OP[sOp] ?? 'none');
 
                 const prefix = dict.get('P');
-                if (typeof prefix === 'string') range.prefix = prefix;
+                if (typeof prefix === 'string') range.prefix = decodePdfTextString(prefix);
 
                 const start = dictGetNum(dict, 'St');
                 if (start !== undefined) range.start = start;
@@ -456,23 +457,6 @@ export function getDecryptionContext(reader: PdfReader): DecryptionContext | nul
 }
 
 // ── Page-Label Number Tree ───────────────────────────────────────────
-
-/**
- * Decode a PDF text string (ISO 32000-1 §7.9.2) that the tokenizer returned as
- * a raw byte string (one JS char per byte). UTF-16BE strings (starting with the
- * `FE FF` BOM) are decoded to their Unicode text; otherwise the string is
- * returned as-is (PDFDocEncoding ≈ Latin-1 for the common ASCII case).
- */
-function decodePdfTextString(raw: string): string {
-    if (raw.length >= 2 && raw.charCodeAt(0) === 0xFE && raw.charCodeAt(1) === 0xFF) {
-        let out = '';
-        for (let i = 2; i + 1 < raw.length; i += 2) {
-            out += String.fromCharCode((raw.charCodeAt(i) << 8) | raw.charCodeAt(i + 1));
-        }
-        return out;
-    }
-    return raw;
-}
 
 /** Reverse of the `/S` numbering-style operator → {@link PageLabelStyle}. */
 const STYLE_FROM_OP: Record<string, PageLabelStyle> = {

@@ -51,6 +51,7 @@ export { MYANMAR_START, MYANMAR_END, containsMyanmar };
 const VIRAMA = MYANMAR_VIRAMA; // 0x1039
 /** Medial ra (U+103C) — renders to the LEFT of the base (pre-base). */
 const MEDIAL_RA = 0x103C;
+const E_VOWEL = 0x1031;
 
 /**
  * Myanmar character type classification.
@@ -175,8 +176,11 @@ export function buildMyanmarClusters(str: string): MyanmarCluster[] {
             }
         }
         // Consume asat directly after base/stack.
-        // Consume medials.
-        while (i < cps.length && myanmarCharType(cps[i]) === 8) {
+        // Consume medials — ya, wa, ha, and the medial ra (U+103C) wherever
+        // it sits among them: `က ြ ွ ေ` is one cluster, with the ra and the
+        // wa drawn around the same base (1.9.0; the ra used to end the
+        // medials and split `ွ` off into a cluster of its own).
+        while (i < cps.length && (myanmarCharType(cps[i]) === 8 || cps[i] === MEDIAL_RA)) {
             cluster.push(cps[i]);
             i++;
         }
@@ -215,18 +219,6 @@ export function shapeMyanmarText(str: string, fontData: FontData): ShapedGlyph[]
         return widths[gid] !== undefined ? widths[gid] : defaultWidth;
     }
 
-    function getBaseAnchor(baseGid: number, markClass: number): [number, number] | null {
-        const base = markAnchors && markAnchors.bases && markAnchors.bases[baseGid];
-        if (!base) return null;
-        return base[markClass] ?? null;
-    }
-
-    function getMarkAnchor(markGid: number): { classIdx: number; x: number; y: number } | null {
-        const mark = markAnchors && markAnchors.marks && markAnchors.marks[markGid];
-        if (!mark) return null;
-        return { classIdx: mark[0], x: mark[1], y: mark[2] };
-    }
-
     /**
      * Place a mark, stacking it on the previous mark of the same cluster when
      * the font carries a mark-to-mark anchor for the pair. Without that, two
@@ -235,39 +227,39 @@ export function shapeMyanmarText(str: string, fontData: FontData): ShapedGlyph[]
      */
     function emitMark(
         gid: number,
+        cps: readonly number[],
         baseGid: number,
         prev: { gid: number; dx: number; dy: number } | null,
     ): { gid: number; dx: number; dy: number } {
         const stacked = prev ? positionMarkOnMark(fontData.mark2mark, prev.gid, gid) : null;
         if (stacked && prev) {
             const placed = { gid, dx: prev.dx + stacked.dx, dy: prev.dy + stacked.dy };
-            shaped.push({ gid, dx: placed.dx, dy: placed.dy, isZeroAdvance: true });
+            shaped.push({ gid, dx: placed.dx, dy: placed.dy, isZeroAdvance: true, cps });
             return placed;
         }
         const onBase = positionMarkOnBase(markAnchors, gid, baseGid, getAdv(baseGid));
         const dx = onBase ? onBase.dx : 0;
         const dy = onBase ? onBase.dy : 0;
-        shaped.push({ gid, dx, dy, isZeroAdvance: true });
+        shaped.push({ gid, dx, dy, isZeroAdvance: true, cps });
         return { gid, dx, dy };
     }
 
-    function emitGlyph(gid: number, isZero: boolean, baseGid?: number): void {
+    /**
+     * Emit a glyph that names its source code points (1.9.0): a spacing glyph
+     * at the pen, or a mark anchored on `baseGid` through every anchor triple
+     * the font gives it (the first-triple read of earlier releases missed
+     * the pairs a font anchors through a later subtable, #81).
+     */
+    function emitGlyph(gid: number, cps: readonly number[], isZero: boolean, baseGid?: number): void {
         if (isZero && baseGid !== undefined) {
-            const markAnchor = getMarkAnchor(gid);
-            if (markAnchor) {
-                const baseAnchorPt = getBaseAnchor(baseGid, markAnchor.classIdx);
-                if (baseAnchorPt) {
-                    const baseAdv = getAdv(baseGid);
-                    shaped.push({
-                        gid, dx: baseAnchorPt[0] - markAnchor.x - baseAdv,
-                        dy: baseAnchorPt[1] - markAnchor.y, isZeroAdvance: true,
-                    });
-                    return;
-                }
+            const onBase = positionMarkOnBase(markAnchors, gid, baseGid, getAdv(baseGid));
+            if (onBase) {
+                shaped.push({ gid, dx: onBase.dx, dy: onBase.dy, isZeroAdvance: true, cps });
+                return;
             }
-            shaped.push({ gid, dx: 0, dy: 0, isZeroAdvance: true });
+            shaped.push({ gid, dx: 0, dy: 0, isZeroAdvance: true, cps });
         } else {
-            shaped.push({ gid, dx: 0, dy: 0, isZeroAdvance: false });
+            shaped.push({ gid, dx: 0, dy: 0, isZeroAdvance: false, cps });
         }
     }
 
@@ -282,9 +274,13 @@ export function shapeMyanmarText(str: string, fontData: FontData): ShapedGlyph[]
             if (myanmarCharType(codepoints[ci]) === 0) { baseGid = resolveGid(codepoints[ci]); break; }
         }
 
-        // Emit pre-base (left) glyphs first: medial ra and the e-vowel (U+1031).
-        for (let ci = 0; ci < codepoints.length; ci++) {
-            if (myanmarCharType(codepoints[ci]) === 4) emitGlyph(resolveGid(codepoints[ci]), false);
+        // Emit pre-base (left) glyphs first: the e-vowel (U+1031) leftmost,
+        // then the medial ra (U+103C) that wraps the base — HarfBuzz's
+        // VPre before PRE_C order (`ေ ြ က`), whatever order they were typed.
+        for (const pre of [E_VOWEL, MEDIAL_RA]) {
+            for (let ci = 0; ci < codepoints.length; ci++) {
+                if (codepoints[ci] === pre) emitGlyph(resolveGid(pre), [pre], false);
+            }
         }
 
         // Build base + virama-consonant + medials run for ligature lookup.
@@ -303,7 +299,7 @@ export function shapeMyanmarText(str: string, fontData: FontData): ShapedGlyph[]
             } else if (ct === 4) {
                 // pre-base, already emitted
             } else {
-                emitGlyph(resolveGid(cp), false);
+                emitGlyph(resolveGid(cp), [cp], false);
             }
         }
 
@@ -318,8 +314,9 @@ export function shapeMyanmarText(str: string, fontData: FontData): ShapedGlyph[]
         while (gi < stackGids.length) {
             const lig = tryLig(stackGids.slice(gi));
             const gid = lig ? lig.resultGid : stackGids[gi];
+            const cps = stackEndIdx.slice(gi, gi + (lig ? lig.consumed : 1)).map(ci => codepoints[ci]);
             if (first) {
-                emitGlyph(gid, false);
+                emitGlyph(gid, cps, false);
                 if (lig) baseGid = gid;
                 first = false;
             } else {
@@ -327,7 +324,7 @@ export function shapeMyanmarText(str: string, fontData: FontData): ShapedGlyph[]
                 // the class-based decision this shaper has always made.
                 const origCi = stackEndIdx[gi];
                 const ct = myanmarCharType(codepoints[origCi]);
-                emitGlyph(gid, lig !== null || ct === 7 || ct === 8, baseGid);
+                emitGlyph(gid, cps, lig !== null || ct === 7 || ct === 8, baseGid);
             }
             gi += lig ? lig.consumed : 1;
         }
@@ -341,19 +338,20 @@ export function shapeMyanmarText(str: string, fontData: FontData): ShapedGlyph[]
             const kGids = cluster.kinzi.map(resolveGid);
             const kLig = tryLig(kGids);
             if (kLig && kLig.consumed === kGids.length) {
-                prevMark = emitMark(kLig.resultGid, baseGid, null);
+                prevMark = emitMark(kLig.resultGid, cluster.kinzi, baseGid, null);
             } else {
-                for (const kg of kGids) prevMark = emitMark(kg, baseGid, prevMark);
+                const kinziCps = cluster.kinzi;
+                kGids.forEach((kg, k) => { prevMark = emitMark(kg, [kinziCps[k]], baseGid, prevMark); });
             }
         }
         for (let ci = markStart; ci < codepoints.length; ci++) {
             const cp = codepoints[ci];
             const ct = myanmarCharType(cp);
             if (ct === 2 || ct === 3 || ct === 6) {
-                prevMark = emitMark(resolveGid(cp), baseGid, prevMark);
-            } else if (ct === 5) { emitGlyph(resolveGid(cp), false); prevMark = null; }
+                prevMark = emitMark(resolveGid(cp), [cp], baseGid, prevMark);
+            } else if (ct === 5) { emitGlyph(resolveGid(cp), [cp], false); prevMark = null; }
             else if (ct === 4) { /* already emitted pre-base */ }
-            else { emitGlyph(resolveGid(cp), false); prevMark = null; }
+            else { emitGlyph(resolveGid(cp), [cp], false); prevMark = null; }
         }
     }
 

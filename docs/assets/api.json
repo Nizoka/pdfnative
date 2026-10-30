@@ -2,7 +2,7 @@
   "$comment": "Public API surface of pdfnative, derived mechanically from the export statements of src/index.ts by scripts/build-api-json.ts and policed by the api-json-sync rule of scripts/verify-docs.ts. Fields that cannot be extracted mechanically are null, never guessed. Regenerate with `npm run docs:api`.",
   "package": "pdfnative",
   "source": "src/index.ts",
-  "exportCount": 503,
+  "exportCount": 542,
   "exports": [
     {
       "name": "AddDocumentTimestampOptions",
@@ -73,6 +73,20 @@
       "module": "src/types/pdf-types.ts",
       "signature": "export type Base14Metrics = 'approximate' | 'exact';",
       "summary": "Base-14 measurement mode."
+    },
+    {
+      "name": "BidiDirection",
+      "kind": "type",
+      "module": "src/shaping/bidi.ts",
+      "signature": "export type BidiDirection = TextDirection;",
+      "summary": "Base direction of a paragraph: detected (P2–P3), or forced — the layout option's type."
+    },
+    {
+      "name": "BidiLevels",
+      "kind": "type",
+      "module": "src/shaping/bidi.ts",
+      "signature": "export interface BidiLevels",
+      "summary": "A paragraph's resolved embedding levels, one per UTF-16 code unit."
     },
     {
       "name": "BidiRun",
@@ -192,6 +206,13 @@
       "module": "src/types/pdf-types.ts",
       "signature": "export interface ColumnDef",
       "summary": "Column definition for the table layout."
+    },
+    {
+      "name": "ComposeLtvOptions",
+      "kind": "type",
+      "module": "src/core/pdf-dss.ts",
+      "signature": "export interface ComposeLtvOptions",
+      "summary": "Options for composeLtvData."
     },
     {
       "name": "Contour",
@@ -548,7 +569,7 @@
       "kind": "type",
       "module": "src/types/pdf-document-types.ts",
       "signature": "export interface ImageBlock",
-      "summary": "Image block — embeds a JPEG or PNG image."
+      "summary": "Image block — embeds a JPEG, PNG or JPEG 2000 image (the file bytes as written; v1.9.0 for JPEG 2000)."
     },
     {
       "name": "InspectedBlock",
@@ -570,6 +591,13 @@
       "module": "src/core/pdf-annot.ts",
       "signature": "export interface InternalLink",
       "summary": "Internal link annotation (GoTo action — page destination)."
+    },
+    {
+      "name": "JpxInfo",
+      "kind": "type",
+      "module": "src/core/pdf-image.ts",
+      "signature": "export interface JpxInfo",
+      "summary": "What a JPEG 2000 image declares about itself (ISO/IEC 15444-1), read from the JP2 header boxes and the codestream's SIZ marker."
     },
     {
       "name": "KNOWN_DECODE_FILTERS",
@@ -621,6 +649,13 @@
       "summary": "Link block — clickable hyperlink text."
     },
     {
+      "name": "LinkMarkupAnnotation",
+      "kind": "type",
+      "module": "src/core/pdf-annot-markup.ts",
+      "signature": "export interface LinkMarkupAnnotation extends AnnotationBase",
+      "summary": "URI link annotation (`/Subtype /Link` with a `/URI` action) — the incremental-update counterpart of the document builder's `link` block, so a clickable link can be added to an EXISTING document (#91)."
+    },
+    {
       "name": "ListBlock",
       "kind": "type",
       "module": "src/types/pdf-document-types.ts",
@@ -640,6 +675,13 @@
       "module": "src/core/pdf-dss.ts",
       "signature": "export interface LtvData",
       "summary": "Transport-free validation material, serializable and replayable."
+    },
+    {
+      "name": "LtvMaterial",
+      "kind": "type",
+      "module": "src/core/pdf-dss.ts",
+      "signature": "export interface LtvMaterial",
+      "summary": "Validation material collected out of band — three flat lists of DER."
     },
     {
       "name": "MAX_PARSE_DEPTH",
@@ -668,6 +710,13 @@
       "module": "src/parser/pdf-pagetree.ts",
       "signature": "export interface MergeOptions",
       "summary": "Options for the page-tree manipulation API (mergePdfs, splitPdf, extractPages)."
+    },
+    {
+      "name": "OcspCertId",
+      "kind": "type",
+      "module": "src/crypto/ocsp.ts",
+      "signature": "export interface OcspCertId",
+      "summary": "CertID of a SingleResponse (RFC 6960 §4.1.1)."
     },
     {
       "name": "OcspCertStatus",
@@ -932,14 +981,14 @@
       "name": "PdfColor",
       "kind": "type",
       "module": "src/types/pdf-types.ts",
-      "signature": "export type PdfColor = PdfRgbString | PdfRgbTuple | PdfCmykString | PdfCmykTuple | (string & {});",
+      "signature": "export type PdfColor = PdfRgbString | PdfRgbTuple | PdfCmykString | PdfCmykTuple | PdfSpotColor | PdfInkMix | (string & {});",
       "summary": "Color input accepted by pdfnative."
     },
     {
       "name": "PdfColorSpace",
       "kind": "type",
       "module": "src/core/pdf-color.ts",
-      "signature": "export type PdfColorSpace = 'rgb' | 'cmyk';",
+      "signature": "export type PdfColorSpace = 'rgb' | 'cmyk' | 'separation' | 'devicen';",
       "summary": "The colour space a resolved colour belongs to."
     },
     {
@@ -997,6 +1046,13 @@
       "module": "src/types/pdf-types.ts",
       "signature": "export interface PdfInfoItem",
       "summary": "An info key/value pair displayed in the header section."
+    },
+    {
+      "name": "PdfInkMix",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface PdfInkMix",
+      "summary": "A mix of declared spot inks, each at a tint 0–1: a `/DeviceN` colour space over those inks whose tint transform combines their alternates."
     },
     {
       "name": "PdfLayoutOptions",
@@ -1104,11 +1160,25 @@
       "summary": "A merge source: raw PDF bytes, or bytes paired with the password needed to decrypt an encrypted source."
     },
     {
+      "name": "PdfSpotColor",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface PdfSpotColor",
+      "summary": "A spot colour: one ink declared in `layout.print.spotColours`, painted at `tint` (0–1, default 1)."
+    },
+    {
       "name": "PdfStream",
       "kind": "type",
       "module": "src/parser/pdf-object-parser.ts",
       "signature": "export interface PdfStream",
       "summary": null
+    },
+    {
+      "name": "PdfStreamLimitError",
+      "kind": "value",
+      "module": "src/parser/pdf-inflate.ts",
+      "signature": "export class PdfStreamLimitError extends Error",
+      "summary": "A stream could not be decoded because its output would exceed the configured safety cap (setMaxInflateOutputSize for FlateDecode, the fixed cap of the other filters)."
     },
     {
       "name": "PdfToken",
@@ -1314,6 +1384,20 @@
       "summary": "One emitted document from streamSplitPdf."
     },
     {
+      "name": "SpotColourDef",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export interface SpotColourDef",
+      "summary": "A spot ink the document may paint with: its name (the `/Separation` colorant and the plate name a RIP shows) and its alternate in a process space — CMYK percentages for a press job, RGB 0–255 for an RGB OutputIntent — used wherever the ink "
+    },
+    {
+      "name": "StreamErrorPolicy",
+      "kind": "type",
+      "module": "src/parser/pdf-text-extract.ts",
+      "signature": "export type StreamErrorPolicy = 'limit' | 'throw' | 'skip';",
+      "summary": "How extractText treats a stream it cannot decode."
+    },
+    {
       "name": "StreamMergeOptions",
       "kind": "type",
       "module": "src/parser/pdf-pagetree.ts",
@@ -1382,6 +1466,13 @@
       "module": "src/core/pdf-annot-markup.ts",
       "signature": "export interface TextAnnotation extends AnnotationBase",
       "summary": "Sticky-note text annotation (`/Subtype /Text`)."
+    },
+    {
+      "name": "TextDirection",
+      "kind": "type",
+      "module": "src/types/pdf-types.ts",
+      "signature": "export type TextDirection = 'auto' | 'ltr' | 'rtl';",
+      "summary": "Base direction of a paragraph: detected from its first strong character (`'auto'`, UAX #9 P2–P3) or forced."
     },
     {
       "name": "TextMarkupAnnotation",
@@ -1542,7 +1633,7 @@
       "kind": "type",
       "module": "src/core/pdf-watermark.ts",
       "signature": "export interface WatermarkState",
-      "summary": "Resolved watermark state for use during PDF assembly."
+      "summary": null
     },
     {
       "name": "WatermarkText",
@@ -1641,6 +1732,20 @@
       "module": "src/core/pdf-typography.ts",
       "signature": "export function applyPunctuationSpacing(text: string, rules: readonly PunctuationSpacingRule[]): string",
       "summary": "Replace the plain spaces adjacent to punctuation with no-break ones, following an explicit set of rules."
+    },
+    {
+      "name": "bidiLineLevels",
+      "kind": "value",
+      "module": "src/shaping/bidi.ts",
+      "signature": "export function bidiLineLevels(line: string, lineLevels: readonly number[], paraLevel: number): number[]",
+      "summary": "The final levels of one line (UAX #9 L1 applied to the paragraph levels of that line): segment separators and the whitespace or formatting characters before one or at the end of the line take the paragraph level."
+    },
+    {
+      "name": "bidiRunsForLine",
+      "kind": "value",
+      "module": "src/shaping/bidi.ts",
+      "signature": "export function bidiRunsForLine(line: string, lineLevels: readonly number[], paraLevel: number): BidiRun[]",
+      "summary": "Reorder one line of a paragraph from the paragraph's resolved levels (UAX #9 L1, L2 and L4): the line's slice of the levels, trailing whitespace reset to the paragraph level, runs reversed and mirrored."
     },
     {
       "name": "bindShortWords",
@@ -1916,6 +2021,13 @@
       "summary": "Collect validation material for every signed signature in the document."
     },
     {
+      "name": "composeLtvData",
+      "kind": "value",
+      "module": "src/core/pdf-dss.ts",
+      "signature": "export function composeLtvData(pdfBytes: Uint8Array, material: LtvMaterial, options: ComposeLtvOptions = {}): LtvData",
+      "summary": "Compose the LtvData that embedValidationInfo expects from flat lists of certificates, OCSP responses and CRLs collected out of band — an air-gapped pipeline, a corporate PKI export, a cached validator run (#90)."
+    },
+    {
       "name": "computeColumnPositions",
       "kind": "value",
       "module": "src/core/pdf-layout.ts",
@@ -1965,11 +2077,32 @@
       "summary": "Check whether a string contains any Ethiopic characters."
     },
     {
+      "name": "containsGujarati",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function containsGujarati(str: string): boolean",
+      "summary": "Check whether a string contains any Gujarati characters."
+    },
+    {
+      "name": "containsGurmukhi",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function containsGurmukhi(str: string): boolean",
+      "summary": "Check whether a string contains any Gurmukhi characters."
+    },
+    {
       "name": "containsHebrew",
       "kind": "value",
       "module": "src/shaping/script-registry.ts",
       "signature": "export function containsHebrew(text: string): boolean",
       "summary": "Check if text contains Hebrew characters."
+    },
+    {
+      "name": "containsKannada",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function containsKannada(str: string): boolean",
+      "summary": "Check whether a string contains any Kannada characters."
     },
     {
       "name": "containsKhmer",
@@ -1984,6 +2117,13 @@
       "module": "src/shaping/script-registry.ts",
       "signature": "export function containsLao(str: string): boolean",
       "summary": "Check whether a string contains any Lao characters."
+    },
+    {
+      "name": "containsMalayalam",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function containsMalayalam(str: string): boolean",
+      "summary": "Check whether a string contains any Malayalam characters."
     },
     {
       "name": "containsMath",
@@ -2007,11 +2147,18 @@
       "summary": "Check whether a string contains any New Tai Lue characters."
     },
     {
+      "name": "containsOdia",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function containsOdia(str: string): boolean",
+      "summary": "Check whether a string contains any Odia characters."
+    },
+    {
       "name": "containsRTL",
       "kind": "value",
       "module": "src/shaping/bidi.ts",
       "signature": "export function containsRTL(text: string): boolean",
-      "summary": "Check if text contains any RTL characters (Arabic or Hebrew) or an explicit directional override (LRO U+202D / RLO U+202E)."
+      "summary": "Check whether text needs bidirectional resolution: it holds a right-to-left character (R or AL, which includes the RLM and ALM marks) or a right-to-left explicit control (RLE, RLO, RLI)."
     },
     {
       "name": "containsSinhala",
@@ -2073,7 +2220,7 @@
       "name": "createEncodingContext",
       "kind": "value",
       "module": "src/core/encoding-context.ts",
-      "signature": "export function createEncodingContext( fontEntries: FontEntry[], pdfA: boolean = false, normalize: 'NFC' | 'NFD' | 'NFKC' | 'NFKD' | false = false, metrics: Base14Metrics = 'approximate', lang?: string, ): EncodingContext",
+      "signature": "export function createEncodingContext( fontEntries: FontEntry[], pdfA: boolean = false, normalize: 'NFC' | 'NFD' | 'NFKC' | 'NFKD' | false = false, metrics: Base14Metrics = 'approximate', lang?: string, actualText: boolean = true, ): EncodingContext",
       "summary": "Create an encoding context that encapsulates text encoding and font reference logic."
     },
     {
@@ -2112,6 +2259,13 @@
       "summary": "Decode an ASCIIHexDecode stream."
     },
     {
+      "name": "decodeDerSignature",
+      "kind": "value",
+      "module": "src/crypto/ecdsa.ts",
+      "signature": "export function decodeDerSignature(der: Uint8Array): { r: bigint; s: bigint }",
+      "summary": "Decode a DER-encoded ECDSA signature to { r, s }."
+    },
+    {
       "name": "decodeEcPublicKey",
       "kind": "value",
       "module": "src/crypto/ecdsa.ts",
@@ -2124,6 +2278,13 @@
       "module": "src/parser/pdf-decode-filters.ts",
       "signature": "export function decodeLZW(data: Uint8Array): Uint8Array",
       "summary": "Decode an LZWDecode stream with variable-width codes (9–12 bits) and automatic table reset on the CLEAR code (256)."
+    },
+    {
+      "name": "decodePdfTextString",
+      "kind": "value",
+      "module": "src/parser/pdf-text-string.ts",
+      "signature": "export function decodePdfTextString(raw: string): string",
+      "summary": "Decode a PDF text string that the parser returned as a byte-per-char string (ISO 32000-1 §7.9.2.2): UTF-16BE behind `FE FF`, UTF-8 behind `EF BB BF`, otherwise PDFDocEncoding."
     },
     {
       "name": "decodeRunLength",
@@ -2213,7 +2374,7 @@
       "name": "detectImageFormat",
       "kind": "value",
       "module": "src/core/pdf-image.ts",
-      "signature": "export function detectImageFormat(bytes: Uint8Array): 'jpeg' | 'png' | null",
+      "signature": "export function detectImageFormat(bytes: Uint8Array): 'jpeg' | 'png' | 'jpx' | null",
       "summary": "Detect the image format from magic bytes."
     },
     {
@@ -2287,11 +2448,25 @@
       "summary": "Sign a message with ECDSA P-256 + SHA-256, using RFC 6979 deterministic k."
     },
     {
+      "name": "ecdsaSignHash",
+      "kind": "value",
+      "module": "src/crypto/ecdsa.ts",
+      "signature": "export function ecdsaSignHash(hash: Uint8Array, privateKey: EcPrivateKey): { r: bigint; s: bigint }",
+      "summary": "Sign a pre-computed SHA-256 hash with ECDSA P-256."
+    },
+    {
       "name": "ecdsaVerify",
       "kind": "value",
       "module": "src/crypto/ecdsa.ts",
       "signature": "export function ecdsaVerify(message: Uint8Array, r: bigint, s: bigint, publicKey: EcPublicKey): boolean",
       "summary": "Verify an ECDSA P-256 + SHA-256 signature."
+    },
+    {
+      "name": "ecdsaVerifyHash",
+      "kind": "value",
+      "module": "src/crypto/ecdsa.ts",
+      "signature": "export function ecdsaVerifyHash(hash: Uint8Array, r: bigint, s: bigint, publicKey: EcPublicKey): boolean",
+      "summary": "Verify an ECDSA P-256 signature against a pre-computed hash."
     },
     {
       "name": "embedValidationInfo",
@@ -2306,6 +2481,13 @@
       "module": "src/core/pdf-barcode.ts",
       "signature": "export function encodeCode128(data: string): number[]",
       "summary": "Encode a string as Code 128 symbol values."
+    },
+    {
+      "name": "encodeDerSignature",
+      "kind": "value",
+      "module": "src/crypto/ecdsa.ts",
+      "signature": "export function encodeDerSignature(r: bigint, s: bigint): Uint8Array",
+      "summary": "Encode an ECDSA signature { r, s } as DER (for CMS)."
     },
     {
       "name": "encodeEcPublicKey",
@@ -2623,6 +2805,27 @@
       "summary": "Check if a codepoint falls in any Georgian Unicode block."
     },
     {
+      "name": "isGujaratiCodepoint",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function isGujaratiCodepoint(cp: number): boolean",
+      "summary": "Check if a codepoint falls in the Gujarati Unicode block."
+    },
+    {
+      "name": "isGurmukhiCodepoint",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function isGurmukhiCodepoint(cp: number): boolean",
+      "summary": "Check if a codepoint falls in the Gurmukhi Unicode block."
+    },
+    {
+      "name": "isKannadaCodepoint",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function isKannadaCodepoint(cp: number): boolean",
+      "summary": "Check if a codepoint falls in the Kannada Unicode block."
+    },
+    {
       "name": "isKhmerCodepoint",
       "kind": "value",
       "module": "src/shaping/script-registry.ts",
@@ -2642,6 +2845,13 @@
       "module": "src/core/pdf-annot.ts",
       "signature": "export function isLinkAnnotation(annot: Annotation): annot is LinkAnnotation",
       "summary": "Check if an annotation is an external link (has `url` property)."
+    },
+    {
+      "name": "isMalayalamCodepoint",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function isMalayalamCodepoint(cp: number): boolean",
+      "summary": "Check if a codepoint falls in the Malayalam Unicode block."
     },
     {
       "name": "isMathCodepoint",
@@ -2670,6 +2880,13 @@
       "module": "src/shaping/script-registry.ts",
       "signature": "export function isNewTaiLueCodepoint(cp: number): boolean",
       "summary": "Check if a codepoint falls in the New Tai Lue Unicode block."
+    },
+    {
+      "name": "isOdiaCodepoint",
+      "kind": "value",
+      "module": "src/shaping/script-registry.ts",
+      "signature": "export function isOdiaCodepoint(cp: number): boolean",
+      "summary": "Check if a codepoint falls in the Odia Unicode block."
     },
     {
       "name": "isRef",
@@ -2795,7 +3012,7 @@
       "kind": "value",
       "module": "src/shaping/bidi.ts",
       "signature": "export function normalizeBidiEmbeddings(text: string): string",
-      "summary": "UAX #9 explicit embedding normalization (v1.2.0, refined v1.3.0)."
+      "summary": "Map the legacy explicit embedding characters LRE (U+202A) / RLE (U+202B) and the PDF (U+202C) closing them to their isolate equivalents LRI / RLI / PDI; overrides (LRO/RLO and their PDF) are preserved and orphan PDFs dropped."
     },
     {
       "name": "normalizeColors",
@@ -2803,6 +3020,13 @@
       "module": "src/core/pdf-color.ts",
       "signature": "export function normalizeColors(colors: PdfColors): PdfColors",
       "summary": "Validate and normalize all color fields in a PdfColors object."
+    },
+    {
+      "name": "ocspResponseMatchesCertificate",
+      "kind": "value",
+      "module": "src/crypto/ocsp.ts",
+      "signature": "export function ocspResponseMatchesCertificate(response: OcspResponse, cert: X509Certificate, issuer: X509Certificate): boolean",
+      "summary": "Does this OCSP response speak about `cert`, issued by `issuer`?"
     },
     {
       "name": "openPdf",
@@ -2865,7 +3089,7 @@
       "kind": "value",
       "module": "src/core/pdf-image.ts",
       "signature": "export function parseImage(bytes: Uint8Array): ParsedImage",
-      "summary": "Parse an image from raw bytes (auto-detect JPEG or PNG)."
+      "summary": "Parse an image from raw bytes (auto-detect JPEG, PNG or JPEG 2000)."
     },
     {
       "name": "parseIndirectObject",
@@ -2880,6 +3104,13 @@
       "module": "src/core/pdf-image.ts",
       "signature": "export function parseJPEG(bytes: Uint8Array): ParsedImage",
       "summary": "Parse a JPEG image to extract dimensions and color space."
+    },
+    {
+      "name": "parseJPX",
+      "kind": "value",
+      "module": "src/core/pdf-image.ts",
+      "signature": "export function parseJPX(bytes: Uint8Array): ParsedImage",
+      "summary": "Parse a JPEG 2000 image — a JP2 file (ISO/IEC 15444-1 Annex I boxes) or a raw codestream — for the facts the Image XObject needs."
     },
     {
       "name": "parseOcspResponse",
@@ -2948,7 +3179,7 @@
       "name": "pdfString",
       "kind": "value",
       "module": "src/fonts/encoding.ts",
-      "signature": "export function pdfString(str: string): string",
+      "signature": "export function pdfString(str: string, onMiss?: (codePoint: number) => void): string",
       "summary": "Create a PDF string literal: encode to WinAnsi and escape (, ), \\."
     },
     {
@@ -3050,11 +3281,18 @@
       "summary": "Clear all registered fonts and cache (useful for testing)."
     },
     {
+      "name": "resolveBidiLevels",
+      "kind": "value",
+      "module": "src/shaping/bidi.ts",
+      "signature": "export function resolveBidiLevels(text: string, direction: BidiDirection = 'auto'): BidiLevels",
+      "summary": "Resolve the embedding levels of a whole paragraph (UAX #9 P2–I2), once."
+    },
+    {
       "name": "resolveBidiRuns",
       "kind": "value",
       "module": "src/shaping/bidi.ts",
       "signature": "export function resolveBidiRuns(text: string): BidiRun[]",
-      "summary": "Resolve bidirectional text into ordered runs with embedding levels."
+      "summary": "Resolve bidirectional text into ordered runs with embedding levels: the whole UAX #9 pipeline (P2–I2, then L1–L4) on a single-line paragraph with its base direction detected."
     },
     {
       "name": "resolveColor",
@@ -3225,6 +3463,27 @@
       "summary": "Shape a string of Devanagari text into an array of positioned glyphs."
     },
     {
+      "name": "shapeGujaratiText",
+      "kind": "value",
+      "module": "src/shaping/gujarati-shaper.ts",
+      "signature": "export function shapeGujaratiText(str: string, fontData: FontData): ShapedGlyph[]",
+      "summary": "Shape a string of Gujarati text into an array of positioned glyphs."
+    },
+    {
+      "name": "shapeGurmukhiText",
+      "kind": "value",
+      "module": "src/shaping/gurmukhi-shaper.ts",
+      "signature": "export function shapeGurmukhiText(str: string, fontData: FontData): ShapedGlyph[]",
+      "summary": "Shape a string of Gurmukhi text into an array of positioned glyphs."
+    },
+    {
+      "name": "shapeKannadaText",
+      "kind": "value",
+      "module": "src/shaping/kannada-shaper.ts",
+      "signature": "export function shapeKannadaText(str: string, fontData: FontData): ShapedGlyph[]",
+      "summary": "Shape a string of Kannada text into an array of positioned glyphs."
+    },
+    {
       "name": "shapeKhmerText",
       "kind": "value",
       "module": "src/shaping/khmer-shaper.ts",
@@ -3246,11 +3505,25 @@
       "summary": "Shape a Latin (or Greek, or Cyrillic) run that carries combining marks."
     },
     {
+      "name": "shapeMalayalamText",
+      "kind": "value",
+      "module": "src/shaping/malayalam-shaper.ts",
+      "signature": "export function shapeMalayalamText(str: string, fontData: FontData): ShapedGlyph[]",
+      "summary": "Shape a string of Malayalam text into an array of positioned glyphs."
+    },
+    {
       "name": "shapeMyanmarText",
       "kind": "value",
       "module": "src/shaping/myanmar-shaper.ts",
       "signature": "export function shapeMyanmarText(str: string, fontData: FontData): ShapedGlyph[]",
       "summary": "Shape a string of Myanmar text into an array of positioned glyphs."
+    },
+    {
+      "name": "shapeOdiaText",
+      "kind": "value",
+      "module": "src/shaping/odia-shaper.ts",
+      "signature": "export function shapeOdiaText(str: string, fontData: FontData): ShapedGlyph[]",
+      "summary": "Shape a string of Odia text into an array of positioned glyphs."
     },
     {
       "name": "shapeSinhalaText",
@@ -3396,7 +3669,7 @@
       "name": "toWinAnsi",
       "kind": "value",
       "module": "src/fonts/encoding.ts",
-      "signature": "export function toWinAnsi(str: string): string",
+      "signature": "export function toWinAnsi(str: string, onMiss?: (codePoint: number) => void): string",
       "summary": "Encode a JavaScript string to WinAnsiEncoding (ISO-8859-1 superset)."
     },
     {

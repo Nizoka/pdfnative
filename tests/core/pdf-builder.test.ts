@@ -358,7 +358,7 @@ describe('buildPDF input validation', () => {
     });
 
     // 100k rows exceed the 5 s default under coverage instrumentation.
-    it('should accept 100,000 rows without throwing', { timeout: 60_000 }, () => {
+    it('should accept 100,000 rows without throwing', { timeout: 120_000 }, () => {
         const rows = Array.from({ length: 100_000 }, () => ({
             cells: ['x', 'y', 'z'], type: 'credit', pointed: false,
         }));
@@ -594,5 +594,45 @@ describe('buildPDF — params.metadata Info/XMP parity', () => {
         const a = buildPDFBytes({ ...makeMinimalParams(), metadata: {} }, { creationDate: fixedDate });
         const b = buildPDFBytes(makeMinimalParams(), { creationDate: fixedDate });
         expect(Buffer.from(a).equals(Buffer.from(b))).toBe(true);
+    });
+});
+
+// 1.9.0 — amount styling by declaration in the table builder: as soon as a
+// column declares a `kind`, only `'amount'` columns get the bold credit/debit
+// treatment; without any `kind` the historical fourth-column heuristic stays.
+
+describe('buildPDF — ColumnDef.kind amount (1.9.0)', () => {
+    const params: PdfParams = {
+        title: 'Kinds',
+        infoItems: [],
+        balanceText: '',
+        countText: '',
+        footerText: '',
+        headers: ['A', 'B', 'C', 'D'],
+        rows: [{ cells: ['a', 'b', 'c', '9.99'], type: 'credit', pointed: false }],
+    };
+    const cols = [
+        { f: 0.25, a: 'l' as const, mx: 20, mxH: 20 },
+        { f: 0.25, a: 'l' as const, mx: 20, mxH: 20 },
+        { f: 0.25, a: 'l' as const, mx: 20, mxH: 20 },
+        { f: 0.25, a: 'r' as const, mx: 20, mxH: 20 },
+    ];
+    const bodyOps = (s: string): string => s.slice(s.indexOf('(a) Tj') - 80);
+
+    it('styles the fourth column when no kind is declared (historical heuristic)', () => {
+        const s = buildPDF(params, { columns: cols });
+        expect(s).toMatch(/\/F2 7\.5 Tf [\d.]+ [\d.]+ Td \(9\.99\) Tj/);
+        expect(bodyOps(s)).toMatch(/\/F1 7\.5 Tf [\d.]+ [\d.]+ Td \(a\) Tj/);
+    });
+
+    it('styles only the declared amount column', () => {
+        const s = buildPDF(params, { columns: [{ ...cols[0], kind: 'amount' }, cols[1], cols[2], cols[3]] });
+        expect(s).toMatch(/\/F2 7\.5 Tf [\d.]+ [\d.]+ Td \(a\) Tj/);
+        expect(s).toMatch(/\/F1 7\.5 Tf [\d.]+ [\d.]+ Td \(9\.99\) Tj/);
+    });
+
+    it('a declared kind on another column switches the heuristic off for the fourth', () => {
+        const s = buildPDF(params, { columns: [cols[0], { ...cols[1], kind: 'amount' }, cols[2], cols[3]] });
+        expect(s).toMatch(/\/F1 7\.5 Tf [\d.]+ [\d.]+ Td \(9\.99\) Tj/);
     });
 });

@@ -34,6 +34,7 @@
 import type { FontData, ShapedGlyph } from '../types/pdf-types.js';
 import { useCategories, splitUseSyllables, type UseClusterCategory } from './use-engine.js';
 import { tryLigature } from './gsub-driver.js';
+import { findMarkToBase, positionMarkOnMark } from './gpos-positioner.js';
 
 /** Categories that render before the base and move there when they stay separate. */
 const PRE_BASE = /*#__PURE__*/ new Set<UseClusterCategory>(['VPre', 'VMPre', 'MPre']);
@@ -52,6 +53,8 @@ interface Item {
     readonly lead: UseClusterCategory;
     /** True once a ligature has placed this glyph, so it must not move. */
     readonly composed: boolean;
+    /** The code points the glyph stands for (a ligature names every component). @since 1.9.0 */
+    readonly cps: readonly number[];
 }
 
 /**
@@ -63,7 +66,6 @@ interface Item {
  */
 export function shapeUseText(str: string, fd: FontData): ShapedGlyph[] {
     const { cmap, ligatures, markAnchors, widths, defaultWidth } = fd;
-    const m2m = fd.mark2mark || { mark1Anchors: {}, mark2Classes: {} };
     const out: ShapedGlyph[] = [];
 
     const cps: number[] = [];
@@ -75,28 +77,12 @@ export function shapeUseText(str: string, fd: FontData): ShapedGlyph[] {
     const advanceOf = (gid: number): number =>
         (widths[gid] !== undefined ? widths[gid] : defaultWidth);
 
-    const markAnchor = (gid: number): { classIdx: number; x: number; y: number } | null => {
-        const a = markAnchors?.marks?.[gid];
-        return a ? { classIdx: a[0], x: a[1], y: a[2] } : null;
-    };
-
-    const baseAnchor = (gid: number, cls: number): [number, number] | null =>
-        markAnchors?.bases?.[gid]?.[cls] ?? null;
-
-    const stackOffset = (m1: number, m2: number): { dx: number; dy: number } | null => {
-        const a1 = m2m.mark1Anchors?.[m1];
-        const c2 = m2m.mark2Classes?.[m2];
-        if (!a1 || !c2) return null;
-        const pt = a1[c2[0]];
-        return pt ? { dx: pt[0] - c2[1], dy: pt[1] - c2[2] } : null;
-    };
-
     for (const syllable of splitUseSyllables(cps)) {
         // ── 1. Logical-order glyphs ──────────────────────────────────
         const items: Item[] = [];
         for (let i = syllable.start; i < syllable.end; i++) {
             const cp = cps[i] === 0x202F || cps[i] === 0xA0 ? 0x20 : cps[i];
-            items.push({ gid: cmap[cp] || 0, lead: cats[i], composed: false });
+            items.push({ gid: cmap[cp] || 0, lead: cats[i], composed: false, cps: [cps[i]] });
         }
 
         // ── 2. Ligatures, on the logical sequence ────────────────────
@@ -104,7 +90,7 @@ export function shapeUseText(str: string, fd: FontData): ShapedGlyph[] {
         for (let i = 0; i < items.length;) {
             const match = tryLigature(items.slice(i).map(it => it.gid), ligatures);
             if (match && match.consumed > 1) {
-                ligated.push({ gid: match.resultGid, lead: items[i].lead, composed: true });
+                ligated.push({ gid: match.resultGid, lead: items[i].lead, composed: true, cps: items.slice(i, i + match.consumed).flatMap(it => [...it.cps]) });
                 i += match.consumed;
             } else {
                 ligated.push(items[i]);
@@ -134,29 +120,31 @@ export function shapeUseText(str: string, fd: FontData): ShapedGlyph[] {
             const isMark = advance === 0 || (!it.composed && MARK.has(it.lead));
 
             if (!isMark) {
-                out.push({ gid: it.gid, dx: 0, dy: 0, isZeroAdvance: false });
+                out.push({ gid: it.gid, dx: 0, dy: 0, isZeroAdvance: false, cps: it.cps });
                 baseGid = it.gid;
                 baseAdv = advance;
                 prevMark = null;
                 continue;
             }
 
+            // Every anchor triple is tried, mark-to-mark through the shared
+            // helper (1.9.0, #81) — the first-triple read missed the pairs a
+            // font anchors through a later subtable.
             let dx = 0;
             let dy = 0;
-            const anchor = markAnchor(it.gid);
-            const stack = prevMark ? stackOffset(prevMark.gid, it.gid) : null;
+            const stack = prevMark ? positionMarkOnMark(fd.mark2mark, prevMark.gid, it.gid) : null;
             if (stack && prevMark) {
                 dx = prevMark.dx + stack.dx;
                 dy = prevMark.dy + stack.dy;
-            } else if (anchor && baseGid >= 0) {
-                const attach = baseAnchor(baseGid, anchor.classIdx);
-                if (attach) {
-                    dx = attach[0] - anchor.x - baseAdv;
-                    dy = attach[1] - anchor.y;
+            } else if (baseGid >= 0) {
+                const found = findMarkToBase(markAnchors, it.gid, baseGid);
+                if (found) {
+                    dx = found.base[0] - found.mark[0] - baseAdv;
+                    dy = found.base[1] - found.mark[1];
                 }
             }
 
-            out.push({ gid: it.gid, dx, dy, isZeroAdvance: true });
+            out.push({ gid: it.gid, dx, dy, isZeroAdvance: true, cps: it.cps });
             prevMark = { gid: it.gid, dx, dy };
         }
     }

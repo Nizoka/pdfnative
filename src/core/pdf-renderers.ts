@@ -13,6 +13,7 @@ import type {
     EncodingContext,
     PageTemplate,
     ColumnDef,
+    TextDirection,
 } from '../types/pdf-types.js';
 import type {
     DocumentBlock,
@@ -482,6 +483,7 @@ export function renderParagraph(
     documentChildren: (StructElement | MCRef)[],
     slice?: ParagraphSlice,
     optical: boolean = false,
+    direction?: TextDirection,
 ): { ops: string[]; y: number } {
     const ops: string[] = [];
     const sz = block.fontSize ?? DEFAULT_PARA_SIZE;
@@ -489,7 +491,17 @@ export function renderParagraph(
     const lineH = sz * lhMul;
     const color = parseColor(block.color ?? '0.216 0.255 0.318');
     const indent = block.indent ?? 0;
-    const align = block.align ?? 'left';
+    // Bidirectional levels are resolved once for the whole paragraph (UAX #9
+    // P1): every line is drawn through the paragraph context, so a wrapped
+    // line keeps the direction of its paragraph. The context is `enc` itself
+    // when nothing in the paragraph runs right to left.
+    const dir = block.direction ?? direction;
+    const penc = enc.withParagraph?.(block.text, dir) ?? enc;
+    // Alignment follows the paragraph direction only when the author asked
+    // for direction handling; without it, 1.8.0 placed every paragraph on the
+    // left and still does.
+    const rtl = dir !== undefined && penc.paragraphLevel === 1;
+    const align = block.align ?? (rtl ? 'right' : 'left');
 
     const availW = cw - indent;
     // Unsliced (the historical path) renders the whole paragraph; a slice
@@ -522,27 +534,31 @@ export function renderParagraph(
         const lineX = mgL + indent - hangL;
         const lineW = availW + hangL + hangR;
 
+        // A justified right-to-left paragraph leaves its last line ragged on
+        // the left: that line is right-aligned.
+        const raggedRight = align === 'justify' && !justifyThis && rtl;
         if (tagCtx?.tagged) {
             const mcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
             pChildren.push({ mcid, pageObjNum: tagCtx.pageObjNum });
-            if (align === 'right') {
-                ops.push(txtRTagged(line, pgW - mgR + hangR, y - sz, enc.f1, sz, enc, mcid));
+            if (align === 'right' || raggedRight) {
+                ops.push(txtRTagged(line, pgW - mgR + hangR, y - sz, enc.f1, sz, penc, mcid));
             } else if (align === 'center') {
-                ops.push(txtCTagged(line, mgL + indent, y - sz, enc.f1, sz, availW, enc, mcid));
+                ops.push(txtCTagged(line, mgL + indent, y - sz, enc.f1, sz, availW, penc, mcid));
             } else if (justifyThis) {
-                ops.push(wrapSpan(txtJustified(line, lineX, y - sz, enc.f1, sz, enc, lineW), line, mcid));
+                // The structure span carries the line's text: no inner run span.
+                ops.push(wrapSpan(txtJustified(line, lineX, y - sz, enc.f1, sz, penc, lineW, false), line, mcid));
             } else {
-                ops.push(txtTagged(line, lineX, y - sz, enc.f1, sz, enc, mcid));
+                ops.push(txtTagged(line, lineX, y - sz, enc.f1, sz, penc, mcid));
             }
         } else {
-            if (align === 'right') {
-                ops.push(txtR(line, pgW - mgR + hangR, y - sz, enc.f1, sz, enc));
+            if (align === 'right' || raggedRight) {
+                ops.push(txtR(line, pgW - mgR + hangR, y - sz, enc.f1, sz, penc));
             } else if (align === 'center') {
-                ops.push(txtC(line, mgL + indent, y - sz, enc.f1, sz, availW, enc));
+                ops.push(txtC(line, mgL + indent, y - sz, enc.f1, sz, availW, penc));
             } else if (justifyThis) {
-                ops.push(txtJustified(line, lineX, y - sz, enc.f1, sz, enc, lineW));
+                ops.push(txtJustified(line, lineX, y - sz, enc.f1, sz, penc, lineW));
             } else {
-                ops.push(txt(line, lineX, y - sz, enc.f1, sz, enc));
+                ops.push(txt(line, lineX, y - sz, enc.f1, sz, penc));
             }
         }
         y -= lineH;
@@ -716,6 +732,47 @@ export interface TablePlan {
     readonly fontSize: { th: number; td: number };
     readonly pad: number;
     readonly trailerSpacing: number;
+    /**
+     * Extra bottom space reserved in each data row for the deepest font
+     * descender it renders (0 for Latin metrics, where the historical
+     * padding already covers the descent). Included in `rowHeights`; the
+     * renderer lifts the baseline by the same amount (#80). @since 1.9.0
+     */
+    readonly rowDescentExtra: number[];
+    /** The header row's counterpart of {@link rowDescentExtra}. @since 1.9.0 */
+    readonly headerDescentExtra: number;
+}
+
+/**
+ * The deepest descender, in points, among the fonts a cell's text actually
+ * uses (`|hhea.descent| / unitsPerEm × size`). Latin (base-14) contexts report
+ * 0: Helvetica's descender fits inside the historical 3 pt bottom padding.
+ * Myanmar, Khmer, Tibetan or Arabic faces descend 0.5–0.9 em and used to be
+ * clipped by the cell rectangle (#80).
+ */
+function cellDescent(lines: readonly string[], sz: number, enc: EncodingContext): number {
+    if (!enc.isUnicode) return 0;
+    let max = 0;
+    for (const line of lines) {
+        for (const run of enc.textRuns(line, sz)) {
+            const m = run.fontData.metrics;
+            const d = Math.abs(m.descent) / m.unitsPerEm * sz;
+            if (d > max) max = d;
+        }
+    }
+    return max;
+}
+
+/**
+ * How much deeper than the historical allowance a row must grow so its
+ * deepest descender clears the cell floor. `allowance` is the distance from
+ * the last baseline to the row floor under the historical placement; the
+ * result is rounded to 1/100 pt (the operand precision) and is 0 whenever the
+ * descent fits — which keeps every Latin table byte-identical.
+ */
+function descentExtra(descent: number, allowance: number): number {
+    const extra = descent - allowance;
+    return extra > 0.005 ? Math.round(extra * 100) / 100 : 0;
 }
 
 /**
@@ -737,6 +794,49 @@ export interface TableSlice {
     readonly isFinalSlice: boolean;
     /** Shared accumulator collecting `/TR` / `/Caption` children across slices. */
     readonly tableStructAccum: (StructElement | MCRef)[];
+    /**
+     * Document-wide ordinal of the table, the stem of its header-cell `/ID`s
+     * (`T<index>H<fromRow>C<col>`) referenced by `/Headers` (1.9.0). The
+     * paginator numbers tables in document order. @since 1.9.0
+     */
+    readonly tableIndex?: number;
+}
+
+/** The `/ID` of a header cell: table ordinal, the slice that drew it, column. */
+function headerCellId(tableIndex: number, headerSliceRow: number, col: number): string {
+    return `T${tableIndex}H${headerSliceRow}C${col}`;
+}
+
+/**
+ * One page's share of a table of contents whose entries run past the foot of
+ * the page: `[fromIndex, toIndex)` indexes the headings the block lists
+ * (those at or above `maxLevel`). The title is drawn on the first slice, the
+ * trailing spacing after the last; in tagged mode the `/TOCI` children of
+ * every slice accumulate into the single `/TOC` element the final slice
+ * commits (#83).
+ *
+ * @internal
+ * @since 1.9.0
+ */
+export interface TocSlice {
+    readonly fromIndex: number;
+    readonly toIndex: number;     // exclusive
+    readonly drawTitle: boolean;
+    readonly isFinalSlice: boolean;
+    /** Shared accumulator collecting the `/TOCI` children across slices. */
+    readonly tocStructAccum: (StructElement | MCRef)[];
+}
+
+/** The headings a {@link TocBlock} lists: those at or above its `maxLevel`. */
+export function tocEntries(tocBlock: TocBlock, headings: readonly HeadingDestination[]): HeadingDestination[] {
+    const maxLevel = tocBlock.maxLevel ?? 3;
+    return headings.filter(h => h.level <= maxLevel);
+}
+
+/** The fixed parts of a table of contents' height: title band, entry line, trailer. */
+export function tocMetrics(tocBlock: TocBlock): { titleH: number; lineH: number; bottomH: number } {
+    const sz = tocBlock.fontSize ?? DEFAULT_TOC_SIZE;
+    return { titleH: 14 + TOC_TITLE_SPACING, lineH: sz * TOC_LINE_HEIGHT, bottomH: TOC_BOTTOM_SPACING };
 }
 
 /**
@@ -807,27 +907,51 @@ export function planTable(
         headerLines.push(lines);
         if (lines.length > headerMaxLines) headerMaxLines = lines.length;
     }
-    const headerHeight = headerMaxLines === 1
+    const baseHeaderHeight = headerMaxLines === 1
         ? TH_H
         : Math.max(TH_H, headerMaxLines * fs.th * TABLE_LINE_HEIGHT + pad + 2);
+    // Distance from the header's last baseline to its floor under the
+    // historical placement (emitCell): HEADER_PAD_BOTTOM for one line,
+    // otherwise what remains below the top-aligned block of lines.
+    const headerAllowance = headerMaxLines === 1
+        ? HEADER_PAD_BOTTOM
+        : baseHeaderHeight - (pad + 0.8 * fs.th + (headerMaxLines - 1) * fs.th * TABLE_LINE_HEIGHT);
+    let headerDescent = 0;
+    for (const lines of headerLines) headerDescent = Math.max(headerDescent, cellDescent(lines, fs.th, enc));
+    const headerDescentExtra = descentExtra(headerDescent, headerAllowance);
+    const headerHeight = baseHeaderHeight + headerDescentExtra;
 
     // Per-row lines + heights.
     const rowLines: string[][][] = [];
     const rowHeights: number[] = [];
+    const rowDescentExtra: number[] = [];
+    const vAligned = block.cellVAlign !== undefined || resolvedColumns.some(c => c.vAlign !== undefined);
     for (let r = 0; r < block.rows.length; r++) {
         const row = block.rows[r];
         const cells: string[][] = [];
         let maxLines = 1;
+        let descent = 0;
         for (let i = 0; i < row.cells.length && i < resolvedColumns.length; i++) {
             const lines = wrapCell(row.cells[i], i, fs.td, false);
             cells.push(lines);
             if (lines.length > maxLines) maxLines = lines.length;
+            descent = Math.max(descent, cellDescent(lines, fs.td, enc));
         }
         rowLines.push(cells);
         const h = maxLines === 1
             ? minRowH
             : Math.max(minRowH, maxLines * fs.td * TABLE_LINE_HEIGHT + pad + 2);
-        rowHeights.push(h);
+        // Baseline-to-floor distance of the historical placement: the single-
+        // line pad, the remainder under a top-aligned block, or — when a
+        // vertical alignment is set — the bottom-aligned case, the tightest.
+        const allowance = vAligned
+            ? pad + 0.5 * fs.td
+            : maxLines === 1
+                ? CELL_PAD_BOTTOM
+                : h - (pad + 0.8 * fs.td + (maxLines - 1) * fs.td * TABLE_LINE_HEIGHT);
+        const extra = descentExtra(descent, allowance);
+        rowDescentExtra.push(extra);
+        rowHeights.push(h + extra);
     }
 
     // Caption (optional).
@@ -851,6 +975,8 @@ export function planTable(
         fontSize: { th: fs.th, td: fs.td },
         pad,
         trailerSpacing: 6,
+        rowDescentExtra,
+        headerDescentExtra,
     };
 }
 
@@ -900,6 +1026,13 @@ export function renderTable(
     const { cx, cwi, columns, headerLines, headerHeight, rowLines, rowHeights, fontSize, pad } = plan;
     const fs = fontSize;
     const clip = block.clipCells !== false;
+    // Header-cell identifiers for /Headers (ISO 32000-1 §14.8.4.3.4, PDF/UA
+    // §7.5): the TDs of a slice name the TH row drawn on that slice, or the
+    // first slice's when headers are not repeated. Outside the paginator the
+    // document's child count stands in for the table ordinal.
+    const tableIndex = slice?.tableIndex ?? documentChildren.length;
+    const headerSliceRow = drawHeader ? fromRow : 0;
+    const hasHeaders = block.headers.length > 0;
     const zebraColor = resolveZebraColor(block.zebra);
     const wrapMode = block.wrap ?? 'auto';
 
@@ -971,10 +1104,16 @@ export function renderTable(
         sz: number,
         mcRefsOut: MCRef[] | null,
         isHeader: boolean,
+        /** Bottom band reserved for deep descenders (plan `rowDescentExtra`, #80). */
+        descentBand: number = 0,
     ): string[] {
         const col = columns[colIdx];
         const out: string[] = [];
         const lineH = sz * TABLE_LINE_HEIGHT;
+        // The reserved band sits under the historical floor: every placement
+        // below works against `rowH - descentExtra`, so the baseline lifts by
+        // exactly the band and the text keeps its 1.1-era position otherwise.
+        const bandH = rowH - descentBand;
         const padBottom = isHeader ? HEADER_PAD_BOTTOM : CELL_PAD_BOTTOM;
         // Resolve vertical alignment: per-column overrides the table default.
         // When neither is set, `vAlign` is undefined and the historic baseline
@@ -996,8 +1135,8 @@ export function renderTable(
                 const blockH = lines.length * lineH;
                 let offset: number;
                 if (vAlign === 'top') offset = pad;
-                else if (vAlign === 'bottom') offset = rowH - blockH - pad;
-                else offset = (rowH - blockH) / 2; // middle
+                else if (vAlign === 'bottom') offset = bandH - blockH - pad;
+                else offset = (bandH - blockH) / 2; // middle
                 if (offset < pad) offset = pad; // guard: content taller than band
                 baselineY = rowTop - offset - li * lineH - sz + sz * 0.2;
             } else {
@@ -1005,7 +1144,7 @@ export function renderTable(
                 // above the row floor) → byte-identical output when no wrap fires.
                 // Multi-line path top-aligns inside the cell band.
                 baselineY = lines.length === 1
-                    ? rowTop - rowH + padBottom
+                    ? rowTop - bandH + padBottom
                     : rowTop - pad - sz + sz * 0.2 - li * lineH; // top-aligned with ascender bias
             }
             let op: string;
@@ -1066,10 +1205,12 @@ export function renderTable(
         const thChildren: (StructElement | MCRef)[] = [];
         for (let i = 0; i < block.headers.length && i < columns.length; i++) {
             const cellRefs: MCRef[] | null = tagCtx?.tagged ? [] : null;
-            ops.push(...emitCell(headerLines[i] ?? [''], i, y, headerHeight, enc.f2, fs.th, cellRefs, true));
+            ops.push(...emitCell(headerLines[i] ?? [''], i, y, headerHeight, enc.f2, fs.th, cellRefs, true, plan.headerDescentExtra));
             ops.push(...cellBorderOps(cx[i], cwi[i], y, headerHeight));
             if (cellRefs && cellRefs.length > 0) {
-                thChildren.push({ type: 'TH', children: cellRefs });
+                // A column header: its /Scope and /ID let readers announce it
+                // for every cell below (ISO 32000-1 Table 349, PDF/UA §7.5).
+                thChildren.push({ type: 'TH', children: cellRefs, id: headerCellId(tableIndex, fromRow, i), attrs: '/O /Table /Scope /Column' });
             }
         }
         if (tagCtx?.tagged && thChildren.length > 0) {
@@ -1106,10 +1247,15 @@ export function renderTable(
             ops.push(`${fillOp(color)}`);
 
             const cellRefs: MCRef[] | null = tagCtx?.tagged ? [] : null;
-            ops.push(...emitCell(cells[i] ?? [''], i, y, rowH, font, fs.td, cellRefs, false));
+            ops.push(...emitCell(cells[i] ?? [''], i, y, rowH, font, fs.td, cellRefs, false, plan.rowDescentExtra[r]));
             ops.push(...cellBorderOps(cx[i], cwi[i], y, rowH));
             if (cellRefs && cellRefs.length > 0) {
-                tdChildren.push({ type: 'TD', children: cellRefs });
+                const headers = hasHeaders && i < block.headers.length
+                    ? `/O /Table /Headers [(${headerCellId(tableIndex, headerSliceRow, i)})]`
+                    : undefined;
+                tdChildren.push(headers !== undefined
+                    ? { type: 'TD', children: cellRefs, attrs: headers }
+                    : { type: 'TD', children: cellRefs });
             }
         }
         if (tagCtx?.tagged && tdChildren.length > 0) {
@@ -1346,33 +1492,49 @@ export function renderToc(
     pageAnnotations: PageAnnotation[],
     tagCtx: TagContext | undefined,
     documentChildren: (StructElement | MCRef)[],
+    /**
+     * Optional slice from the paginator (#83). Without it the whole table of
+     * contents renders in one call, as before 1.9.0.
+     * @since 1.9.0
+     */
+    slice?: TocSlice,
 ): { ops: string[]; y: number } {
     const ops: string[] = [];
     const sz = tocBlock.fontSize ?? DEFAULT_TOC_SIZE;
     const indent = tocBlock.indent ?? DEFAULT_TOC_INDENT;
-    const maxLevel = tocBlock.maxLevel ?? 3;
     const title = tocBlock.title ?? DEFAULT_TOC_TITLE;
     const lineH = sz * TOC_LINE_HEIGHT;
+    const entries = tocEntries(tocBlock, headings);
+    const fromIndex = slice?.fromIndex ?? 0;
+    const toIndex = slice?.toIndex ?? entries.length;
+    const drawTitle = slice?.drawTitle ?? true;
+    const isFinalSlice = slice?.isFinalSlice ?? true;
+    // The /TOC element: its title's marked content plus every /TOCI entry,
+    // nested as ISO 32000-1 §14.8.4.3.3 describes (the entries were siblings
+    // of the element before 1.9.0).
+    const tocChildren: (StructElement | MCRef)[] = slice?.tocStructAccum ?? [];
 
-    // TOC Title
+    // TOC Title (first slice only)
     const titleSz = 14;
     const titleColor = '0.145 0.388 0.922';
-    ops.push(`${fillOp(titleColor)}`);
-    if (tagCtx?.tagged) {
-        const mcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
-        ops.push(txtTagged(title, mgL, y - titleSz, enc.f2, titleSz, enc, mcid));
-        documentChildren.push({ type: 'TOC', children: [{ mcid, pageObjNum: tagCtx.pageObjNum }] });
-    } else {
-        ops.push(txt(title, mgL, y - titleSz, enc.f2, titleSz, enc));
+    if (drawTitle) {
+        ops.push(`${fillOp(titleColor)}`);
+        if (tagCtx?.tagged) {
+            const mcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
+            ops.push(txtTagged(title, mgL, y - titleSz, enc.f2, titleSz, enc, mcid));
+            tocChildren.push({ mcid, pageObjNum: tagCtx.pageObjNum });
+        } else {
+            ops.push(txt(title, mgL, y - titleSz, enc.f2, titleSz, enc));
+        }
+        y -= titleSz + TOC_TITLE_SPACING;
     }
-    y -= titleSz + TOC_TITLE_SPACING;
 
     // TOC entries
     const textColor = '0.216 0.255 0.318';
     ops.push(`${fillOp(textColor)}`);
 
-    for (const heading of headings) {
-        if (heading.level > maxLevel) continue;
+    for (let ei = fromIndex; ei < toIndex && ei < entries.length; ei++) {
+        const heading = entries[ei];
 
         const entryIndent = (heading.level - 1) * indent;
         const entryX = mgL + entryIndent;
@@ -1396,7 +1558,7 @@ export function renderToc(
         if (tagCtx?.tagged) {
             const mcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
             ops.push(txtTagged(displayText, entryX, textY, font, sz, enc, mcid));
-            documentChildren.push({ type: 'TOCI', children: [{ mcid, pageObjNum: tagCtx.pageObjNum }] });
+            tocChildren.push({ type: 'TOCI', children: [{ mcid, pageObjNum: tagCtx.pageObjNum }] });
         } else {
             ops.push(txt(displayText, entryX, textY, font, sz, enc));
         }
@@ -1423,7 +1585,12 @@ export function renderToc(
         y -= lineH;
     }
 
-    y -= TOC_BOTTOM_SPACING;
+    if (isFinalSlice) {
+        if (tagCtx?.tagged && tocChildren.length > 0) {
+            documentChildren.push({ type: 'TOC', children: tocChildren });
+        }
+        y -= TOC_BOTTOM_SPACING;
+    }
     return { ops, y };
 }
 

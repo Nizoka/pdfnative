@@ -1,11 +1,14 @@
 /**
  * Visual-regression helper — PDF content/glyph extraction.
  *
- * Parses a generated PDF, decodes each page content stream, and extracts the
- * deterministic text-show operators emitted by the document builder
- * (`BT /Fn size Tf x y Td <hexGIDs> Tj ET`). It also resolves, per font
+ * Parses a generated PDF, decodes each page content stream and replays its
+ * text operators (`BT`/`ET`, `Tf`, `Td`, `Tm`, `Tj`, `TJ`) the way a viewer
+ * does — since 1.9.0 (C25) a line is one text object whose runs are placed
+ * by relative `Td` moves and whose shaped glyphs sit in `TJ` arrays — so
+ * every glyph of every hex string comes out at its absolute origin, advanced
+ * by the `/W` widths the page's CIDFonts declare. It also resolves, per font
  * resource, the embedded TrueType `glyf` bytes so a rasteriser can reproduce
- * the page bitmap from the shaped glyph IDs.
+ * the page bitmap from the glyph ids.
  *
  * This is TEST-ONLY tooling — it is not part of the published library.
  */
@@ -13,8 +16,9 @@
 import { openPdf } from '../../../src/index.js';
 import type { PdfDict, PdfStream, PdfValue } from '../../../src/parser/pdf-object-parser.js';
 import { isDict, isArray, isStream } from '../../../src/parser/pdf-object-parser.js';
+import { interpretGlyphs } from '../../helpers/text-objects.js';
 
-/** A single glyph-run show operator at an absolute device position. */
+/** One glyph at its absolute device position. */
 export interface ShowOp {
     /** Font resource name (e.g. `F3`). */
     readonly font: string;
@@ -24,7 +28,7 @@ export interface ShowOp {
     readonly x: number;
     /** Baseline y (user space). */
     readonly y: number;
-    /** Identity-H glyph IDs decoded from the hex string. */
+    /** The Identity-H glyph id — one per op. */
     readonly gids: readonly number[];
 }
 
@@ -37,15 +41,10 @@ export interface PageExtract {
     readonly fonts: ReadonlyMap<string, Uint8Array | null>;
 }
 
-const SHOW_RE =
-    /\/(\w+)\s+([\d.]+)\s+Tf\s+(-?[\d.]+)\s+(-?[\d.]+)\s+Td\s*<([0-9A-Fa-f]+)>\s*Tj/g;
-
-function hexToGids(hex: string): number[] {
-    const gids: number[] = [];
-    for (let i = 0; i + 4 <= hex.length; i += 4) {
-        gids.push(parseInt(hex.slice(i, i + 4), 16));
-    }
-    return gids;
+/** A page font's advances: its `/W` entries over `/DW` (ISO 32000-1 §9.7.4.3). */
+interface FontWidths {
+    readonly dw: number;
+    readonly w: ReadonlyMap<number, number>;
 }
 
 function bytesToLatin1(bytes: Uint8Array): string {
@@ -58,7 +57,7 @@ function bytesToLatin1(bytes: Uint8Array): string {
 }
 
 /**
- * Extract per-page show operators and embedded font bytes from a PDF.
+ * Extract per-page glyph positions and embedded font bytes from a PDF.
  *
  * @param bytes - Complete PDF file bytes.
  * @returns One {@link PageExtract} per page.
@@ -71,9 +70,14 @@ export function extractPages(bytes: Uint8Array): PageExtract[] {
         const page = r.getPage(p);
         const [width, height] = readMediaBox(r, page);
         const content = concatContent(r, page);
-        const ops = parseShowOps(content);
-        const fonts = resolveFonts(r, page);
-        out.push({ width, height, ops, fonts });
+        const { programs, widths } = resolveFonts(r, page);
+        const widthOf = (font: string, gid: number): number => {
+            const fw = widths.get(font);
+            if (fw === undefined) return 500;
+            return fw.w.get(gid) ?? fw.dw;
+        };
+        const ops = interpretGlyphs(content, widthOf).map(g => ({ font: g.font, size: g.size, x: g.x, y: g.y, gids: [g.gid] }));
+        out.push({ width, height, ops, fonts: programs });
     }
     return out;
 }
@@ -104,45 +108,64 @@ function concatContent(r: ReturnType<typeof openPdf>, page: PdfDict): string {
     return text;
 }
 
-function parseShowOps(content: string): ShowOp[] {
-    const ops: ShowOp[] = [];
-    SHOW_RE.lastIndex = 0;
-    let m: RegExpExecArray | null;
-    while ((m = SHOW_RE.exec(content)) !== null) {
-        ops.push({
-            font: m[1],
-            size: parseFloat(m[2]),
-            x: parseFloat(m[3]),
-            y: parseFloat(m[4]),
-            gids: hexToGids(m[5]),
-        });
-    }
-    return ops;
-}
-
-function resolveFonts(r: ReturnType<typeof openPdf>, page: PdfDict): Map<string, Uint8Array | null> {
-    const fonts = new Map<string, Uint8Array | null>();
+function resolveFonts(r: ReturnType<typeof openPdf>, page: PdfDict): { programs: Map<string, Uint8Array | null>; widths: Map<string, FontWidths> } {
+    const programs = new Map<string, Uint8Array | null>();
+    const widths = new Map<string, FontWidths>();
     const res = r.resolveValue(page.get('Resources') as PdfValue);
-    if (!isDict(res)) return fonts;
+    if (!isDict(res)) return { programs, widths };
     const fontDict = r.resolveValue(res.get('Font') as PdfValue);
-    if (!isDict(fontDict)) return fonts;
+    if (!isDict(fontDict)) return { programs, widths };
 
     for (const [name, ref] of fontDict.entries()) {
-        fonts.set(name, embeddedTrueType(r, r.resolveValue(ref)));
+        const fontVal = r.resolveValue(ref);
+        const descendant = descendantFont(r, fontVal);
+        programs.set(name, embeddedTrueType(r, descendant));
+        if (descendant !== null) widths.set(name, cidWidths(r, descendant));
     }
-    return fonts;
+    return { programs, widths };
 }
 
-function embeddedTrueType(r: ReturnType<typeof openPdf>, fontVal: PdfValue): Uint8Array | null {
+/** The CIDFont of a Type0 font, else the font itself. */
+function descendantFont(r: ReturnType<typeof openPdf>, fontVal: PdfValue): PdfDict | null {
     if (!isDict(fontVal)) return null;
-    // Type0 → DescendantFonts[0] → FontDescriptor → FontFile2
-    let descriptorHolder: PdfDict | null = fontVal;
     const descendants = r.resolveValue(fontVal.get('DescendantFonts') as PdfValue);
     if (isArray(descendants) && descendants.length > 0) {
         const df = r.resolveValue(descendants[0]);
-        if (isDict(df)) descriptorHolder = df;
+        if (isDict(df)) return df;
     }
-    const fd = r.resolveValue(descriptorHolder.get('FontDescriptor') as PdfValue);
+    return fontVal;
+}
+
+/** `/W [c [w1 w2 …] cfirst clast w …]` and `/DW` of a CIDFont (ISO 32000-1 §9.7.4.3). */
+function cidWidths(r: ReturnType<typeof openPdf>, cidFont: PdfDict): FontWidths {
+    const dwVal = r.resolveValue(cidFont.get('DW') as PdfValue);
+    const dw = typeof dwVal === 'number' ? dwVal : 1000;
+    const w = new Map<number, number>();
+    const arr = r.resolveValue(cidFont.get('W') as PdfValue);
+    if (isArray(arr)) {
+        const items = arr.map(v => r.resolveValue(v));
+        let i = 0;
+        while (i < items.length) {
+            const first = items[i];
+            const second = items[i + 1];
+            if (typeof first !== 'number') break;
+            if (isArray(second)) {
+                second.forEach((v, k) => { const n = r.resolveValue(v); if (typeof n === 'number') w.set(first + k, n); });
+                i += 2;
+            } else if (typeof second === 'number' && typeof items[i + 2] === 'number') {
+                for (let g = first; g <= second; g++) w.set(g, items[i + 2] as number);
+                i += 3;
+            } else {
+                break;
+            }
+        }
+    }
+    return { dw, w };
+}
+
+function embeddedTrueType(r: ReturnType<typeof openPdf>, fontVal: PdfDict | null): Uint8Array | null {
+    if (fontVal === null) return null;
+    const fd = r.resolveValue(fontVal.get('FontDescriptor') as PdfValue);
     if (!isDict(fd)) return null;
     const ff2 = r.resolveValue(fd.get('FontFile2') as PdfValue);
     if (!isStream(ff2)) return null;

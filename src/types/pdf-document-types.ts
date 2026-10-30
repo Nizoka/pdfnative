@@ -5,7 +5,7 @@
  * Supports headings, paragraphs, lists, tables, spacers, and page breaks.
  */
 
-import type { PdfRow, ColumnDef, FontEntry, PdfLayoutOptions, PdfColor, DocumentMetadata } from './pdf-types.js';
+import type { PdfRow, ColumnDef, FontEntry, PdfLayoutOptions, PdfColor, DocumentMetadata, TextDirection } from './pdf-types.js';
 import type { BarcodeFormat, QRErrorLevel } from '../core/pdf-barcode.js';
 import type { SvgRenderOptions } from '../core/pdf-svg.js';
 import type { FormFieldType } from '../core/pdf-form.js';
@@ -45,6 +45,16 @@ export interface ParagraphBlock {
      * @since 1.8.0 — the `'justify'` value.
      */
     readonly align?: 'left' | 'right' | 'center' | 'justify';
+    /**
+     * Base direction of this paragraph, overriding `layout.direction`:
+     * `'auto'` detects it from the first strong character, `'rtl'` / `'ltr'`
+     * force it. A right-to-left paragraph is right-aligned unless `align`
+     * says otherwise, and a justified one leaves its last line ragged on the
+     * left. Omitted: the document setting, else the 1.8.0 behaviour.
+     *
+     * @since 1.9.0
+     */
+    readonly direction?: TextDirection;
     readonly indent?: number;
     readonly color?: PdfColor;
     /**
@@ -242,7 +252,7 @@ export interface PageBreakBlock {
     readonly type: 'pageBreak';
 }
 
-/** Image block — embeds a JPEG or PNG image. */
+/** Image block — embeds a JPEG, PNG or JPEG 2000 image (the file bytes as written; v1.9.0 for JPEG 2000). */
 export interface ImageBlock {
     readonly type: 'image';
     readonly data: Uint8Array;
@@ -349,12 +359,25 @@ export interface FormFieldBlock {
 
 /** A single data series in a {@link ChartBlock}. */
 export interface ChartSeries {
-    /** Series label (shown in the legend). */
-    readonly label: string;
+    /**
+     * Series label (shown in the legend). Optional since 1.9.0: a series
+     * without one is listed as `Series N` (1-based position) in the legend
+     * and in validation messages (#82).
+     */
+    readonly label?: string;
     /** Numeric values, one per category. */
     readonly values: readonly number[];
     /** Optional colour override (hex, tuple, or PDF RGB). */
     readonly color?: PdfColor;
+    /**
+     * One colour per value, for the bar charts (`bar`, `barH`, `stackedBar`,
+     * `stackedBarH`): the bar of each category takes its own colour — an ink
+     * coverage chart paints the cyan plate cyan and the spot plate in its
+     * spot colour. Must have exactly one entry per value. The legend swatch
+     * keeps the series colour; other chart types ignore it.
+     * @since 1.9.0
+     */
+    readonly colors?: readonly PdfColor[];
     /**
      * X positions for `scatter` charts (and `line`/`area` on a non-category
      * x-axis): one entry per value. Numbers are used as-is (epoch

@@ -17,6 +17,7 @@
   <meta property="og:title" content="Accessibility — pdfnative">
   <meta property="og:description" content="Tagged, accessible PDFs out of the box — PDF/UA structure tree, PDF/A Unicode mapping, and screen-reader-friendly reading order.">
   <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
+  <meta property="og:image:alt" content="pdfnative — pure native PDF generation, zero dependencies">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
@@ -127,14 +128,14 @@
 <li><code>/H1</code>, <code>/H2</code>, <code>/H3</code> for headings</li>
 <li><code>/P</code> for paragraphs</li>
 <li><code>/L</code> → <code>/LI</code> for lists</li>
-<li><code>/Table</code> → <code>/TR</code> → <code>/TH</code> / <code>/TD</code> for tables</li>
+<li><code>/Table</code> → <code>/TR</code> → <code>/TH</code> / <code>/TD</code> for tables — since v1.9.0 every <code>/TH</code> carries <code>/A &lt;&lt; /O /Table /Scope /Column &gt;&gt;</code> and an <code>/ID</code>, every <code>/TD</code> names its header in <code>/Headers</code>, and the <code>/StructTreeRoot</code> registers the ids in an <code>/IDTree</code> (ISO 14289-1 §7.5)</li>
 <li><code>/Figure</code> for images, barcodes, SVG (with <code>/Alt</code> text)</li>
 <li><code>/Link</code> for hyperlinks (with <code>/Contents</code> description)</li>
 <li><code>/Form</code> for AcroForm fields</li>
 <li><code>/TOC</code> → <code>/TOCI</code> for tables of contents</li>
 </ul>
 </li>
-<li><strong>Marked content</strong> (<code>/Span &lt;&lt; /MCID n /ActualText &lt;hex&gt; &gt;&gt; BDC</code>) wrapping every text run, so screen readers receive the original Unicode even when the visible glyph is a shaped Arabic ligature or Devanagari conjunct.</li>
+<li><strong>Marked content</strong> (<code>/Span &lt;&lt; /MCID n /ActualText &lt;hex&gt; &gt;&gt; BDC</code>) wrapping every text run, so screen readers receive the original Unicode even when the visible glyph is a shaped Arabic ligature or Devanagari conjunct. Each span wraps a single text object — a line or cell is one <code>BT … ET</code>, a shaped run one <code>TJ</code> array (since v1.9.0) — because Acrobat applies <code>/ActualText</code> once per text object: a cell drawn as one text object per glyph pasted its text once per glyph.</li>
 <li><strong>Per-page parent trees</strong> (<code>/StructParents</code> + <code>/ParentTree</code>) — required by ISO 14289-1 §7.10.3.</li>
 <li><strong>Document metadata</strong> in XMP (PDF/A-required).</li>
 <li><strong>sRGB ICC OutputIntent</strong> so colors remain stable across viewers.</li>
@@ -161,7 +162,7 @@
 # https://verapdf.org/software/ (installer) or run it via Docker:
 docker run --rm -v &quot;$PWD:/data&quot; verapdf/cli --format text /data/my-document.pdf
 </code></pre>
-<p>veraPDF is the reference PDF/A validator. The pdfnative test suite generates 292 sample PDFs and the PDF/A samples are validated against veraPDF on every release.</p>
+<p>veraPDF is the reference PDF/A validator. The pdfnative test suite generates 311 sample PDFs and the PDF/A samples are validated against veraPDF on every release.</p>
 <h3 id="pac-2024-pdfua">PAC 2024 (PDF/UA)<a class="heading-anchor" href="#pac-2024-pdfua" aria-label="Link to this section">#</a></h3>
 <p><a href="https://pac.pdf-accessibility.org/" target="_blank" rel="noopener">PAC</a> (PDF Accessibility Checker) is a free Windows tool that walks the structure tree and reports PDF/UA issues. Run it on samples in <code>test-output/tagged/</code>.</p>
 <h3 id="screen-reader-spot-check">Screen reader spot-check<a class="heading-anchor" href="#screen-reader-spot-check" aria-label="Link to this section">#</a></h3>

@@ -7,6 +7,9 @@ package and never loaded at runtime — only the generated `.ts` modules are.
 | File | Generator | Output |
 |---|---|---|
 | `BidiMirroring.txt` | `scripts/generate-bidi-mirroring.ts` | `src/shaping/bidi-mirroring-data.ts` |
+| `BidiBrackets.txt` | `scripts/generate-bidi-brackets.ts` | `src/shaping/bidi-brackets-data.ts` |
+| `DerivedBidiClass.txt` | `scripts/generate-bidi-class.ts` | `src/shaping/bidi-class-data.ts` |
+| `BidiCharacterTest-subset.txt` | `scripts/select-bidi-conformance-subset.ts` (input: the full UCD file) | read by `tests/shaping/bidi-conformance.test.ts` — no generated module |
 | `IndicSyllabicCategory.txt` | `scripts/generate-use-data.ts` | `src/shaping/use-data.ts` |
 | `IndicPositionalCategory.txt` | `scripts/generate-use-data.ts` | `src/shaping/use-data.ts` |
 | `ArabicShaping.txt` | `scripts/generate-use-data.ts` | `src/shaping/use-data.ts` |
@@ -20,7 +23,17 @@ All UCD files above are Unicode **17.0.0**. `generate-use-data.ts` refuses to
 run if they disagree with each other, so a partial upgrade fails loudly
 rather than producing a table derived from two Unicode versions.
 
-`DerivedGeneralCategory.txt` comes from the UCD's `extracted/` directory.
+`DerivedGeneralCategory.txt` and `DerivedBidiClass.txt` come from the UCD's `extracted/` directory.
+
+`BidiCharacterTest-subset.txt` is every 11th test line of the UCD's
+`BidiCharacterTest.txt` (8 337 of 91 707 lines, header kept verbatim), a
+deterministic uniform sample of that combinatorially generated corpus. The
+conformance test runs it at every gate and runs the full file when
+`BIDI_CHARACTER_TEST=<path>` points at it. Regenerate it from a downloaded copy:
+
+```
+npx tsx scripts/select-bidi-conformance-subset.ts <download-dir>/BidiCharacterTest.txt
+```
 
 ## The two `-Additional` files
 
@@ -46,10 +59,11 @@ mirrors the treatment of the Noto fonts (SIL OFL 1.1, see `fonts/LICENSE` and
 and downloaded rather than committed. The engine's UCD release is
 `USE_UNICODE_VERSION` in `src/shaping/use-data.ts` (17.0.0).
 
-The two `-Additional` files are distributed by HarfBuzz under the
-[Old MIT license](https://github.com/harfbuzz/harfbuzz/blob/main/COPYING),
-likewise permissive and redistributable with attribution. Both keep their
-original headers naming Andrew Glass as author.
+The two `-Additional` files are © Microsoft Corporation under the
+[MIT License](https://github.com/harfbuzz/harfbuzz/blob/main/src/ms-use/COPYING)
+(HarfBuzz's `src/ms-use/COPYING`), likewise permissive and redistributable with
+attribution. Both keep their original headers naming Andrew Glass as author;
+the license text is reproduced in `THIRD-PARTY-NOTICES.md`.
 
 ## Upgrading
 
@@ -59,6 +73,9 @@ once: the generator cross-checks the version headers.
 
 ```
 npx tsx scripts/generate-bidi-mirroring.ts
+npx tsx scripts/generate-bidi-brackets.ts
+npx tsx scripts/generate-bidi-class.ts
 npx tsx scripts/generate-use-data.ts
-npm run verify:unicode      # what CI runs
+npx tsx scripts/select-bidi-conformance-subset.ts <download-dir>/BidiCharacterTest.txt
+npm run verify:unicode      # what CI runs: every generator in --check mode
 ```

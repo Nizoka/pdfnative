@@ -1184,3 +1184,24 @@ describe('pdf-modifier — conformance hardening', () => {
         expect((reader2.getObject(num) as PdfDict).get('Custom')).toBe('mixed-chain');
     });
 });
+
+describe('tokenizer — stray delimiters (v1.9.0, found by fuzz/tokenizer.js)', () => {
+    it('consumes a lone ), { or } as a one-byte keyword instead of returning an empty token forever', () => {
+        // ISO 32000-1 §7.2.2 reserves { and } for PostScript functions and a
+        // lone ) closes nothing: none of them has a reader of its own, and the
+        // keyword reader used to yield an empty keyword without advancing.
+        const tok = createTokenizer(new TextEncoder().encode('} { ) begincm}p'));
+        const values: string[] = [];
+        for (let t = tok.next(), n = 0; t !== null && n < 20; t = tok.next(), n++) values.push(String(t.value));
+        expect(values).toEqual(['}', '{', ')', 'begincm', '}', 'p']);
+    });
+
+    it('reads a ToUnicode CMap whose begincmap keyword is corrupted through to its end', () => {
+        const cmap = new TextEncoder().encode('/CIDInit /ProcSet findresource begin\nbegincm}p\n1 begincodespacerange\n<00> <FF>\nendcodespacerange\n1 beginbfchar\n<41> <0041>\nendbfchar\nendcmap\n');
+        const tok = createTokenizer(cmap);
+        let n = 0;
+        while (tok.next() !== null && n < 1000) n++;
+        expect(n).toBeGreaterThan(10);
+        expect(n).toBeLessThan(1000);
+    });
+});

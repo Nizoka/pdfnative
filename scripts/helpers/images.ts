@@ -167,3 +167,68 @@ export function makeSyntheticPNG(): Uint8Array {
     result.set(iend, offset);
     return result;
 }
+
+// ── JPEG 2000 (v1.9.0) ───────────────────────────────────────────────
+
+/** Big-endian helpers for the fixtures below. */
+const u16 = (n: number): number[] => [(n >>> 8) & 0xFF, n & 0xFF];
+const u32 = (n: number): number[] => [(n >>> 24) & 0xFF, (n >>> 16) & 0xFF, (n >>> 8) & 0xFF, n & 0xFF];
+const fourcc = (s: string): number[] => Array.from(s, c => c.charCodeAt(0));
+const box = (type: string, body: readonly number[]): number[] => [...u32(8 + body.length), ...fourcc(type), ...body];
+
+/**
+ * A minimal, valid JPEG 2000 codestream (ISO/IEC 15444-1): `size` × `size`
+ * pixels, `components` 8-bit unsigned components, one tile, one quality
+ * layer, no wavelet decomposition, the reversible 5/3 transform and no
+ * quantization. Every packet is empty, so every coefficient is zero and the
+ * image decodes to mid grey (128 after the DC level shift) in each
+ * component — a flat tone any JPEG 2000 decoder reproduces, which is what a
+ * pass-through fixture needs: the engine never decodes it.
+ */
+export function makeMinimalJ2K(components = 1, size = 8): Uint8Array {
+    const siz = [
+        ...u16(38 + 3 * components), ...u16(0),
+        ...u32(size), ...u32(size), ...u32(0), ...u32(0),       // image size and offset
+        ...u32(size), ...u32(size), ...u32(0), ...u32(0),       // one tile covering the image
+        ...u16(components),
+    ];
+    for (let c = 0; c < components; c++) siz.push(0x07, 0x01, 0x01); // 8-bit unsigned, no subsampling
+    const cod = [...u16(12), 0x00, 0x00, ...u16(1), components === 3 ? 0x01 : 0x00, 0x00, 0x04, 0x04, 0x00, 0x01];
+    const qcd = [...u16(4), 0x40, 0x40]; // no quantization, 2 guard bits; LL exponent 8
+    const packets = Array.from({ length: components }, () => 0x00); // one empty packet per component
+    const psot = 12 + 2 + packets.length; // SOT segment + SOD + data
+    const sot = [...u16(10), ...u16(0), ...u32(psot), 0x00, 0x01];
+    return new Uint8Array([
+        0xFF, 0x4F,                 // SOC
+        0xFF, 0x51, ...siz,         // SIZ
+        0xFF, 0x52, ...cod,         // COD
+        0xFF, 0x5C, ...qcd,         // QCD
+        0xFF, 0x90, ...sot,         // SOT
+        0xFF, 0x93, ...packets,     // SOD + the empty packets
+        0xFF, 0xD9,                 // EOC
+    ]);
+}
+
+/**
+ * The JP2 file wrapping {@link makeMinimalJ2K}: signature and file-type
+ * boxes, a JP2 header (ihdr; a colr box naming sRGB, greyscale or CMYK by
+ * the component count), optionally a cdef box declaring the last component
+ * as opacity, and the codestream box.
+ */
+export function makeMinimalJP2(components = 1, options: { readonly alpha?: boolean; readonly size?: number } = {}): Uint8Array {
+    const size = options.size ?? 8;
+    const colourChannels = options.alpha ? components - 1 : components;
+    const enumCs = colourChannels === 1 ? 17 : colourChannels === 4 ? 12 : 16;
+    const codestream = makeMinimalJ2K(components, size);
+    const ihdr = box('ihdr', [...u32(size), ...u32(size), ...u16(components), 0x07, 0x07, 0x00, 0x00]);
+    const colr = box('colr', [0x01, 0x00, 0x00, ...u32(enumCs)]);
+    const cdef = options.alpha
+        ? box('cdef', [...u16(components), ...Array.from({ length: components }, (_, i) => (i === components - 1 ? [...u16(i), ...u16(1), ...u16(0)] : [...u16(i), ...u16(0), ...u16(i + 1)])).flat()])
+        : [];
+    return new Uint8Array([
+        ...box('jP  ', [0x0D, 0x0A, 0x87, 0x0A]),
+        ...box('ftyp', [...fourcc('jp2 '), ...u32(0), ...fourcc('jp2 ')]),
+        ...box('jp2h', [...ihdr, ...colr, ...cdef]),
+        ...box('jp2c', Array.from(codestream)),
+    ]);
+}

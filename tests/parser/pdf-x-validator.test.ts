@@ -240,3 +240,84 @@ describe('validatePdfX: annotations, actions, resources and filters', () => {
         expect(all).toMatch(/1 embedded file stream/);
     });
 });
+
+describe('validatePdfX: colour inside XObjects and spot colour alternates (1.9.0)', () => {
+    /** A minimal PDF/X skeleton with a prtr profile of `space`, page content `content`, and extra objects from 6 on. */
+    function skeleton(space: string, content: string, resources: string, extra: readonly string[] = []): Uint8Array {
+        const icc = latin1Bytes(String.fromCharCode(...fakeIcc(space)));
+        let iccStr = ''; for (let i = 0; i < icc.length; i++) iccStr += String.fromCharCode(icc[i]);
+        return assemblePdf([
+            '<< /Type /Catalog /Pages 2 0 R /OutputIntents [5 0 R] >>',
+            '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+            `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /TrimBox [0 0 612 792] /Resources << ${resources} >> /Contents 4 0 R >>`,
+            stream('', content),
+            `<< /Type /OutputIntent /S /GTS_PDFX /OutputConditionIdentifier (x) /DestOutputProfile 6 0 R >>`,
+            stream(`/N ${space === 'CMYK' ? 4 : 3}`, iccStr),
+            ...extra,
+        ]);
+    }
+    const colourErrors = (bytes: Uint8Array): string[] => validatePdfX(bytes).errors.filter(e => /Device(RGB|CMYK) colour/.test(e));
+
+    it('sees device colour painted inside a Form XObject, with the form\'s own resources in force', () => {
+        const bytes = skeleton('RGB ', '/Fx Do', '/XObject << /Fx 7 0 R >>', [
+            stream('/Type /XObject /Subtype /Form /BBox [0 0 10 10]', '0 0 0 1 k 0 0 5 5 re f'),
+        ]);
+        expect(colourErrors(bytes)).toEqual(['Page 1, form /Fx: DeviceCMYK colour under a RGB OutputIntent without /DefaultCMYK (ISO 15930-7).']);
+        // The same form under a CMYK intent is fine; and a form with its own /DefaultCMYK passes under RGB.
+        expect(colourErrors(skeleton('CMYK', '/Fx Do', '/XObject << /Fx 7 0 R >>', [stream('/Type /XObject /Subtype /Form /BBox [0 0 10 10]', '0 0 0 1 k')]))).toEqual([]);
+        expect(colourErrors(skeleton('RGB ', '/Fx Do', '/XObject << /Fx 7 0 R >>', [
+            stream('/Type /XObject /Subtype /Form /BBox [0 0 10 10] /Resources << /ColorSpace << /DefaultCMYK [/ICCBased 6 0 R] >> >>', '0 0 0 1 k'),
+        ]))).toEqual([]);
+    });
+
+    it('sees the colour space of an image XObject', () => {
+        const bytes = skeleton('RGB ', '/Im1 Do', '/XObject << /Im1 7 0 R >>', [
+            stream('/Type /XObject /Subtype /Image /Width 1 /Height 1 /ColorSpace /DeviceCMYK /BitsPerComponent 8', '\0\0\0\0'),
+        ]);
+        expect(colourErrors(bytes)).toEqual(['Page 1, image /Im1: DeviceCMYK colour under a RGB OutputIntent without /DefaultCMYK (ISO 15930-7).']);
+        expect(colourErrors(skeleton('CMYK', '/Im1 Do', '/XObject << /Im1 7 0 R >>', [
+            stream('/Type /XObject /Subtype /Image /Width 1 /Height 1 /ColorSpace /DeviceRGB /BitsPerComponent 8', '\0\0\0'),
+        ]))).toEqual(['Page 1, image /Im1: DeviceRGB colour under a CMYK OutputIntent without /DefaultRGB (ISO 15930-7).']);
+    });
+
+    it('checks the alternate of a Separation or DeviceN the content selects, not of an unused one', () => {
+        const sep = '/Spot_Gold [/Separation /Gold /DeviceCMYK << /FunctionType 2 /Domain [0 1] /C0 [0 0 0 0] /C1 [0 0.2 0.8 0] /N 1 >>]';
+        expect(colourErrors(skeleton('RGB ', '/Spot_Gold cs 1 scn 0 0 5 5 re f', `/ColorSpace << ${sep} >>`)))
+            .toEqual(['Page 1, colour space /Spot_Gold: DeviceCMYK colour under a RGB OutputIntent without /DefaultCMYK (ISO 15930-7).']);
+        expect(colourErrors(skeleton('CMYK', '/Spot_Gold cs 1 scn 0 0 5 5 re f', `/ColorSpace << ${sep} >>`))).toEqual([]);
+        expect(colourErrors(skeleton('RGB ', '0 0 5 5 re f', `/ColorSpace << ${sep} >>`))).toEqual([]);
+        const devn = '/DeviceN_A__B [/DeviceN [/A /B] /DeviceRGB 7 0 R]';
+        expect(colourErrors(skeleton('CMYK', '/DeviceN_A__B cs 1 0 scn', `/ColorSpace << ${devn} >>`, ['<< /FunctionType 2 /Domain [0 1 0 1] /C0 [1 1 1] /C1 [0 0 0] /N 1 >>'])))
+            .toEqual(['Page 1, colour space /DeviceN_A__B: DeviceRGB colour under a CMYK OutputIntent without /DefaultRGB (ISO 15930-7).']);
+    });
+
+    // 1.9.0 — a type 4 tint transform may use only the ISO 32000-1 Table 42
+    // operators; `repeat` (what 1.9.0's first DeviceN function emitted) makes
+    // Acrobat refuse the page with "Invalid Function resource".
+    it('reports a type 4 tint transform that uses an operator outside Table 42 or a stray procedure', () => {
+        const tintErrors = (bytes: Uint8Array): string[] => validatePdfX(bytes).errors.filter(e => /tint transform/.test(e));
+        const devn = '/DeviceN_A__B [/DeviceN [/A /B] /DeviceCMYK 7 0 R]';
+        const fn = (code: string): string => stream('/FunctionType 4 /Domain [0 1 0 1] /Range [0 1 0 1 0 1 0 1]', code);
+        const good = '{ 2 copy 0 mul exch 1 mul add 3 1 roll 2 copy 0 mul exch 0.44 mul add 3 1 roll 2 copy 0 mul exch 0 mul add 3 1 roll 2 copy 0.1 mul exch 0 mul add 3 1 roll pop pop }';
+        expect(tintErrors(skeleton('CMYK', '/DeviceN_A__B cs 1 0 scn', `/ColorSpace << ${devn} >>`, [fn(good)]))).toEqual([]);
+        expect(tintErrors(skeleton('CMYK', '/DeviceN_A__B cs 1 0 scn', `/ColorSpace << ${devn} >>`, [fn('{ 2 copy add 3 1 roll 2 {pop} repeat }')])))
+            .toEqual([
+                'Page 1, colour space /DeviceN_A__B: type 4 tint transform has a procedure outside if / ifelse before "repeat" (ISO 32000-1 §7.10.5, ISO 15930-7).',
+                'Page 1, colour space /DeviceN_A__B: type 4 tint transform uses "repeat", not an ISO 32000-1 Table 42 operator (ISO 15930-7).',
+            ]);
+        expect(tintErrors(skeleton('CMYK', '/DeviceN_A__B cs 1 0 scn', `/ColorSpace << ${devn} >>`, [fn('{ dup 1 gt {pop 1} if 0 0 0 }')]))).toEqual([]);
+        expect(tintErrors(skeleton('CMYK', '/DeviceN_A__B cs 1 0 scn', `/ColorSpace << ${devn} >>`, [fn('{ 0 0 0 0 pop pop /x def }')])))
+            .toEqual([
+                'Page 1, colour space /DeviceN_A__B: type 4 tint transform uses "/x", not an ISO 32000-1 Table 42 operator (ISO 15930-7).',
+                'Page 1, colour space /DeviceN_A__B: type 4 tint transform uses "def", not an ISO 32000-1 Table 42 operator (ISO 15930-7).',
+            ]);
+        // An unused colour space is never inspected; a Separation with a type 2 function is not a calculator.
+        expect(tintErrors(skeleton('CMYK', '0 0 5 5 re f', `/ColorSpace << ${devn} >>`, [fn('{ 1 2 3 4 repeat }')]))).toEqual([]);
+        // The builder's own ink mix passes the check it now has.
+        const inks = buildDocumentPDFBytes(
+            { ...doc, blocks: [{ type: 'paragraph', text: 'Mix', color: { inks: { A: 1, B: 0.5 } } }] },
+            { ...x4, print: { spotColours: [{ name: 'A', alternate: [100, 0, 0, 0] }, { name: 'B', alternate: [0, 0, 0, 10] }] } },
+        );
+        expect(tintErrors(inks)).toEqual([]);
+    });
+});

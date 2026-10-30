@@ -9,15 +9,13 @@ import { describe, it, expect } from 'vitest';
 import { buildDocumentPDFBytes } from '../../src/core/pdf-document.js';
 import { extractText } from '../../src/parser/pdf-text-extract.js';
 import { openPdf } from '../../src/parser/pdf-reader.js';
+import { createEncodingContext } from '../../src/core/encoding-context.js';
 import type { DocumentParams } from '../../src/types/pdf-document-types.js';
 import type { FontData, FontEntry } from '../../src/types/pdf-types.js';
 import * as notoArabic from '../../fonts/noto-arabic-data.js';
 
 const arabicFont = notoArabic as unknown as FontData;
 const fontEntries: FontEntry[] = [{ fontData: arabicFont, fontRef: '/F3', lang: 'ar' }];
-
-const gidHex = (cp: number): string =>
-    (arabicFont.cmap[cp] as number).toString(16).toUpperCase().padStart(4, '0');
 
 function pageContent(pdf: Uint8Array): string {
     const r = openPdf(pdf);
@@ -37,25 +35,40 @@ function build(text: string): Uint8Array {
     return buildDocumentPDFBytes(params);
 }
 
+/**
+ * The glyphs of a word as the encoding context shapes them, the CIDs the
+ * content stream shows them by (C28), and the page the builder wrote.
+ */
+function shaped(text: string): { gids: number[]; codes: string[]; content: string } {
+    const enc = createEncodingContext(fontEntries, false, false);
+    const run = enc.textRuns(text, 10)[0];
+    const gids = run.shaped!.map(g => g.gid);
+    const codes = run.cids!.map(c => c.toString(16).toUpperCase().padStart(4, '0'));
+    return { gids, codes, content: pageContent(build(text)) };
+}
+const gid = (cp: number): number => arabicFont.cmap[cp] as number;
+
 describe('Persian joining in the content stream', () => {
     it('renders قیمت with the MEDIAL farsi-yeh form, never the isolated one', () => {
-        const content = pageContent(build('قیمت'));
-        expect(content).toContain(gidHex(0xFBFF)); // farsi yeh MEDIAL
-        expect(content).not.toContain(gidHex(0x06CC)); // nominal = isolated yeh
+        const { gids, codes, content } = shaped('قیمت');
+        expect(gids).toContain(gid(0xFBFF)); // farsi yeh MEDIAL
+        expect(gids).not.toContain(gid(0x06CC)); // nominal = isolated yeh
+        expect(content).toContain(`<${codes.join('')}>`); // shown by its CIDs
     });
 
     it('renders سال with the FINAL alef form (no bare alef)', () => {
-        const content = pageContent(build('سال'));
-        expect(content).toContain(gidHex(0xFE8E)); // alef FINAL
-        expect(content).toContain(gidHex(0xFEB3)); // seen initial
+        const { gids, codes, content } = shaped('سال');
+        expect(gids).toContain(gid(0xFE8E)); // alef FINAL
+        expect(gids).toContain(gid(0xFEB3)); // seen initial
+        expect(content).toContain(`<${codes.join('')}>`);
     });
 
     it('renders پدر and گفتگو through Presentation Forms-A', () => {
-        const pedar = pageContent(build('پدر'));
-        expect(pedar).toContain(gidHex(0xFB58)); // peh INITIAL
-        const goftogu = pageContent(build('گفتگو'));
-        expect(goftogu).toContain(gidHex(0xFB94)); // gaf initial
-        expect(goftogu).toContain(gidHex(0xFB95)); // gaf medial
+        expect(shaped('پدر').gids).toContain(gid(0xFB58)); // peh INITIAL
+        const goftogu = shaped('گفتگو');
+        expect(goftogu.gids).toContain(gid(0xFB94)); // gaf initial
+        expect(goftogu.gids).toContain(gid(0xFB95)); // gaf medial
+        expect(goftogu.content).toContain(`<${goftogu.codes.join('')}>`);
     });
 });
 
@@ -77,9 +90,14 @@ describe('Persian digits and mirroring at the extraction level', () => {
         expect(text).toContain(')');
     });
 
-    it('keeps an LTR island intact inside a Persian sentence', () => {
+    it('keeps an LTR island intact inside a Persian sentence, each Persian run logical (C27)', () => {
         const pdf = build('متن با (English text) داخل آن');
         const text = extractText(pdf).map(p => p.text).join('\n');
-        expect(text).toContain('(English text)');
+        // The brackets resolve to the Persian level (UAX #9 N0): each
+        // right-to-left run carries its own bracket, in logical order, and
+        // the island between them is untouched.
+        expect(text).toContain('English text');
+        expect(text).toContain('متن با (');
+        expect(text).toContain(') داخل آن');
     });
 });

@@ -155,6 +155,10 @@ Vertically align cell text within the row band. Useful when rows have a tall `mi
 
 ---
 
+## Row height and deep descenders (v1.9.0)
+
+A row reserves, below its baseline, the deepest descender of the fonts its text uses (`|descent| / unitsPerEm × size`) beyond the historical bottom allowance, and the baseline is lifted by that band — so a Myanmar stack, a Khmer subscript or a Thai tone mark under a vowel clears the cell border instead of being clipped by it ([#80](https://github.com/Nizoka/pdfnative/issues/80)). Rows set in the base-14 fonts reserve nothing extra and are byte-identical to 1.8.0; rows holding such text grow by the band, which moves the following rows and can change where a long table breaks.
+
 ## How multi-page tables are sliced
 
 pdfnative uses a two-phase pipeline:
@@ -196,6 +200,10 @@ The structure is **single** even when the table spans multiple pages. `_paginate
 Repeated headers in `repeatHeader: true` mode are **not** re-emitted in the structure tree — they are visual continuations only. The single `/TR` for the header sits at the top of the `/Table` element.
 
 ---
+
+### Header semantics (v1.9.0)
+
+Every `/TH` carries `/A << /O /Table /Scope /Column >>` and an `/ID`, every `/TD` names the header cell of its column in `/Headers`, and the `/StructTreeRoot` registers the ids in an `/IDTree` — what PDF/UA readers use to announce "Amount: 3 000.00" instead of a bare number (ISO 14289-1 §7.5). Sliced tables keep the association per slice: the repeated header row of each page gets its own ids and the cells of that page point to them. `validatePdfUA()` reports a `/TH` without `/Scope` as an error and a `/TD` without `/Headers` as a warning.
 
 ## Tagged-mode + zebra
 

@@ -74,3 +74,39 @@ describe('getAnnotations round-trip', () => {
         expect(openPdf(bytes).getAnnotations(0)).toEqual([]);
     });
 });
+
+// v1.9.0 (#91) — a URI link can be added to an existing document, and an
+// unknown type is refused instead of serialising `/Subtype /undefined`.
+
+describe('link annotations and unknown types (#91)', () => {
+    it('builds a /Link with a /URI action and no visible border', () => {
+        const body = buildAnnotationBody({ type: 'link', rect: [72, 700, 200, 716], url: 'https://example.org/a(b)' });
+        expect(body).toContain('/Subtype /Link');
+        expect(body).toContain('/Border [0 0 0]');
+        expect(body).toContain('/A << /Type /Action /S /URI /URI (https://example.org/a\\(b\\)) >>');
+        expect(body).not.toContain('undefined');
+    });
+
+    it('applies the document builder\'s URL scheme allow-list', () => {
+        for (const url of ['javascript:alert(1)', 'file:///etc/passwd', 'data:text/html,x', 'ftp://x']) {
+            expect(() => buildAnnotationBody({ type: 'link', rect: [0, 0, 1, 1], url })).toThrow(/Blocked URL scheme/);
+        }
+        expect(() => buildAnnotationBody({ type: 'link', rect: [0, 0, 1, 1], url: 'https://x\n.y' })).toThrow(/Blocked URL scheme/);
+        expect(() => buildAnnotationBody({ type: 'link', rect: [0, 0, 1, 1], url: 'mailto:a@b.c' })).not.toThrow();
+    });
+
+    it('rejects an annotation type outside the union', () => {
+        expect(() => buildAnnotationBody({ type: 'bogus', rect: [0, 0, 1, 1] } as unknown as MarkupAnnotation))
+            .toThrow('Unknown annotation type "bogus" — expected one of: text, highlight, underline, strikeout, squiggly, square, circle, line, freetext, link');
+    });
+
+    it('round-trips through the modifier and getAnnotations', () => {
+        const base = buildDocumentPDFBytes({ title: 'A', blocks: [{ type: 'paragraph', text: 'Hello' }] });
+        const mod = createModifier(openPdf(base));
+        mod.addAnnotation(0, buildAnnotationBody({ type: 'link', rect: [72, 700, 200, 716], url: 'https://pdfnative.dev/' }));
+        const [link] = openPdf(mod.save()).getAnnotations(0);
+        expect(link.subtype).toBe('Link');
+        expect(link.rect).toEqual([72, 700, 200, 716]);
+        expect(link.url).toBe('https://pdfnative.dev/');
+    });
+});

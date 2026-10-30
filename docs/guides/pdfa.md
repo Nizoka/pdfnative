@@ -171,6 +171,18 @@ unembedded Helvetica standard-14 references for byte-stable v1.0.x
 output — convenient for non-archival rendering but invalid under
 PDF/A.
 
+## Level U — every glyph must map to text (v1.9.0)
+
+PDF/A-2u and 3u require every character code of every font to map to Unicode (ISO 19005-2 §6.2.11.7.2). Since v1.9.0 every shaper reports the code points behind the glyphs it emits and the `/ToUnicode` CMap names them all — conjuncts, subjoined forms, positional forms, ligatures — so a Tai Tham, Khmer or Arabic document can claim `'pdfa2u'` (the `tagged-pdfa2u-taitham` sample is validated by veraPDF). When a glyph still has no mapping — in practice a character the font does not cover, drawn as glyph 0 — the build raises `PDFA_GLYPH_WITHOUT_UNICODE` (a warning; an error under `strict`) naming the font and the glyph ids, instead of letting veraPDF find it.
+
+## Images under PDF/A (v1.9.0)
+
+JPEG and PNG are accepted at every level. JPEG 2000 (`/JPXDecode`) is flagged under PDF/A-1 (PDF 1.4 has no such filter: `PDFA1_JPX_IMAGE`, a warning or an error under `strict`; veraPDF rejects the file) and accepted under PDF/A-2 and 3 with one, three or four colour channels and no opacity channel in the codestream (ISO 19005-2 §6.2.8.3; otherwise `PDFA_JPX_IMAGE`, a warning or an error under `strict`). A CMYK image under the default sRGB intent raises `PDFA_DEVICE_CMYK_CONTENT` as any CMYK content does. See the [images guide](images.html).
+
+## PDF/A and PDF/X together (v1.9.0)
+
+`tagged: 'pdfa2b'` or `'pdfa2u'` combines with `pdfx: 'pdfx4'`: two OutputIntents sharing one profile, `pdfaid` and `pdfxid` in the XMP, both validators satisfied. PDF/A-1 and PDF/A-3 do not combine with PDF/X-4. See the [print guide](print.html#pdfa-and-pdfx-in-one-file-v190).
+
 ## Validating your output
 
 pdfnative ships a thin wrapper around the official veraPDF CLI:
@@ -191,12 +203,15 @@ engine PR — see [.github/workflows/verapdf.yml](https://github.com/Nizoka/pdfn
 and again as a blocking gate before every npm publish.
 
 Detection is automatic and guarded: every sample declaring
-`pdfaid:part` — currently the 21 PDF/A-claiming samples — is validated
+`pdfaid:part` — currently the 25 PDF/A-claiming samples — is validated
 without any registration, and a **coverage canary** fails the run if the
 detected count drifts from `declared.pdfaSamples` in
 `docs/assets/ecosystem.json` (bump it when adding or removing a
 claiming sample; a mismatch with no sample change means detection or
-generation regressed).
+generation regressed). The same script holds every sample declaring
+`pdfxid:GTS_PDFXVersion` to `validatePdfX()` — veraPDF never covers
+PDF/X — with its own canary, `declared.pdfxSamples`; see the
+[print guide](print.html).
 
 > **Which samples are subject to PDF/A validation?** Only files that
 > *declare* a conformance level in their XMP (`pdfaid:part`) — the ones

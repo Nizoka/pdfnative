@@ -17,6 +17,7 @@
   <meta property="og:title" content="pdfnative-mcp Tool Explorer — 28 AI PDF tools">
   <meta property="og:description" content="Browse the 28 pdfnative-mcp tool schemas, see example prompts, and generate the exact PDFs an AI assistant receives — directly in your browser. No keys, no install.">
   <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
+  <meta property="og:image:alt" content="pdfnative — pure native PDF generation, zero dependencies">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
@@ -124,7 +125,7 @@
   <nav class="playground-switcher" aria-label="Playground switcher">
     <span class="playground-switcher-label">Playgrounds:</span>
     <a href="./extreme-scripts.html">Extreme scripts</a>
-    <a href="./all-scripts.html">All 27 scripts</a>
+    <a href="./all-scripts.html">All 32 scripts</a>
     <a href="./toolkit.html">PDF Toolkit</a>
     <a href="./inspect.html">Inspect &amp; verify</a>
     <a href="./charts.html">Charts</a>
@@ -137,10 +138,12 @@
     <a href="./print.html">Print &amp; PDF/X</a>
     <a href="./reproducible.html">Reproducible output</a>
     <a href="./docspec-lint.html">DocSpec lint</a>
+    <a href="./images.html">Images</a>
     <a href="./" style="margin-left:auto;">All →</a>
   </nav>
   <article class="guide-content">
     <h1>pdfnative-mcp tool explorer</h1>
+<!-- verify-docs:allow stale-token (historical: this companion release was built on pdfnative 1.8.0 (27 scripts)) -->
     <p>The tools an AI assistant gets when you wire <a href="https://github.com/Nizoka/pdfnative-mcp">pdfnative-mcp</a> <strong>v1.7.0</strong> (pins pdfnative <code>^1.8.0</code>, requires pdfnative ≥ 1.8.0 and Node ≥ 22; <code>_meta.apiVersion</code> = <code>TOOL_API_VERSION</code> <code>1.7.0</code>) into Claude Desktop, Cursor, Continue, Zed, or any other MCP client (Cline, Windsurf, Goose, Gemini CLI…). The server exposes <strong>28 tools</strong> — the catalogue did not grow in v1.7.0; what each tool can do did: a <code>typography</code> option on the nine document tools and on <code>inspect_layout</code> (paragraphs that split with orphan / widow control, justification with optical margins, kerning and OpenType features), <strong>CMYK colours</strong> on every colour input (<code>[c, m, y, k]</code> percent tuples or <code>'c m y k'</code> operand strings), <strong>PDF/X-4</strong> output (<code>pdfx: "pdfx4"</code>, CMYK or Gray output intents, colour bars) with a structural check in <code>validate_pdf</code> <code>{ standard: "pdf-x-4" }</code>, <strong>27 scripts</strong> in <code>add_international_text</code> (Lao, Tai Tham, New Tai Lue, Tai Le and Cham join), and <strong>reproducible output</strong> (every date written in UTC; a per-call <code>creationDate</code>, or an operator-wide pin through <code>PDFNATIVE_MCP_CREATION_DATE</code> / <code>SOURCE_DATE_EPOCH</code>). Still there from earlier releases: the v1.6.0 PAdES ladder <code>add_ltv</code> / <code>timestamp_pdf</code> (with RFC 3161 timestamps on <code>sign_pdf</code>), <code>update_metadata</code>, the read-only <code>inspect_layout</code> pagination preview, all 13 block kinds in <code>generate_basic_pdf</code>, print production and charts v2, the v1.5.0 <code>add_chart</code> / form / encryption tools, the v1.4.0 markup <code>annotate_pdf</code> and network-free <code>draft_governance_issue</code>, the v1.3.0 page-tree trio <code>merge_pdfs</code> / <code>split_pdf</code> / <code>extract_pages</code>, a <code>pdfA</code> flag on every document tool, multi-script <code>lang</code>, and token-frugal read modes (<code>verbosity</code> / <code>fields</code>). Each card below shows a real example prompt, the payload it runs, and a button that produces the very PDF (or report) the AI assistant would receive — <strong>simulated with the pdfnative engine in your browser; the server returns the same shape</strong>. Older cards show the pdfnative library payload this page executes (the MCP schemas differ — see the <a href="../guides/mcp.html">MCP guide</a>); the v1.7.0 cards show the exact MCP tool-call payload and map it to the engine in front of you. No API keys, no install, no LLM cost.</p>
 
     <p style="font-size: 14px; color: var(--c-text-dim);">For the full integration story (config, security model, signed-document workflow), see the <a href="../guides/mcp.html">MCP guide</a>.</p>
@@ -198,7 +201,7 @@
 
     <h2 style="margin-top: 36px;">4. Try the tools</h2>
     <p id="loader-status" style="font-size: 13px; color: var(--c-text-dim);">Loading <code>pdfnative</code> from esm.sh… this happens once per page load.</p>
-    <p style="font-size: 13px; color: var(--c-text-dim);">The interactive cards below cover the core document-authoring tools, the v1.3.0 page-tree trio (<code>merge_pdfs</code>, <code>split_pdf</code>, <code>extract_pages</code>), the v1.4.0 <code>annotate_pdf</code>, the v1.6.0 <code>update_metadata</code>, and the six <span class="mcp-tag new">v1.7.0</span> cards — <code>generate_basic_pdf</code> with <code>typography</code>, <code>generate_basic_pdf</code> as PDF/X-4 with CMYK colours and colour bars, <code>validate_pdf</code> <code>{ standard: "pdf-x-4" }</code>, <code>inspect_pdf</code> <code>{ check: ["pdfx", "trapped"] }</code>, <code>add_international_text</code> with the five new scripts, and a reproducible <code>generate_basic_pdf</code> that is built twice and hashed — all of which build their own source PDFs in the browser and run the real pdfnative 1.8.0 API. Three cards produce no PDF by design: <code>inspect_layout</code> returns a pagination report, <code>validate_pdf</code> and <code>inspect_pdf</code> (PDF/X) return structured reports (run them to see the JSON), and <code>draft_governance_issue</code> validates a report locally, network-free — use its <em>Copy args</em> button. Ten of the 28 tools have no card here: eight need a real PDF as input and run best from your own MCP client (<code>verify_pdf</code>, <code>add_attachment</code>, <code>extract_attachments</code>, <code>extract_text</code>, <code>read_form_fields</code>, <code>fill_form</code>, <code>encrypt_pdf</code>, <code>decrypt_pdf</code>), and two need the operator-configured network providers a browser page cannot supply (<code>add_ltv</code>, <code>timestamp_pdf</code> — TSA / OCSP / CRL endpoints set via the environment variables above). See the <a href="../guides/mcp.html">MCP guide</a> for their full schemas.</p>
+    <p style="font-size: 13px; color: var(--c-text-dim);">The interactive cards below cover the core document-authoring tools, the v1.3.0 page-tree trio (<code>merge_pdfs</code>, <code>split_pdf</code>, <code>extract_pages</code>), the v1.4.0 <code>annotate_pdf</code>, the v1.6.0 <code>update_metadata</code>, and the six <span class="mcp-tag new">v1.7.0</span> cards — <code>generate_basic_pdf</code> with <code>typography</code>, <code>generate_basic_pdf</code> as PDF/X-4 with CMYK colours and colour bars, <code>validate_pdf</code> <code>{ standard: "pdf-x-4" }</code>, <code>inspect_pdf</code> <code>{ check: ["pdfx", "trapped"] }</code>, <code>add_international_text</code> with the five new scripts, and a reproducible <code>generate_basic_pdf</code> that is built twice and hashed — all of which build their own source PDFs in the browser and run the real pdfnative 1.9.0 API. Three cards produce no PDF by design: <code>inspect_layout</code> returns a pagination report, <code>validate_pdf</code> and <code>inspect_pdf</code> (PDF/X) return structured reports (run them to see the JSON), and <code>draft_governance_issue</code> validates a report locally, network-free — use its <em>Copy args</em> button. Ten of the 28 tools have no card here: eight need a real PDF as input and run best from your own MCP client (<code>verify_pdf</code>, <code>add_attachment</code>, <code>extract_attachments</code>, <code>extract_text</code>, <code>read_form_fields</code>, <code>fill_form</code>, <code>encrypt_pdf</code>, <code>decrypt_pdf</code>), and two need the operator-configured network providers a browser page cannot supply (<code>add_ltv</code>, <code>timestamp_pdf</code> — TSA / OCSP / CRL endpoints set via the environment variables above). See the <a href="../guides/mcp.html">MCP guide</a> for their full schemas.</p>
 
     <div class="mcp-cards" id="cards"></div>
 
@@ -526,6 +529,7 @@
     },
     {
       id: 'add_international_text',
+// verify-docs:allow stale-token (historical: this companion release was built on pdfnative 1.8.0 (27 scripts))
       purpose: 'Render text in any of 25 lang codes — 27 scripts plus latin, emoji and the explicit math font — with BiDi & OpenType shaping. You can pass several in one call.',
       prompt: 'Create a multilingual greeting card with English, Thai, Arabic, and a smiling-face emoji.',
       args: {
@@ -545,9 +549,9 @@
         // resolved to a concrete FontEntry { fontData, fontRef, lang }, otherwise
         // the glyphs fall back to .notdef and render as ???? tofu.
         m.registerFonts({
-          th: () => import('https://esm.sh/pdfnative@1.8.0/fonts/noto-thai-data.js'),
-          ar: () => import('https://esm.sh/pdfnative@1.8.0/fonts/noto-arabic-data.js'),
-          emoji: () => import('https://esm.sh/pdfnative@1.8.0/fonts/noto-emoji-data.js'),
+          th: () => import('https://esm.sh/pdfnative@1.9.0/fonts/noto-thai-data.js'),
+          ar: () => import('https://esm.sh/pdfnative@1.9.0/fonts/noto-arabic-data.js'),
+          emoji: () => import('https://esm.sh/pdfnative@1.9.0/fonts/noto-emoji-data.js'),
         });
         const langs = Array.isArray(p.lang) ? p.lang : (p.lang ? [p.lang] : []);
         const loaded = await Promise.all(langs.map((l) => m.loadFontData(l)));
@@ -561,8 +565,10 @@
     {
       id: 'add_international_text',
       key: 'add_international_text_27_scripts',
+// verify-docs:allow stale-token (historical: this companion release was built on pdfnative 1.8.0 (27 scripts))
       tag: 'v1.7.0 · 27 scripts',
       mcp: true,
+// verify-docs:allow stale-token (historical: this companion release was built on pdfnative 1.8.0 (27 scripts))
       purpose: 'The five scripts added in v1.7.0 (pdfnative 1.8): Lao (lo, dedicated shaper), Tai Tham / Lanna (nod) and Cham (cjm) through the Universal Shaping Engine, New Tai Lue (khb) and Tai Le (tdd) — 27 scripts in all; ha / yo / ig / sw are aliases of latin.',
       prompt: 'Typeset a one-page sampler of the scripts of mainland South-East Asia: Lao, Tai Tham, New Tai Lue, Tai Le and Cham, as an archival PDF/A-2b.',
       args: {
@@ -579,16 +585,17 @@
           'Cham — ꨀꨇꩉ ꨌꩌ',
         ],
       },
+      // verify-docs:allow version-token (historical: these modules shipped with pdfnative 1.8.0)
       noteHtml: 'This is <code>examples/scripts-lao-tai-cham.json</code> (demonstration strings in five scripts; the labels are English). All five font modules ship with pdfnative 1.8.0 — <code>noto-lao</code>, <code>noto-taitham</code>, <code>noto-newtailue</code>, <code>noto-taile</code>, <code>noto-cham</code> — so every script in the payload is simulated, loaded from the CDN exactly as the server loads them from <code>node_modules</code>. As on the server, each <code>paragraphs</code> entry becomes one paragraph block, <code>lang</code> is routed run by run to the font that covers it, fonts are always embedded, <code>pdfA</code> maps to <code>layout.tagged</code>, and <code>strict: true</code> makes the first engine diagnostic a refusal. The claim is <code>pdfa2b</code> on purpose: one shaped Tai Tham glyph has no Unicode mapping in pdfnative 1.8.0, so veraPDF rejects <code>nod</code> at level U.',
       button: 'Generate PDF',
       run: async (a, m) => {
         m.registerFonts({
-          lo: () => import('https://esm.sh/pdfnative@1.8.0/fonts/noto-lao-data.js'),
-          nod: () => import('https://esm.sh/pdfnative@1.8.0/fonts/noto-taitham-data.js'),
-          khb: () => import('https://esm.sh/pdfnative@1.8.0/fonts/noto-newtailue-data.js'),
-          tdd: () => import('https://esm.sh/pdfnative@1.8.0/fonts/noto-taile-data.js'),
-          cjm: () => import('https://esm.sh/pdfnative@1.8.0/fonts/noto-cham-data.js'),
-          latin: () => import('https://esm.sh/pdfnative@1.8.0/fonts/noto-sans-data.js'),
+          lo: () => import('https://esm.sh/pdfnative@1.9.0/fonts/noto-lao-data.js'),
+          nod: () => import('https://esm.sh/pdfnative@1.9.0/fonts/noto-taitham-data.js'),
+          khb: () => import('https://esm.sh/pdfnative@1.9.0/fonts/noto-newtailue-data.js'),
+          tdd: () => import('https://esm.sh/pdfnative@1.9.0/fonts/noto-taile-data.js'),
+          cjm: () => import('https://esm.sh/pdfnative@1.9.0/fonts/noto-cham-data.js'),
+          latin: () => import('https://esm.sh/pdfnative@1.9.0/fonts/noto-sans-data.js'),
         });
         const loaded = await Promise.all(a.lang.map((l) => m.loadFontData(l)));
         const fontEntries = loaded
@@ -693,7 +700,7 @@
       // entry this sample would declare a conformance it does not have — on
       // the very page that demonstrates conformance inspection.
       build: async (p, m) => {
-        m.registerFonts({ latin: () => import('https://esm.sh/pdfnative@1.8.0/fonts/noto-sans-data.js') });
+        m.registerFonts({ latin: () => import('https://esm.sh/pdfnative@1.9.0/fonts/noto-sans-data.js') });
         const fontData = await m.loadFontData('latin');
         return m.buildDocumentPDFBytes({
           title: 'Inspect target sample',
@@ -804,7 +811,7 @@
         pdfsBase64: ['<base64 PDF 1>', '<base64 PDF 2>'],
         outputMode: 'base64',
       },
-      noteHtml: 'In a real MCP call the AI assistant supplies each source as base64. To keep this page binary-free, the playground builds two small source PDFs in the browser, then runs the <em>real</em> pdfnative 1.8.0 <code>mergePdfs()</code> the tool calls. Signatures/AcroForms are dropped, matching the tool contract; since v1.5.0 the tool opens encrypted sources with a password and can re-encrypt the merged output. Caps: 50 MiB/part, 200 MiB aggregate.',
+      noteHtml: 'In a real MCP call the AI assistant supplies each source as base64. To keep this page binary-free, the playground builds two small source PDFs in the browser, then runs the <em>real</em> pdfnative 1.9.0 <code>mergePdfs()</code> the tool calls. Signatures/AcroForms are dropped, matching the tool contract; since v1.5.0 the tool opens encrypted sources with a password and can re-encrypt the merged output. Caps: 50 MiB/part, 200 MiB aggregate.',
       build: (p, m) => {
         requirePageTree(m, 'mergePdfs');
         const a = m.buildDocumentPDFBytes({ title: 'Cover letter', blocks: [
@@ -885,7 +892,7 @@
         ],
         outputMode: 'base64',
       },
-      noteHtml: 'The tool never rasterises: it reads the source, appends real annotation objects, and rewrites the page <code>/Annots</code> with an incremental update — the original bytes are preserved. This demo builds a one-page source PDF, then runs the <em>real</em> pdfnative 1.8.0 <code>openPdf()</code> → <code>createModifier()</code> → <code>buildAnnotationBody()</code> → <code>addAnnotation()</code> pipeline the tool calls. <strong>Encrypted sources are rejected</strong> (<code>ENCRYPTED_SOURCE</code>), matching the tool contract.',
+      noteHtml: 'The tool never rasterises: it reads the source, appends real annotation objects, and rewrites the page <code>/Annots</code> with an incremental update — the original bytes are preserved. This demo builds a one-page source PDF, then runs the <em>real</em> pdfnative 1.9.0 <code>openPdf()</code> → <code>createModifier()</code> → <code>buildAnnotationBody()</code> → <code>addAnnotation()</code> pipeline the tool calls. <strong>Encrypted sources are rejected</strong> (<code>ENCRYPTED_SOURCE</code>), matching the tool contract.',
       build: (p, m) => {
         requireFn(m, 'openPdf');
         requireFn(m, 'createModifier');
@@ -919,7 +926,7 @@
         modDate: '2026-08-25T09:00:00+02:00',
         outputMode: 'base64',
       },
-      noteHtml: 'In a real MCP call the AI assistant supplies the source as base64. This demo builds a small source PDF in the browser, then runs the <em>real</em> pdfnative 1.8.0 <code>openPdf()</code> → <code>createModifier()</code> → <code>updateMetadata()</code> → <code>save()</code> pipeline the tool calls — an incremental update, so the original bytes stay a byte-exact prefix. Pinning <code>modDate</code> keeps the output reproducible. <strong>Encrypted sources are rejected</strong> (<code>ENCRYPTED_SOURCE</code>), matching the tool contract.',
+      noteHtml: 'In a real MCP call the AI assistant supplies the source as base64. This demo builds a small source PDF in the browser, then runs the <em>real</em> pdfnative 1.9.0 <code>openPdf()</code> → <code>createModifier()</code> → <code>updateMetadata()</code> → <code>save()</code> pipeline the tool calls — an incremental update, so the original bytes stay a byte-exact prefix. Pinning <code>modDate</code> keeps the output reproducible. <strong>Encrypted sources are rejected</strong> (<code>ENCRYPTED_SOURCE</code>), matching the tool contract.',
       build: (p, m) => {
         requireFn(m, 'openPdf');
         requireFn(m, 'createModifier');
@@ -952,7 +959,7 @@
         issueType: 'bug',
         targetRepo: 'pdfnative',
         reproduction: {
-          command: 'Build a table block with cellVAlign: "bottom" and a cell whose text ends in "y", then render with buildDocumentPDFBytes (pdfnative 1.8.0, Node 22).',
+          command: 'Build a table block with cellVAlign: "bottom" and a cell whose text ends in "y", then render with buildDocumentPDFBytes (pdfnative 1.9.0, Node 22).',
           result: 'The descender of the final "y" is cut off at the bottom cell border.',
         },
         expectedBehavior: 'Descenders render fully within the cell band.',
@@ -988,7 +995,7 @@
 
   // Noto Sans Latin — what `embedFonts: true` embeds on the server (src/diagnostics.ts, latinFontEntries()).
   async function latinEntries(m) {
-    m.registerFonts({ latin: () => import('https://esm.sh/pdfnative@1.8.0/fonts/noto-sans-data.js') });
+    m.registerFonts({ latin: () => import('https://esm.sh/pdfnative@1.9.0/fonts/noto-sans-data.js') });
     const fontData = await m.loadFontData('latin');
     if (!fontData) throw new Error('Noto Sans Latin font data failed to load (FONT_LOAD_FAILED on the server).');
     return [{ fontData, fontRef: '/F3', lang: 'latin' }];
@@ -1157,7 +1164,7 @@
   }
 
   // ─────────────────────────── pdfnative loader (mirrors app.js) ───────────────────────────
-  const CDN_URLS = ['https://esm.sh/pdfnative@1.8.0', 'https://unpkg.com/pdfnative@1.8.0?module'];
+  const CDN_URLS = ['https://esm.sh/pdfnative@1.9.0', 'https://unpkg.com/pdfnative@1.9.0?module'];
   let pdfnativeMod = null;
   let loadErr = null;
 

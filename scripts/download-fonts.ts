@@ -47,7 +47,7 @@ import { fileURLToPath } from 'node:url';
 import { inflateRawSync } from 'node:zlib';
 import {
     DEFAULT_TTF_DIR, MANIFEST_PATH, REPO_ROOT,
-    expectedHashes, isReleaseFont, readManifest, readNameRecord, sha256Of,
+    expectedHashes, fileHolds, isReleaseFont, readManifest, readNameRecord, sha256Of,
 } from './lib/font-sources.js';
 import type { DerivedFont, ReleaseFont, SourcesManifest, UpstreamFont } from './lib/font-sources.js';
 import { buildAllLatinSubsets, withDerivedHashes } from './lib/latin-subsets.js';
@@ -230,7 +230,7 @@ function deriveSubsets(manifest: SourcesManifest, ttfDir: string, tally: Tally):
             tally.failed++;
             continue;
         }
-        const present = existsSync(dest) && Buffer.from(readFileSync(dest)).equals(Buffer.from(r.bytes));
+        const present = fileHolds(dest, r.bytes);
         if (!present) writeFileSync(dest, r.bytes);
         out(`  ${present ? 'OK  ' : 'GEN '} ${r.entry.local} (derived from ${r.entry.from} by subsetTTF, ${kb(r.bytes.length)})`);
         if (present) tally.verified++; else tally.downloaded++;

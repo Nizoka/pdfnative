@@ -189,6 +189,99 @@ export function reportIneffectiveFeatures(
     if (unused.length > 0) emit(typographyFeatureIneffectiveDiagnostic(unused, 'unused'));
 }
 
+/**
+ * Diagnostic payload for characters no registered font covers (v1.9.0):
+ * `notdef` when a CID font drew glyph 0 for them, `winansi` when the base-14
+ * path wrote `?`. Up to eight code points are named, with the character.
+ */
+export function textGlyphNotCoveredDiagnostic(
+    fontLabel: string,
+    codepoints: readonly number[],
+    via: 'notdef' | 'winansi',
+): PdfDiagnostic {
+    // The character itself is shown only when it is printable: a control
+    // character (C0, DEL, C1) would put raw escape bytes into a log line.
+    const printable = (cp: number): boolean => cp >= 0x20 && !(cp >= 0x7F && cp <= 0x9F) && !(cp >= 0xD800 && cp <= 0xDFFF);
+    const name = (cp: number): string => `U+${cp.toString(16).toUpperCase().padStart(4, '0')}${printable(cp) ? ` "${String.fromCodePoint(cp)}"` : ''}`;
+    const shown = codepoints.slice(0, 8).map(name).join(', ') + (codepoints.length > 8 ? `, … (${codepoints.length} in all)` : '');
+    const one = codepoints.length === 1;
+    const message = via === 'notdef'
+        ? `text: ${shown} ${one ? 'has' : 'have'} no glyph in ${fontLabel} and ${one ? 'is' : 'are'} drawn as the .notdef box `
+            + `(ISO 32000-1 §9.7.6.3). Register a font that covers ${one ? 'it' : 'them'} — registerFont('math', …) with a `
+            + `fontEntry covers arrows and operators — or replace the character${one ? '' : 's'}.`
+        : `text: ${shown} ${one ? 'is' : 'are'} outside WinAnsiEncoding and written as "?" by the base-14 Helvetica `
+            + `(ISO 32000-1 Annex D). Register an embedded font through fontEntries — registerFont('latin', …) for Latin, `
+            + `'math' for symbols — or replace the character${one ? '' : 's'}.`;
+    return { code: 'TEXT_GLYPH_NOT_COVERED', severity: 'warning', message };
+}
+
+/**
+ * After a document's content is laid out, report every character that no
+ * registered font covered (v1.9.0): one diagnostic per font, the base-14
+ * WinAnsi path included. Shared by both builders.
+ */
+export function reportUncoveredGlyphs(
+    fontEntries: readonly FontEntry[],
+    enc: EncodingContext,
+    emit: (diagnostic: PdfDiagnostic) => void,
+): void {
+    const uncovered = enc.getUncoveredCodepoints?.();
+    if (!uncovered) return;
+    for (const [fontRef, cps] of uncovered) {
+        if (cps.size === 0) continue;
+        const sorted = [...cps].sort((a, b) => a - b);
+        const fe = fontEntries.find(f => f.fontRef === fontRef);
+        if (fe) emit(textGlyphNotCoveredDiagnostic(`${fontRef} ${fe.fontData.fontName}`, sorted, 'notdef'));
+        else emit(textGlyphNotCoveredDiagnostic('Helvetica', sorted, 'winansi'));
+    }
+}
+
+/**
+ * Diagnostic payload for a level-U PDF/A claim over a font with used glyphs
+ * the ToUnicode CMap cannot name (v1.9.0, #87).
+ */
+export function pdfaGlyphWithoutUnicodeDiagnostic(fontName: string, unmapped: readonly number[]): PdfDiagnostic {
+    const shown = unmapped.slice(0, 8).join(', ') + (unmapped.length > 8 ? ', …' : '');
+    return {
+        code: 'PDFA_GLYPH_WITHOUT_UNICODE',
+        severity: 'warning',
+        message: `tagged: 'pdfa2u' claims PDF/A-2u while font ${fontName} uses ${unmapped.length} glyph(s) the `
+            + `ToUnicode CMap cannot name (glyph ids ${shown}): ISO 19005-2 §6.2.11.7.2 requires every used `
+            + 'character code to map to Unicode, and veraPDF fails the file. A glyph id 0 means a character the '
+            + 'font does not cover (register a font that covers it); another id is a shaped form the shaper did '
+            + "not report (file an issue with the text). Or claim 'pdfa2b', which has no Unicode requirement.",
+    };
+}
+
+/**
+ * Diagnostic payload for a JPEG 2000 image under a PDF/A-1 claim (v1.9.0):
+ * PDF/A-1 is built on PDF 1.4, which has no JPXDecode filter.
+ */
+export function pdfa1JpxImageDiagnostic(): PdfDiagnostic {
+    return {
+        code: 'PDFA1_JPX_IMAGE',
+        severity: 'warning',
+        message: "a JPEG 2000 image was embedded under tagged: 'pdfa1b' — PDF/A-1 is PDF 1.4, which has no "
+            + 'JPXDecode filter (ISO 19005-1 §6.1.10; veraPDF rejects the file). Claim PDF/A-2 or later '
+            + "(tagged: 'pdfa2b'), or convert the image to JPEG or PNG.",
+    };
+}
+
+/**
+ * Diagnostic payload for a JPEG 2000 image that breaks the PDF/A-2 image
+ * constraints (v1.9.0): ISO 19005-2 §6.2.8.3 requires 1, 3 or 4 colour
+ * channels and no /SMaskInData.
+ */
+export function pdfaJpxImageDiagnostic(reason: string): PdfDiagnostic {
+    return {
+        code: 'PDFA_JPX_IMAGE',
+        severity: 'warning',
+        message: `a JPEG 2000 image with ${reason} was embedded under a PDF/A claim — ISO 19005-2 §6.2.8.3 `
+            + 'requires 1, 3 or 4 colour channels and no opacity channel (/SMaskInData); veraPDF rejects the '
+            + 'file. Re-encode the image without the extra channels, or drop the PDF/A level.',
+    };
+}
+
 /** Diagnostic payload for annotations or form fields under a PDF/X-4 claim (v1.8.0). */
 export function pdfxAnnotationsDiagnostic(): PdfDiagnostic {
     return {

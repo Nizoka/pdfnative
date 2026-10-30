@@ -208,6 +208,19 @@ describe('release-prepare: JSON-LD, alt text and SVG label', () => {
         expect(r.text).toContain('pdfnative-cli 1.7.0 is not the engine');
     });
 
+    it('leaves historical prose alone: a verify-docs:allow line and the line after it', () => {
+        const html = [
+            '<!-- verify-docs:allow stale-token (historical: built on pdfnative 1.7.0 (27 scripts)) -->',
+            '<p>v1.5.0 brings the pdfnative 1.7.0 engine to the shell</p>',
+            '<p>pdfnative 1.7.0 is the current engine</p>',
+        ].join('\n');
+        const r = replaceProductVersion(html, '1.7.0', '1.8.0');
+        expect(r.matched).toBe(1);
+        expect(r.text).toContain('built on pdfnative 1.7.0 (27 scripts)');
+        expect(r.text).toContain('brings the pdfnative 1.7.0 engine');
+        expect(r.text).toContain('pdfnative 1.8.0 is the current engine');
+    });
+
     it('relabels an SVG <desc>', () => {
         const svg = '<svg><desc>Layered dependency diagram for pdfnative 1.7.0. Top band …</desc></svg>';
         expect(replaceProductVersion(svg, '1.7.0', '1.8.0').text).toContain('for pdfnative 1.8.0. Top');

@@ -144,7 +144,8 @@ describe('buildKernedTJ', () => {
 describe('applyKerningToRuns', () => {
     it('attaches a TJ operand and tightens the advance', () => {
         const before = base.textRuns('AV', 12);
-        const after = applyKerningToRuns(before, 12);
+        // The codes are the document's CIDs (C28): the wrapper takes the context's resolver.
+        const after = applyKerningToRuns(before, 12, (ref, cid) => base.getCidMaps!().get(ref)![cid]);
         expect(after[0].tjStr).toBeDefined();
         expect(after[0].widthPt).toBeLessThan(before[0].widthPt);
     });

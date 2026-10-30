@@ -19,9 +19,11 @@
 | `circle` | `/Circle` | Ellipse |
 | `line` | `/Line` | Straight line |
 | `freetext` | `/FreeText` | Typewriter / callout text |
+| `link` | `/Link` | A clickable region with a `/URI` action (v1.9.0) — `url` goes through the same allow-list as the document builder's links: `http`, `https` and `mailto`; `javascript:`, `file:` and `data:` are refused |
 
 Every type shares `AnnotationBase`: `rect`, and optional `contents`, `color`,
-`opacity`, `title`, `modified`, `flags`.
+`opacity`, `title`, `modified`, `flags`. A `type` outside the union throws
+`Unknown annotation type` instead of writing `/Subtype /undefined` (v1.9.0, [#91](https://github.com/Nizoka/pdfnative/issues/91)); the [annotate-link recipe](https://github.com/Nizoka/pdfnative/blob/main/recipes/annotate-link.ts) adds a link to an existing PDF as an incremental update.
 
 ## Building annotations
 

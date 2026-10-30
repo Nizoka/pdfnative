@@ -1,34 +1,17 @@
 name: CodeQL
 
+# No path filter (v1.9.0): a weekly schedule plus every push and pull request,
+# so the FAQ's "CodeQL on every pull request and push" is literally true and a
+# code-scanning rule can one day wait for its results on every pull request.
 on:
   push:
     branches: [main, master]
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
-      - '.github/ISSUE_TEMPLATE/**'
-      - '.github/*.md'
-      - '.github/FUNDING.yml'
-      - 'LICENSE'
-      - '.editorconfig'
-      - '.gitignore'
   pull_request:
     branches: [main, master]
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
-      - '.github/ISSUE_TEMPLATE/**'
-      - '.github/*.md'
-      - '.github/FUNDING.yml'
-      - 'LICENSE'
-      - '.editorconfig'
-      - '.gitignore'
   schedule:
     - cron: '27 3 * * 1'
 
 permissions:
-  security-events: write
-  actions: read
   contents: read
 
 concurrency:
@@ -40,17 +23,31 @@ jobs:
     name: Analyze
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # Write permission at the JOB level only (OpenSSF Scorecard
+    # Token-Permissions, zizmor excessive-permissions): a second job added to
+    # this file would not inherit the right to write security events.
+    permissions:
+      security-events: write # Upload the analysis to code scanning.
+      actions: read # Read the workflow run the analysis belongs to.
+      contents: read # Read the source.
 
+    # `actions` reads the workflows themselves (injection, untrusted checkout,
+    # excessive permissions); `javascript-typescript` the engine and the
+    # scripts. Neither needs a build: CodeQL extracts both from source, so the
+    # build step of the template is gone. `security-extended` adds the
+    # lower-precision queries a library that parses untrusted input wants.
     strategy:
       fail-fast: false
       matrix:
-        language: [javascript-typescript]
+        include:
+          - { language: actions, build-mode: none }
+          - { language: javascript-typescript, build-mode: none }
 
     steps:
       - name: Harden the runner
         uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
-          egress-policy: audit
+          egress-policy: audit # 2026-10-23: the CodeQL bundle and its query packs come from hosts not baselined yet
 
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -61,9 +58,8 @@ jobs:
         uses: github/codeql-action/init@c10b8064de6f491fea524254123dbe5e09572f13 # v4.35.1
         with:
           languages: ${{ matrix.language }}
-
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@c10b8064de6f491fea524254123dbe5e09572f13 # v4.35.1
+          build-mode: ${{ matrix.build-mode }}
+          queries: security-extended
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@c10b8064de6f491fea524254123dbe5e09572f13 # v4.35.1

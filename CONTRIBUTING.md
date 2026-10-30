@@ -13,7 +13,7 @@ npm run fonts:download   # fetch Noto Sans TTFs → fonts/ttf/
 
 ### Requirements
 
-- Node.js 22 — the line in `.nvmrc` and `.node-version` (`nvm use` / `fnm use` / `volta` pick it up; CI also runs the suite on 24, and `engines.node` allows `>=22`).
+- Node.js 22 — the line in `.nvmrc` and `.node-version` (`nvm use` / `fnm use` / `volta` pick it up; CI runs the gate on Node 22 and 24 on Linux and on Node 22 on Windows and macOS, Node 26 advisory — in LTS since 2026-10-28, it joins the required matrix at the first minor after that date; `engines.node` allows `>=22`).
 - npm — the version pinned by `packageManager` in `package.json` (Corepack honours it). The repository's `.npmrc` sets `ignore-scripts=true` (no dependency runs an install script here — esbuild resolves its platform binary from an optional dependency), `fund=false` and `audit-level=high`; `npm run <script>` still runs the script you name, but lifecycle hooks such as `prepublishOnly` do not fire, which is why the publish workflow builds explicitly before it packs.
 - Dev dependencies use caret ranges on purpose: `package-lock.json` plus `npm ci` is what makes an install reproducible, not narrow ranges. Let npm manage the lockfile.
 - Source fonts: `npm run fonts:download` fetches every TTF at the google/fonts commit pinned in [fonts/SOURCES.json](fonts/SOURCES.json) and refuses a file whose SHA-256 differs from the manifest; the four hinted static instances (Arabic, Armenian, Georgian, Hebrew) come from the notofonts release archives the manifest names (`origin: "release"`: repository, tag, asset, entry path), extracted and hash-checked by the same script; the five Latin subsets (Cyrillic, Greek, Polish, Turkish, Vietnamese) are cut by the same script from the pinned `NotoSans-VF.ttf` with the library's own `subsetTTF()`, from the code-point lists in `fonts/subsets/` (`derived[]`: tool, command, SHA-256). Nothing under `fonts/ttf/` is committed.
@@ -31,7 +31,7 @@ Edit, add a test beside the code you touched (`tests/` mirrors `src/`), run the 
 
 Sign your commits if you can: with an SSH key already registered on GitHub, `git config gpg.format ssh`, `git config user.signingkey ~/.ssh/id_ed25519.pub`, `git config commit.gpgsign true` and `git config tag.gpgSign true` make every commit and tag verifiable; the rulesets do not require signatures yet, so an unsigned contribution is still welcome.
 
-Every file the project writes uses LF line endings (`.gitattributes` says `* text=auto eol=lf`); on Windows, Git converts on checkout and the pre-commit hook refuses a staged CRLF file. Do not run `git add --renormalize` in a feature branch — the maintainer does that in one dedicated commit.
+Every file the project writes uses LF line endings (`.gitattributes` says `* text=auto eol=lf`); on Windows, Git converts on checkout, the opt-in pre-commit hook refuses a staged CRLF file and `verify:docs` (rule `eol-lf`) fails the gate on one. The tree was renormalised once, in the 1.9.0 line-ending commit listed in `.git-blame-ignore-revs` (GitHub honours that file; locally run `git config blame.ignoreRevsFile .git-blame-ignore-revs` once).
 
 ## Build
 
@@ -76,7 +76,7 @@ npm run test:watch     # vitest (watch mode)
 npm run test:coverage  # vitest with v8 coverage (CI enforces the thresholds below)
 npm run test:generate  # Generate the sample PDFs → test-output/ (`derived.samplePdfs` in the manifest)
 npm run verify:samples # Fingerprint the samples against the committed baseline chain
-npm run validate:pdfa  # veraPDF validation of every PDF/A-claiming sample (see below)
+npm run validate:pdfa  # veraPDF over every PDF/A-claiming sample, validatePdfX() over every PDF/X-claiming one (see below)
 npm run verify:bundle  # Tree-shaking probes over dist/ (run `npm run build` first)
 npm run verify:docs    # offline rules over docs/, playgrounds, README, llms files
 npm run gate           # Everything a pull request is held to, in one command (see below)
@@ -85,19 +85,33 @@ npm run bench          # Performance benchmarks (vitest bench)
 
 All new code must include tests. Coverage thresholds (vitest.config.ts): statements 88%, branches 80%, functions 85%, lines 90%.
 
-The counts (tests, test files, sample PDFs, PDF/A-claiming samples, guides, playgrounds, recipes, scripts) live in one place, `docs/assets/ecosystem.json`, and `npm run verify:docs` reports every document that disagrees with it — update the manifest, not the prose. Its rules, each named in the failure line: `derived-counts` (the manifest against the file tree), `count-tokens` ("N tests", "N scripts" / "N Unicode scripts", "N playgrounds" — word numerals included — in every document), `version-token` (every version quoted in prose, tables and badges against the manifest), `error-parity` (every diagnostic code named in the docs exists in `docs/data/errors.json` and in `src/`, and vice versa), `playgrounds-manifest` (`docs/data/playgrounds.json` against the playground pages and their engine pins), `guide-render-sync` (every `docs/guides/*.md` has an up-to-date `.html` from `npm run docs:guides`), `llms-sync` (the llms files, the release-note link included, regenerated from their sources), `sitemap-parity`, `switcher-parity`, `bench-parity`, `claude-md-budget` (`AGENTS.md` and `CLAUDE.md` ≤ 120 lines, the Copilot file ≤ 16 KiB, no line over 240 characters), `prose-language` (English only, see Code Style), and since the 1.8.0 hardening pass `agent-config-parity` (`.claude/settings.json`, the guard hook and `CLAUDE.md` agree), `claude-rules-sync` / `claude-rules-budget` (`.claude/rules/*.md` regenerate from `.github/instructions/` by `npm run agents:rules` and stay within budget), `skills-shape`, `pr-template-parity` (the pull-request template mirrors the checklist below word for word) and `eol-lf` (tracked text files stored with CRLF — a warning until the renormalisation commit, then a failure).
+The counts (tests, test files, sample PDFs, PDF/A-claiming samples, guides, playgrounds, recipes, scripts) live in one place, `docs/assets/ecosystem.json`, and `npm run verify:docs` reports every document that disagrees with it — update the manifest, not the prose. Its rules, each named in the failure line: `derived-counts` (the manifest against the file tree), `count-tokens` ("N tests", "N scripts" / "N Unicode scripts" / "N writing systems", "N guides", "N playgrounds" — word numerals and a link tag between numeral and noun included — in every document), `version-token` (every version quoted in prose, tables and badges against the manifest), `error-parity` (every diagnostic code named in the docs exists in `docs/data/errors.json` and in `src/`, and vice versa), `playgrounds-manifest` (`docs/data/playgrounds.json` against the playground pages and their engine pins), `release-coverage` (every export added since the previous release — `docs/assets/api.json` minus `tests/compat/api-<previous>.json` — is named under a playground's `exercises` and present in that page, imported by a recipe, or listed under `coverageExemptions` with a reason), `jsonld-item-count` (the ItemList sizes of the guides and playgrounds indexes equal the manifest), `social-image-fresh` (`og-image.png` and `social-preview.png` are not older than their SVG sources), `guide-render-sync` (every `docs/guides/*.md` has an up-to-date `.html` from `npm run docs:guides`), `llms-sync` (the llms files, the release-note link included, regenerated from their sources), `sitemap-parity`, `switcher-parity`, `bench-parity`, `claude-md-budget` (`AGENTS.md` and `CLAUDE.md` ≤ 120 lines, the Copilot file ≤ 16 KiB, no line over 240 characters), `prose-language` (English only, see Code Style), and since the 1.8.0 hardening pass `agent-config-parity` (`.claude/settings.json`, the guard hook and `CLAUDE.md` agree), `claude-rules-sync` / `claude-rules-budget` (`.claude/rules/*.md` regenerate from `.github/instructions/` by `npm run agents:rules` and stay within budget), `skills-shape`, `pr-template-parity` (the pull-request template mirrors the checklist below word for word) and `eol-lf` (a tracked text file stored with CRLF fails; the tree has been LF since the 1.9.0 renormalisation commit).
 
-## PDF/A validation (veraPDF)
+### Compatibility with the previous release
+
+`npm run compat:previous` runs the previous release's test suite, exactly as tagged, against the current sources (`scripts/run-compat.ts`; the tag must be fetched: `git fetch --no-tags origin +refs/tags/v1.8.0:refs/tags/v1.8.0`). The files it may skip are listed in `tests/compat/allow-<previous>.json`, each with a reason and, when the reason is a behaviour change, the compatibility-ledger entry (`C1`, `C2`, …) of the release note that justifies it. `tests/tools/api-compat.test.ts` holds the export surface and the error vocabulary to the registries of the previous release (`tests/compat/api-<previous>.json`, `errors-<previous>.json`). Both are required checks (`compat-previous`) and part of the publish gate; SECURITY.md §Compatibility promise is the policy they enforce.
+
+## PDF/A and PDF/X validation (veraPDF, validatePdfX)
 
 pdfnative's PDF/A claims are backed by the official reference validator,
 [veraPDF](https://verapdf.org). `npm run validate:pdfa` scans `test-output/`
 (run `npm run test:generate` first), **auto-detects** every PDF that declares
-`pdfaid:part` in its XMP — currently the 21 PDF/A-claiming samples — and
+`pdfaid:part` in its XMP — currently the 25 PDF/A-claiming samples — and
 validates each against its declared profile (1b/2b/2u/3b). Detection is
 automatic: a new sample that claims PDF/A is validated without registering
 anything, and a coverage canary fails the run if the detected count drifts
 from `declared.pdfaSamples` in `docs/assets/ecosystem.json` (bump it when
 adding or removing a claiming sample).
+
+The same run holds every sample that declares `pdfxid:GTS_PDFXVersion` —
+currently the 4 PDF/X-claiming samples, the PDF/A-2b + PDF/X-4 dual claim
+among them — to `validatePdfX()`, pdfnative's own structural check of the
+ISO 15930-7 prerequisites: veraPDF covers PDF/A and PDF/UA, never PDF/X,
+and the project bundles no other tool. That pass needs nothing installed,
+so it runs and decides the exit code even where veraPDF is absent; its
+canary is `declared.pdfxSamples`. `tests/regression/samples.test.ts`
+repeats both counts and the PDF/X pass in the ordinary test suite whenever
+the corpus is present.
 
 Without veraPDF installed the script skips with exit 0 and prints install
 hints — local development never blocks. **CI is blocking**: the same script
@@ -163,13 +177,13 @@ src/
 ├── crypto/       # Zero-dependency cryptographic primitives (SHA, AES, RSA, ECDSA, X.509, CMS)
 ├── parser/       # PDF reading & incremental modification (tokenizer, object parser, xref, reader, modifier, decode filters (pdf-decode-filters.ts), decryption (pdf-decrypt.ts), page-tree merge/split/extract (pdf-pagetree.ts), text extraction (pdf-text-extract.ts))
 ├── fonts/        # WinAnsi + CIDFont pure encoding, font loader, TTF subsetter (buffer guards), CMap
-├── shaping/      # Script registry, Thai/Devanagari/Bengali/Tamil GSUB+GPOS, Arabic positional shaping, BiDi resolution, script detection, multi-font splitting
+├── shaping/      # Shaper registry, the data-driven Indic engine (ten scripts), Thai, Lao, Khmer, Myanmar, Tibetan, Sinhala, Arabic and USE shapers, full UAX #9 BiDi, script detection, multi-font splitting
 ├── types/        # All public TypeScript type definitions (pdf-types.ts, pdf-document-types.ts)
 └── worker/       # Web Worker dispatch + self-contained worker entry
-fonts/            # 31 pre-built font-data modules (27 scripts + Latin + math + monochrome and colour emoji)
+fonts/            # 36 pre-built font-data modules (32 scripts + Latin + math + monochrome and colour emoji)
 tools/            # CLI tool for converting TTF → importable data modules
-scripts/          # Modular sample PDF generation (49 generators, 292 PDFs) and the verification scripts
-tests/            # 161 test files (unit + integration + fuzz + parser + regression + docs + tools), mirrors src/ structure
+scripts/          # Modular sample PDF generation (50 generators, 311 PDFs) and the verification scripts
+tests/            # 178 test files (unit + integration + fuzz + parser + regression + docs + tools), mirrors src/ structure
 bench/            # Performance benchmarks (vitest bench)
 ```
 
@@ -193,10 +207,10 @@ bench/            # Performance benchmarks (vitest bench)
 - [ ] New code has tests
 - [ ] No `any` types introduced
 - [ ] No new runtime dependencies added
-- [ ] If samples or PDF/A behaviour changed: `npm run test:generate && npm run verify:samples && npm run validate:pdfa` passes locally (veraPDF installed — see [PDF/A validation](#pdfa-validation-verapdf); new PDF/A-claiming samples bump `declared.pdfaSamples`; an intended output change is rebaselined with `npx tsx scripts/verify-samples.ts --update` and explained in the commit)
+- [ ] If samples or PDF/A behaviour changed: `npm run test:generate && npm run verify:samples && npm run validate:pdfa` passes locally (veraPDF installed — see [PDF/A and PDF/X validation](#pdfa-and-pdfx-validation-verapdf-validatepdfx); new PDF/A-claiming samples bump `declared.pdfaSamples`; an intended output change is rebaselined with `npx tsx scripts/verify-samples.ts --update` and explained in the commit)
 - [ ] If docs/, playgrounds, README or llms files changed: `npm run verify:docs` passes
 - [ ] CHANGELOG.md updated if user-facing changes
-- [ ] For releases: follow [Release](#release) — `release-notes/vX.Y.Z.md` written, and `npm run gate -- --publish` passes locally, which runs every individual gate: `typecheck:all`, `lint`, `verify:unicode`, `test:coverage`, `build`, `verify:bundle`, `test:generate`, `verify:samples`, `verify:fonts`, `validate:pdfa` (all PDF/A-claiming samples compliant), `verify:docs`, `verify:diagrams` (documentation diagrams render without overflow or overlap)
+- [ ] For releases: follow [Release](#release) — `release-notes/vX.Y.Z.md` written, and `npm run gate -- --publish` passes locally, which runs every individual gate: `typecheck:all`, `lint`, `verify:unicode`, `test:coverage`, `build`, `verify:bundle`, `test:generate`, `verify:samples`, `verify:fonts`, `validate:pdfa` (all PDF/A-claiming samples compliant), `compat:previous` (the previous release's suite against the current sources), `verify:docs`, `verify:diagrams` (documentation diagrams render without overflow or overlap)
 
 ## Commit Messages
 
@@ -221,12 +235,12 @@ The version bump is scripted; the judgement goes into the release note.
 6. `npm run gate -- --publish` (PowerShell: `npx tsx scripts/gate.ts --publish`): the full gate, veraPDF and the sample, font, Unicode and bundle checks included. `--require-all` (what `publish.yml` passes) turns a skipped step — veraPDF or the source fonts missing — into a failure.
 7. Draft the pull-request body from [release-notes/PR_TEMPLATE.md](release-notes/PR_TEMPLATE.md) into `RELEASE_PR_vX.Y.Z.md` at the repository root (git-ignored scratch file); paste the numbers the gate printed into its Verification section.
 8. Squash-merge with the title `release: vX.Y.Z — <headline>`, where the headline is the release note's GitHub Release title.
-9. Tag `vX.Y.Z` on the merge commit and publish the GitHub Release (title `vX.Y.Z — <headline>`, body = the release note). `publish.yml` fires on the published release: it waits for the `npm-publish` environment's reviewer, installs a checksummed veraPDF and the pinned source fonts, runs `gate --publish --require-all`, publishes to npm with provenance through an exact npm 11, then a second job attaches the CycloneDX SBOM, the tarball and their build-provenance attestations to the release. The tag ruleset ([.github/rulesets/tags.json](.github/rulesets/tags.json)) forbids deleting or moving a `v*` tag.
+9. Tag `vX.Y.Z` on the merge commit and publish the GitHub Release (title `vX.Y.Z — <headline>`, body = the release note). `publish.yml` fires on the published release and runs four jobs: `guard` refuses anything but a `v*` tag matching `package.json` before any approval is asked; `build` installs a checksummed veraPDF and the pinned source fonts, fetches the previous release tag, runs `gate --publish --require-all` and packs the tarball once, recording its digests; `publish`, behind the `npm-publish` environment's reviewer, installs nothing and uploads exactly that tarball with Trusted Publishing (OIDC, provenance); `attest` fetches the published bytes back, checks them against the digests and `npm audit signatures`, and attaches the SBOMs and the Sigstore bundle to the release.
 10. After publication: `npm view pdfnative version`, then open a playground — the site's CDN pins (`pdfnative@X.Y.Z`) only resolve once the package exists on the registry.
 
 ### Branch protection
 
-The rules for `main` are versioned in [.github/rulesets/main.json](.github/rulesets/main.json), GitHub's ruleset format: no deletion, no force-push, pull request required (single maintainer, so zero approvals — but every review thread resolved, stale reviews dismissed on push, squash merges only), and the status checks `ci (22)`, `ci (24)` and `sample-regression` required and up to date with `main`. `verapdf`, the Docs workflow and the other path-filtered workflows are deliberately not required: a required check that never reports leaves a pull request stuck on "Expected — waiting for status to be reported". For the same reason the repository Admin role may bypass the ruleset through a pull request only — `ci.yml` ignores documentation-only changes, so such a pull request has no `ci` run to wait for — never by pushing to `main` directly.
+The rules for `main` are versioned in [.github/rulesets/main.json](.github/rulesets/main.json), GitHub's ruleset format: no deletion, no force-push, pull request required (single maintainer, so zero approvals — but every review thread resolved, stale reviews dismissed on push, squash merges only), and the status checks `ci (22)`, `ci (24)`, `windows`, `macos`, `compat-previous`, `workflow lint` and `sample-regression` required and up to date with `main` (v1.9.0: the two non-Linux legs, the previous release's suite and the workflow linter joined the list). No workflow that reports a required check has a path filter — a required check that never reports leaves a pull request stuck on "Expected — waiting for status to be reported", so `ci.yml` runs on documentation-only changes too. `verapdf`, the Docs, visual-regression and font-reproducibility workflows (path-filtered) and the advisory `runtimes`, `node-current`, `fuzz` and `bench` jobs are deliberately not required. The repository Admin role may bypass the ruleset through a pull request only, as an emergency measure, never by pushing to `main` directly; after a change to the required checks, import the ruleset again once the new checks have reported green on a pull request.
 
 Import the file after editing it: Settings → Rules → Rulesets → New ruleset → Import a ruleset, or from the shell:
 

@@ -20,6 +20,7 @@ import type { DecryptionContext } from './pdf-decrypt.js';
 import { encryptStringData, encryptStreamData, isSignatureDict, isExemptStream } from './pdf-decrypt.js';
 import { md5 } from '../core/pdf-encrypt.js';
 import { buildPdfMetadata, buildXMPMetadata, utf8EncodeBinaryString } from '../core/pdf-tags.js';
+import { decodePdfTextString } from './pdf-text-string.js';
 
 // ── Types ────────────────────────────────────────────────────────────
 
@@ -610,18 +611,9 @@ function encodeTextValue(text: string): string {
 }
 
 /**
- * Decode a PDF text-string VALUE back to JS text: UTF-16BE when it carries
- * the `FE FF` BOM, otherwise as-is (PDFDocEncoding ≈ Latin-1 for the common
- * ASCII case). Non-strings yield `undefined`.
+ * Decode a PDF text-string VALUE back to JS text (ISO 32000-1 §7.9.2.2 via
+ * {@link decodePdfTextString}). Non-strings yield `undefined`.
  */
 function decodeTextValue(val: PdfValue | undefined): string | undefined {
-    if (typeof val !== 'string') return undefined;
-    if (val.length >= 2 && val.charCodeAt(0) === 0xFE && val.charCodeAt(1) === 0xFF) {
-        let out = '';
-        for (let i = 2; i + 1 < val.length; i += 2) {
-            out += String.fromCharCode((val.charCodeAt(i) << 8) | val.charCodeAt(i + 1));
-        }
-        return out;
-    }
-    return val;
+    return typeof val === 'string' ? decodePdfTextString(val) : undefined;
 }

@@ -17,6 +17,7 @@
   <meta property="og:title" content="Quick Start — pdfnative">
   <meta property="og:description" content="Generate your first PDF in under a minute — install, render, export bytes. Node.js ≥ 22, browsers, Deno, Bun. Zero runtime dependencies.">
   <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
+  <meta property="og:image:alt" content="pdfnative — pure native PDF generation, zero dependencies">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
@@ -98,7 +99,7 @@ const pdf = buildDocumentPDFBytes(params, { compress: true });
 </code></pre>
 <h2 id="browser">Browser<a class="heading-anchor" href="#browser" aria-label="Link to this section">#</a></h2>
 <pre><code class="language-html">&lt;script type=&quot;module&quot;&gt;
-  import { buildDocumentPDFBytes, downloadBlob } from &#39;https://esm.sh/pdfnative@1.8.0&#39;;
+  import { buildDocumentPDFBytes, downloadBlob } from &#39;https://esm.sh/pdfnative@1.9.0&#39;;
 
   document.getElementById(&#39;go&#39;).addEventListener(&#39;click&#39;, () =&gt; {
     const pdf = buildDocumentPDFBytes({
@@ -243,7 +244,7 @@ pdfnative inspect --input report.signed.pdf --format text
 <li><a href="accessibility.html">Accessibility</a> — tagged PDF, PDF/UA, PDF/A.</li>
 <li><a href="faq.html">FAQ</a> — fonts, encryption, signatures, comparisons.</li>
 <li><a href="troubleshooting.html">Troubleshooting</a> — common pitfalls and fixes.</li>
-<li><a href="https://github.com/Nizoka/pdfnative/tree/main/scripts/generators" target="_blank" rel="noopener">Sample generators</a> — 292 sample PDFs across 38 categories (49 generators).</li>
+<li><a href="https://github.com/Nizoka/pdfnative/tree/main/scripts/generators" target="_blank" rel="noopener">Sample generators</a> — 311 sample PDFs across 39 categories (50 generators).</li>
 </ul>
 <!-- guide:render:end -->
   </article>

@@ -76,6 +76,6 @@
 
   <!-- Footer -->
   <rect x="40" y="472" width="880" height="66" rx="12" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="1"/>
-  <text x="480" y="500" text-anchor="middle" font-size="12.5" font-weight="600" fill="#334155">No RGB to CMYK conversion — plate values are authored; pdfx and tagged are mutually exclusive, so the press file is not tagged.</text>
+  <text x="480" y="500" text-anchor="middle" font-size="12.5" font-weight="600" fill="#334155">No RGB to CMYK conversion — plate values are authored; pdfnative-react 1.3.0 claims pdfx or tagged, not both (the engine does since 1.9.0).</text>
   <text x="480" y="520" text-anchor="middle" font-size="12.5" fill="#475569">The engine's validatePdfX checks the press bytes in-process; a certified preflight still has the last word before press.</text>
 </svg>

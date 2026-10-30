@@ -15,6 +15,7 @@
   <meta property="og:title" content="Authoring+ Playground (v1.5.0) — pdfnative">
   <meta property="og:description" content="SVG text labels, layout debug overlay, and markup annotations — all in your browser.">
   <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
+  <meta property="og:image:alt" content="pdfnative — pure native PDF generation, zero dependencies">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
@@ -73,7 +74,7 @@
   <nav class="playground-switcher" aria-label="Playground switcher">
     <span class="playground-switcher-label">Playgrounds:</span>
     <a href="./extreme-scripts.html">Extreme scripts</a>
-    <a href="./all-scripts.html">All 27 scripts</a>
+    <a href="./all-scripts.html">All 32 scripts</a>
     <a href="./toolkit.html">PDF Toolkit</a>
     <a href="./inspect.html">Inspect &amp; verify</a>
     <a href="./charts.html">Charts</a>
@@ -86,6 +87,7 @@
     <a href="./print.html">Print &amp; PDF/X</a>
     <a href="./reproducible.html">Reproducible output</a>
     <a href="./docspec-lint.html">DocSpec lint</a>
+    <a href="./images.html">Images</a>
     <a href="./" style="margin-left:auto;">All →</a>
   </nav>
   <article class="guide-content">
@@ -104,7 +106,7 @@
       <select id="preset" style="padding:6px 10px;border-radius:6px;border:1px solid #cbd5e1;font-size:14px;">
         <option value="svgtext">SVG &lt;text&gt; labelled chart</option>
         <option value="debug">Layout debug overlay + inspection</option>
-        <option value="annotations">Markup annotations (build + read back)</option>
+        <option value="annotations">Markup annotations — highlight and link (build + read back)</option>
         <option value="math">Edge case · math / technical symbols</option>
         <option value="pagelabels">Edge case · page labels (write + read back)</option>
         <option value="controlchars">Edge case · control-character hardening</option>
@@ -170,7 +172,7 @@ function setStatus(msg, kind) {
 const DESCRIPTIONS = {
   svgtext: 'Renders a labelled bar chart from a single SVG string. The bars are <rect> elements; the axis and quarter labels are <text> elements with text-anchor="middle", which pdfnative draws as upright PDF text.',
   debug: 'Renders a short document with the layout debug overlay enabled (layout: { debug: true }), drawing the margin box, per-block content bounds, and table cell outlines. The status line reports the inspectDocumentLayout() block count.',
-  annotations: 'Builds a contract PDF, injects a highlight annotation onto it with addAnnotation(), and reads every annotation back out with getAnnotations(). The annotated PDF is downloaded and the status line lists what was read back.',
+  annotations: 'Builds a contract PDF, injects a highlight annotation and — since 1.9.0 — a link annotation (type: \'link\', a URI action over a rectangle) onto it with addAnnotation(), both as one non-destructive incremental update, and reads every annotation back out with getAnnotations(). The annotated PDF is downloaded and the status line lists what was read back.',
   math: 'Edge case — a document full of mathematical operators (∑ ∫ √ ≠ ≤ ⇒), arrows and letterlike symbols (ℝ ℕ). The bundled math font is registered from the CDN; script detection routes every math code point to it automatically while Latin words stay on the base font.',
   pagelabels: 'Edge case — writes a three-range page-label tree (front-matter in lowercase Roman, body in decimal, appendix with an "A-" prefix) then reads it straight back with getPageLabels() to prove the writer↔reader round-trip.',
   // verify-docs:allow version-token (feature-era demo copy)
@@ -235,10 +237,13 @@ const base = buildDocumentPDFBytes({
   ],
 });
 
-// 2. Inject a highlight via a non-destructive incremental update.
+// 2. Inject a highlight and a link via one non-destructive incremental update.
 const modifier = createModifier(openPdf(base));
 modifier.addAnnotation(0, buildAnnotationBody({
   type: 'highlight', rect: [72, 690, 320, 706], color: '#ffe14d', contents: 'Key clause',
+}));
+modifier.addAnnotation(0, buildAnnotationBody({
+  type: 'link', rect: [72, 660, 320, 676], url: 'https://pdfnative.dev/guides/annotations.html', contents: 'Read the terms online',   // 1.9.0
 }));
 const annotated = modifier.save();
 
@@ -250,7 +255,7 @@ downloadBlob(annotated, 'annotated-contract.pdf');`,
   math: `import { registerFont, loadFontData, buildDocumentPDFBytes, downloadBlob } from 'pdfnative';
 
 // The bundled math font is opt-in — register it once, lazily.
-registerFont('math', () => import('https://esm.sh/pdfnative@1.8.0/fonts/noto-sans-math-data.js'));
+registerFont('math', () => import('https://esm.sh/pdfnative@1.9.0/fonts/noto-sans-math-data.js'));
 const mathFont = await loadFontData('math');
 
 const pdf = buildDocumentPDFBytes({
@@ -318,7 +323,7 @@ function applyPreset(id) {
   if (window.Prism) window.Prism.highlightElement(codeView);
 }
 
-const CDN_URLS = ['https://esm.sh/pdfnative@1.8.0', 'https://cdn.jsdelivr.net/npm/pdfnative@1.8.0/+esm'];
+const CDN_URLS = ['https://esm.sh/pdfnative@1.9.0', 'https://cdn.jsdelivr.net/npm/pdfnative@1.9.0/+esm'];
 let pdfMod = null;
 
 async function loadPdfnative() {
@@ -396,6 +401,9 @@ function buildAnnotations(mod) {
   modifier.addAnnotation(0, mod.buildAnnotationBody({
     type: 'highlight', rect: [72, 690, 320, 706], color: '#ffe14d', contents: 'Key clause',
   }));
+  modifier.addAnnotation(0, mod.buildAnnotationBody({
+    type: 'link', rect: [72, 660, 320, 676], url: 'https://pdfnative.dev/guides/annotations.html', contents: 'Read the terms online',
+  }));
   const annotated = modifier.save();
   const read = mod.openPdf(annotated).getAnnotations(0);
   const note = read.length
@@ -407,7 +415,7 @@ function buildAnnotations(mod) {
 async function buildMath(mod) {
   let mathFont = null;
   if (typeof mod.registerFont === 'function' && typeof mod.loadFontData === 'function') {
-    mod.registerFont('math', () => import('https://esm.sh/pdfnative@1.8.0/fonts/noto-sans-math-data.js'));
+    mod.registerFont('math', () => import('https://esm.sh/pdfnative@1.9.0/fonts/noto-sans-math-data.js'));
     try { mathFont = await mod.loadFontData('math'); } catch (_) { mathFont = null; }
   }
   const pdf = mod.buildDocumentPDFBytes({

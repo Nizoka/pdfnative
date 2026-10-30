@@ -24,10 +24,11 @@ import type {
     PdfColor,
 } from '../types/pdf-types.js';
 import { createEncodingContext, applyDocumentFeatures, applyDocumentKerning } from './encoding-context.js';
-import { createDiagnosticEmitter, pdfaNoFontEntriesDiagnostic, pdfaDeviceCmykContentDiagnostic, pdfaIccProfileVersionDiagnostic, pdfxNoFontEntriesDiagnostic, pdfxDeviceCmykDiagnostic, reportIneffectiveFeatures } from './pdf-diagnostics.js';
+import { createDiagnosticEmitter, pdfaNoFontEntriesDiagnostic, pdfaDeviceCmykContentDiagnostic, pdfaIccProfileVersionDiagnostic, pdfxNoFontEntriesDiagnostic, pdfxDeviceCmykDiagnostic, reportIneffectiveFeatures, reportUncoveredGlyphs, pdfa1JpxImageDiagnostic, pdfaJpxImageDiagnostic, pdfaGlyphWithoutUnicodeDiagnostic } from './pdf-diagnostics.js';
 import { scanDeviceColour } from './pdf-content-colour.js';
+import { spotColourResources, type SpotFunctionStream } from './pdf-spot.js';
 import { truncate, buildWinAnsiToUnicodeCMap } from '../fonts/encoding.js';
-import { buildToUnicodeCMap, buildSubsetWidthArray } from '../fonts/font-embedder.js';
+import { buildToUnicodeCMap, buildSubsetWidthArray, buildCidWidthArray, unmappedUsedGids, subsetTag } from '../fonts/font-embedder.js';
 import { getDecodedFontBytes } from '../fonts/font-loader.js';
 import { subsetTTF, uint8ToBinaryString } from '../fonts/font-subsetter.js';
 import { txt, txtR, txtC, txtTagged, txtRTagged, txtCTagged, fmtNum, encodePdfTextString } from './pdf-text.js';
@@ -56,12 +57,13 @@ import {
     buildEmbeddedFiles,
     validateAttachments,
     utf8EncodeBinaryString,
+    pageTransparencyGroup,
 } from './pdf-tags.js';
 import type { EncryptionState } from './pdf-encrypt.js';
 import { initEncryption } from './pdf-encrypt.js';
 import { createPdfWriter, writeXrefTrailer } from './pdf-assembler.js';
 import type { WatermarkState } from './pdf-watermark.js';
-import { validateWatermark, buildWatermarkState } from './pdf-watermark.js';
+import { validateWatermark, buildWatermarkState, translucentStates } from './pdf-watermark.js';
 import { validatePrintOptions, resolvePrintBoxes, buildPrinterMarksOps, pdfxBoxes, REGISTRATION_COLOR_SPACE_ENTRY } from './pdf-print.js';
 import { resolveCreationDate } from './pdf-reproducible.js';
 
@@ -105,7 +107,9 @@ function _buildTableHeader(
         if (tagCtx?.tagged) {
             const mcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
             const mcref: MCRef = { mcid, pageObjNum: tagCtx.pageObjNum };
-            const thEl: StructElement = { type: 'TH', children: [mcref] };
+            // Column header: /Scope and an /ID the data cells' /Headers name
+            // (ISO 32000-1 Table 349, PDF/UA §7.5). One table per document here.
+            const thEl: StructElement = { type: 'TH', children: [mcref], id: `T0H0C${i}`, attrs: '/O /Table /Scope /Column' };
             thChildren.push(thEl);
             if (columns[i].a === 'r') {
                 ops.push(txtRTagged(t, cx[i] + cwi[i] - 3, y - TH_H + 4, enc.f2, fs.th, enc, mcid, true));
@@ -156,9 +160,13 @@ function _buildDataRow(
 
     const tdChildren: (StructElement | MCRef)[] = [];
 
+    // Amount styling: by declaration (`ColumnDef.kind: 'amount'`, 1.9.0) when
+    // any column declares a kind; otherwise the historical fourth-column
+    // heuristic the fourteen financial samples were built on (byte-identical).
+    const declared = columns.some(c => c.kind !== undefined);
     for (let i = 0; i < cells.length; i++) {
         const t = truncate(cells[i], columns[i].mx);
-        const isAmount = (i === 3);
+        const isAmount = declared ? columns[i].kind === 'amount' : (i === 3);
         const color = isAmount ? (type === 'credit' ? colors.credit : colors.debit) : colors.text;
         const font = isAmount ? enc.f2 : enc.f1;
         ops.push(`${fillOp(color)}`);
@@ -166,7 +174,7 @@ function _buildDataRow(
         if (tagCtx?.tagged) {
             const mcid = tagCtx.mcidAlloc.next(tagCtx.pageObjNum);
             const mcref: MCRef = { mcid, pageObjNum: tagCtx.pageObjNum };
-            const tdEl: StructElement = { type: 'TD', children: [mcref] };
+            const tdEl: StructElement = { type: 'TD', children: [mcref], attrs: `/O /Table /Headers [(T0H0C${i})]` };
             tdChildren.push(tdEl);
             if (columns[i].a === 'r') {
                 ops.push(txtRTagged(t, cx[i] + cwi[i] - 3, y - ROW_H + 3, font, fs.td, enc, mcid));
@@ -335,7 +343,7 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
         emitDiagnostic(pdfaIccProfileVersionDiagnostic(outputIntent.iccVersion));
     }
 
-    const encBase = createEncodingContext(fontEntries, embedFonts, layoutOptions?.normalize ?? false, layoutOptions?.typography?.metrics, layoutOptions?.typography?.hyphenationLanguage);
+    const encBase = createEncodingContext(fontEntries, embedFonts, layoutOptions?.normalize ?? false, layoutOptions?.typography?.metrics, layoutOptions?.typography?.hyphenationLanguage, layoutOptions?.actualText ?? true);
     const encFeat = applyDocumentFeatures(encBase, layoutOptions?.typography?.fontFeatures);
     const enc = applyDocumentKerning(encFeat, layoutOptions?.typography?.kerning);
 
@@ -398,6 +406,19 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
     const wmState: WatermarkState | null = watermarkOpts
         ? buildWatermarkState(watermarkOpts, pgW, pgH, enc)
         : null;
+    // A translucent watermark gives the page a transparency group (1.9.0).
+    const pageGroup = pageTransparencyGroup(wmState !== null && translucentStates(wmState.extGStates) && !(tagged && pdfaConfig.pdfaPart === 1), outputIntent);
+    // A JPEG 2000 watermark image (v1.9.0) needs the PDF 1.5 header; under
+    // PDF/A the claim's rules apply (see the document builder).
+    const wmJpx = wmState?.parsedImage?.filter === '/JPXDecode' ? wmState.parsedImage : null;
+    if (wmJpx && tagged) {
+        if (pdfaConfig.pdfaPart === 1) emitDiagnostic(pdfa1JpxImageDiagnostic());
+        else {
+            if (wmJpx.jpx && wmJpx.jpx.channels !== 1 && wmJpx.jpx.channels !== 3 && wmJpx.jpx.channels !== 4) emitDiagnostic(pdfaJpxImageDiagnostic(`${wmJpx.jpx.channels} colour channels`));
+            if (wmJpx.jpx?.alpha) emitDiagnostic(pdfaJpxImageDiagnostic('an opacity channel'));
+        }
+    }
+    const needsPdf15 = wmJpx !== null && !(tagged && pdfaConfig.pdfaPart === 1);
     const wmExtraObjs = wmState
         ? wmState.extGStates.size + (wmState.imageXObj ? 1 : 0)
         : 0;
@@ -413,8 +434,7 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
     const printMarksOps = printOpts?.marks && printResolved?.trim
         ? buildPrinterMarksOps(printResolved.trim, pgW, pgH, printOpts.marks, registrationColour, tagged)
         : '';
-    const pageColorSpaceRes = defaultRgbResource(
-        outputIntent, registrationColour && printMarksOps ? REGISTRATION_COLOR_SPACE_ENTRY : '');
+    const registrationEntry = registrationColour && printMarksOps ? REGISTRATION_COLOR_SPACE_ENTRY : '';
 
     const mcidAlloc = tagged ? createMCIDAllocator() : undefined;
 
@@ -590,7 +610,28 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
     if (outputIntent && outputIntent.space !== 'cmyk' && pageStreams.some(s => scanDeviceColour(s).cmyk)) {
         emitDiagnostic(pdfx ? pdfxDeviceCmykDiagnostic() : pdfaDeviceCmykContentDiagnostic());
     }
+    // Object numbers of the DeviceN tint transforms: right after /Info and
+    // the base-14 ToUnicode CMap, before the tagged tail chains on.
+    const spotFnStart = preBaseObjCount + 2 + (latinToUniObjNum ? 1 : 0);
+    // Spot colours (v1.9.0): the /Separation and /DeviceN resources behind
+    // every spot name the pages select, from layout.print.spotColours. The
+    // DeviceN tint transforms are stream objects; an ink the content names
+    // but nobody declared throws here.
+    const usedColourSpaceNames: string[] = [];
+    for (const s of pageStreams) for (const n of scanDeviceColour(s).named) if (!usedColourSpaceNames.includes(n)) usedColourSpaceNames.push(n);
+    const spotFunctions: SpotFunctionStream[] = [];
+    const spotRes = spotColourResources(printOpts?.spotColours, usedColourSpaceNames, fn => {
+        spotFunctions.push(fn);
+        return `${spotFnStart + spotFunctions.length - 1} 0 R`;
+    });
+    if (spotRes.cmykAlternate && outputIntent && outputIntent.space !== 'cmyk') {
+        emitDiagnostic(pdfx ? pdfxDeviceCmykDiagnostic() : pdfaDeviceCmykContentDiagnostic());
+    }
+    const pageColorSpaceRes = defaultRgbResource(
+        outputIntent, [registrationEntry, spotRes.entries].filter(Boolean).join(' '));
+
     reportIneffectiveFeatures(layoutOptions?.typography?.fontFeatures, fontEntries, enc, emitDiagnostic);
+    reportUncoveredGlyphs(fontEntries, enc, emitDiagnostic);
 
     // Build the table structure element (inserted before footer /P elements)
     if (tagged && tableRows.length > 0) {
@@ -609,7 +650,8 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
     // PDF/X-4 is PDF 1.6, which /UserUnit also needs.
     const pdfVersion = pdfxConfig ? pdfxConfig.pdfVersion
         : printOpts?.userUnit !== undefined && pdfaConfig.pdfVersion < '1.6'
-            ? '1.7' : pdfaConfig.pdfVersion;
+            ? '1.7'
+            : needsPdf15 && pdfaConfig.pdfVersion < '1.5' ? '1.5' : pdfaConfig.pdfVersion;
     emit(`%PDF-${pdfVersion}\n`);
     emit('%\xE2\xE3\xCF\xD3\n\n');
 
@@ -629,12 +671,23 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
         }
         emitObj(2, `<< /Type /Pages /Kids [${kids.join(' ')}] /Count ${totalPages} >>`);
 
+        // The name of an embedded font: a subset carries the six-letter tag of
+        // ISO 32000-1 §9.6.4 in front of the face name (C21); the whole program
+        // (no used-glyph set) keeps the bare name.
+        const embeddedFontName = (entry: FontEntry): string => {
+            const clean = entry.fontData.fontName.replace(/[^A-Za-z0-9-]/g, '');
+            // Under PDF/A-1 the tag is withheld: ISO 19005-1 §6.3.5 then asks for a
+            // CIDSet stream the builders do not write yet (a tagged subset without it
+            // fails veraPDF 6.3.5-3); the untagged name is what every 1.8.0 file carried.
+            const used = (tagged && pdfaConfig.pdfaPart === 1) ? null : (enc.getUsedGids ? enc.getUsedGids().get(entry.fontRef) : null);
+            return used ? `/${subsetTag(entry.fontData.fontName, used)}+${clean}` : `/${clean}`;
+        };
         if (embedFonts) {
             // PDF/A and PDF/X: /F1 and /F2 must reference embedded fonts. Alias both to
             // primary font's Type0 (sharing FontFile2 stream). Bold renders as
             // regular under PDF/A — register a separate Bold font for true bold.
             const pf = fontEntries[0];
-            const bfName = `/${pf.fontData.fontName.replace(/[^A-Za-z0-9-]/g, '')}`;
+            const bfName = embeddedFontName(pf);
             const primaryBase = 5;
             const refDict = `<< /Type /Font /Subtype /Type0 /BaseFont ${bfName} ` +
                 `/Encoding /Identity-H /DescendantFonts [${primaryBase + 1} 0 R] /ToUnicode ${primaryBase + 4} 0 R >>`;
@@ -654,18 +707,38 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
 
             const fontBytes = getDecodedFontBytes(fd);
             const usedGids = enc.getUsedGids ? enc.getUsedGids().get(fe.fontRef) : null;
-            const ttfBinary = usedGids && usedGids.size > 0
-                ? subsetTTF(fontBytes, usedGids)
+            // The document's CID space of the font (C28): the content streams
+            // show glyph `cids[cid]` by `cid`, the subset is renumbered in that
+            // order (GID i = CID i under /CIDToGIDMap /Identity), /W and
+            // ToUnicode are keyed by CID. The viewer never reads the font's
+            // cmap, so the embed carries one over the used glyphs only (v1.9.0).
+            // A registered font no character reached keeps its five objects (the
+            // page resources name it, and ISO 19005-2 §6.2.11.4.1 wants a
+            // program behind every referenced font) but embeds the .notdef-only
+            // subset, not the whole file (C18).
+            const cids = enc.getCidMaps?.().get(fe.fontRef);
+            const ttfBinary = usedGids
+                ? subsetTTF(fontBytes, usedGids, { lean: { cmap: fd.cmap, cids } })
                 : uint8ToBinaryString(fontBytes);
 
             const fm = fd.metrics;
-            const bfName = `/${fd.fontName.replace(/[^A-Za-z0-9-]/g, '')}`;
+            const bfName = embeddedFontName(fe);
+            const overrides = enc.getToUnicodeOverrides?.().get(fe.fontRef);
+            const encoded = enc.getToUnicodeEncoded?.().get(fe.fontRef);
             const toUnicodeCMap = usedGids && usedGids.size > 0
-                ? buildToUnicodeCMap(fd.cmap, usedGids, enc.getToUnicodeOverrides?.().get(fe.fontRef))
+                ? buildToUnicodeCMap(fd.cmap, usedGids, overrides, encoded, cids)
                 : buildToUnicodeCMap(fd.cmap, new Set());
+            // A level-U claim needs every used code named (ISO 19005-2 §6.2.11.7.2, #87).
+            if (pdfaConfig.pdfaConformance === 'U' && usedGids && usedGids.size > 0) {
+                const unmapped = unmappedUsedGids(fd.cmap, usedGids, overrides, encoded);
+                if (unmapped.length > 0) emitDiagnostic(pdfaGlyphWithoutUnicodeDiagnostic(bfName, unmapped));
+            }
 
-            const subsetW = buildSubsetWidthArray(fd.widths, usedGids ?? new Set());
-            const wArray = subsetW || fd.pdfWidthArray;
+            const subsetW = usedGids && cids
+                ? buildCidWidthArray(fd.widths, cids, usedGids)
+                : buildSubsetWidthArray(fd.widths, usedGids ?? new Set());
+            // An unused font carries `/W []`: /DW covers its only glyph (C18).
+            const wArray = subsetW ?? (usedGids && usedGids.size === 0 ? '' : fd.pdfWidthArray);
 
             // Type0 (Composite Font)
             emitObj(base,
@@ -735,7 +808,7 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
             const structParents = tagged ? ` /StructParents ${p}` : '';
             emitObj(pageObjNum,
                 `<< /Type /Page /Parent 2 0 R ` +
-                `/MediaBox [0 0 ${fmtNum(pgW)} ${fmtNum(pgH)}]${printBoxesStr} ` +
+                `/MediaBox [0 0 ${fmtNum(pgW)} ${fmtNum(pgH)}]${printBoxesStr}${pageGroup} ` +
                 `/Contents ${streamObjNum} 0 R ` +
                 `/Resources << /Font << ${fontRes} >>${wmImgRes}${wmGsRes}${pageColorSpaceRes} >>${structParents} >>`
             );
@@ -780,7 +853,7 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
             const structParents = tagged ? ` /StructParents ${p}` : '';
             emitObj(pageObjNum,
                 `<< /Type /Page /Parent 2 0 R ` +
-                `/MediaBox [0 0 ${fmtNum(pgW)} ${fmtNum(pgH)}]${printBoxesStr} ` +
+                `/MediaBox [0 0 ${fmtNum(pgW)} ${fmtNum(pgH)}]${printBoxesStr}${pageGroup} ` +
                 `/Contents ${streamObjNum} 0 R ` +
                 `/Resources << /Font << /F1 3 0 R /F2 4 0 R >>${wmImgResLatin}${wmGsResLatin}${pageColorSpaceRes} >>${structParents} >>`
             );
@@ -822,9 +895,15 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
         totalObjs = latinToUniObjNum;
     }
 
+    // Spot colour tint transforms (v1.9.0): the DeviceN functions the page
+    // resources reference, chained here like the base-14 ToUnicode CMap —
+    // forward references the page dictionaries already carry.
+    for (let i = 0; i < spotFunctions.length; i++) emitStreamObj(spotFnStart + i, spotFunctions[i].dict, spotFunctions[i].data);
+    if (spotFunctions.length > 0) totalObjs = spotFnStart + spotFunctions.length - 1;
+
     // ── Tagged PDF objects (StructTreeRoot, XMP, ICC, OutputIntent) ──
     let xmpObjNum = 0;
-    let outputIntentObjNum = 0;
+    let outputIntentsStr = '';
     let afArrayStr = '';
     let embeddedFilesNamesDict = '';
 
@@ -844,9 +923,14 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
 
         // XMP metadata stream (skip compression for PDF/A validator compatibility)
         xmpObjNum = totalObjs + 1;
-        const xmpContent = utf8EncodeBinaryString(pdfxConfig
-            ? buildPdfXXMPMetadata(infoTitle, isoDate, pdfxConfig.trapped, pdfxDocumentId(`${infoTitle}|${pdfDate}`), params.metadata?.author, params.metadata?.subject, params.metadata?.keywords)
-            : buildXMPMetadata(infoTitle, isoDate, pdfaConfig.pdfaPart, pdfaConfig.pdfaConformance, params.metadata?.author, params.metadata?.subject, params.metadata?.keywords, undefined, undefined, params.metadata?.trapped));
+        // PDF/X alone has its own packet; PDF/A, alone or with PDF/X-4 (the
+        // dual claim, v1.9.0), has the PDF/A packet with the PDF/X
+        // identification added.
+        const pdfxId = pdfxConfig ? pdfxDocumentId(`${infoTitle}|${pdfDate}`) : '';
+        const xmpContent = utf8EncodeBinaryString(pdfxConfig && !tagged
+            ? buildPdfXXMPMetadata(infoTitle, isoDate, pdfxConfig.trapped, pdfxId, params.metadata?.author, params.metadata?.subject, params.metadata?.keywords)
+            : buildXMPMetadata(infoTitle, isoDate, pdfaConfig.pdfaPart, pdfaConfig.pdfaConformance, params.metadata?.author, params.metadata?.subject, params.metadata?.keywords, undefined, undefined,
+                pdfxConfig ? pdfxConfig.trapped : params.metadata?.trapped, pdfxConfig ? { documentId: pdfxId } : undefined));
         emitStreamObj(xmpObjNum,
             `<< /Type /Metadata /Subtype /XML /Length ${xmpContent.length}`, xmpContent, true);
         totalObjs = xmpObjNum;
@@ -860,10 +944,22 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
             `<< /N ${intent.components} /Length ${intent.profile.length}`, intent.profile);
         totalObjs = iccObjNum;
 
-        // OutputIntent
-        outputIntentObjNum = totalObjs + 1;
-        emitObj(outputIntentObjNum, buildOutputIntentDict(iccObjNum, pdfx ? 'GTS_PDFX' : pdfaConfig.outputIntentSubtype, layoutOptions?.outputIntent));
-        totalObjs = outputIntentObjNum;
+        // One OutputIntent per claim, both on the same profile stream under a
+        // dual claim (ISO 19005-2 §6.2.3 requires them to share it).
+        const intentRefs: string[] = [];
+        if (tagged) {
+            const n = totalObjs + 1;
+            emitObj(n, buildOutputIntentDict(iccObjNum, pdfaConfig.outputIntentSubtype, layoutOptions?.outputIntent));
+            totalObjs = n;
+            intentRefs.push(`${n} 0 R`);
+        }
+        if (pdfx) {
+            const n = totalObjs + 1;
+            emitObj(n, buildOutputIntentDict(iccObjNum, 'GTS_PDFX', layoutOptions?.outputIntent));
+            totalObjs = n;
+            intentRefs.push(`${n} 0 R`);
+        }
+        outputIntentsStr = intentRefs.join(' ');
 
         // Embedded file attachments (PDF/A-3 only)
         if (attachments && attachments.length > 0) {
@@ -890,7 +986,7 @@ export function assembleTableParts(params: PdfParams, layoutOptions?: Partial<Pd
             `<< /Type /Catalog /Pages 2 0 R ` +
             (tagged ? `/MarkInfo << /Marked true >> /StructTreeRoot ${structTreeRootObjNum} 0 R ` : '') +
             `/Metadata ${xmpObjNum} 0 R ` +
-            `/OutputIntents [${outputIntentObjNum} 0 R]`;
+            `/OutputIntents [${outputIntentsStr}]`;
         if (afArrayStr) {
             catalogContent += ` /AF [${afArrayStr}] ${embeddedFilesNamesDict}`;
         }

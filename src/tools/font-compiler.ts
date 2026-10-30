@@ -163,6 +163,8 @@ interface RawParsed {
     markAnchors: RawMarkAnchors;
     otl: RawOtl | null;
     name?: string;
+    /** The font's copyright statement (name id 0), for the module header. @since 1.9.0 */
+    copyright: string | null;
 }
 
 // ── TTF binary reader (DataView-based, big-endian) ───────────────────
@@ -178,13 +180,27 @@ class TTFReader {
     }
 
     seek(offset: number): void { this.pos = offset; }
+    get length(): number { return this.bytes.length; }
     skip(n: number): void { this.pos += n; }
 
-    readUint8(): number { return this.view.getUint8(this.pos++); }
-    readUint16(): number { const v = this.view.getUint16(this.pos); this.pos += 2; return v; }
-    readInt16(): number { const v = this.view.getInt16(this.pos); this.pos += 2; return v; }
-    readUint32(): number { const v = this.view.getUint32(this.pos); this.pos += 4; return v; }
+    /**
+     * A table offset or count that points past the end of the font is a
+     * malformed font, refused as such; left to the DataView it would surface
+     * as a RangeError, the engine's error for the parser's omission (found
+     * by fuzz/font-data.js, v1.9.0). Mirrored in tools/build-font-data.cjs.
+     */
+    private need(n: number): void {
+        if (this.pos < 0 || this.pos + n > this.bytes.length) {
+            throw new Error(`font data: read of ${n} byte(s) at offset ${this.pos} runs past the end of the font (${this.bytes.length} bytes)`);
+        }
+    }
+
+    readUint8(): number { this.need(1); return this.view.getUint8(this.pos++); }
+    readUint16(): number { this.need(2); const v = this.view.getUint16(this.pos); this.pos += 2; return v; }
+    readInt16(): number { this.need(2); const v = this.view.getInt16(this.pos); this.pos += 2; return v; }
+    readUint32(): number { this.need(4); const v = this.view.getUint32(this.pos); this.pos += 4; return v; }
     readTag(): string {
+        this.need(4);
         let t = '';
         for (let k = 0; k < 4; k++) t += String.fromCharCode(this.bytes[this.pos + k]);
         this.pos += 4;
@@ -587,6 +603,7 @@ const OTL_SCRIPT_TAGS = [
     'DFLT',
     'dev2', 'deva', 'bng2', 'beng', 'tml2', 'taml', 'tel2', 'telu', 'sinh',
     'gur2', 'guru', 'gjr2', 'gujr', 'ory2', 'orya', 'knd2', 'knda', 'mlm2', 'mlym',
+    'tibt', 'khmr', 'mym2', 'mymr', 'cham',
     'latn',
 ];
 
@@ -594,6 +611,7 @@ const OTL_SCRIPT_TAGS = [
 const OTL_FEATURE_TAGS = [
     'locl', 'ccmp', 'nukt', 'akhn', 'rphf', 'rkrf', 'pref', 'blwf', 'abvf', 'half',
     'pstf', 'vatu', 'cjct', 'pres', 'abvs', 'blws', 'psts', 'haln', 'calt',
+    'rlig', 'liga', 'clig',
 ];
 
 /** Under `DFLT` and `latn` only glyph composition is kept. */
@@ -1312,6 +1330,48 @@ function parseGPOS(r: TTFReader, tables: TableDir): RawMarkAnchors {
 
 // ── `name` table (best-effort font-name derivation) ──────────────────
 
+/**
+ * The font's copyright statement — `name` record id 0, preferring the
+ * Windows Unicode record in US English, then any Windows record, then the
+ * Macintosh Roman one — whitespace collapsed; `null` without one.
+ * Must stay identical to `parseTTFCopyright` in `tools/build-font-data.cjs`.
+ */
+function parseCopyright(r: TTFReader, tables: TableDir): string | null {
+    const name = tables['name'];
+    if (!name) return null;
+    try {
+        r.seek(name.offset + 2);
+        const count = r.readUint16();
+        const stringsAt = name.offset + r.readUint16();
+        let best: { score: number; text: string } | null = null;
+        for (let i = 0; i < count; i++) {
+            r.seek(name.offset + 6 + i * 12);
+            const platform = r.readUint16();
+            const encoding = r.readUint16();
+            const language = r.readUint16();
+            const nameId = r.readUint16();
+            const length = r.readUint16();
+            const start = stringsAt + r.readUint16();
+            if (nameId !== 0 || start + length > r.length) continue;
+            let score: number;
+            let text = '';
+            if (platform === 3 && (encoding === 1 || encoding === 10)) {
+                score = language === 0x0409 ? 3 : 2;
+                r.seek(start);
+                for (let k = 0; k + 1 < length; k += 2) text += String.fromCharCode(r.readUint16());
+            } else if (platform === 1 && encoding === 0) {
+                score = 1;
+                r.seek(start);
+                for (let k = 0; k < length; k++) text += String.fromCharCode(r.readUint8());
+            } else continue;
+            if (!best || score > best.score) best = { score, text };
+        }
+        return best ? best.text.replace(/\s+/g, ' ').trim() : null;
+    } catch {
+        return null;
+    }
+}
+
 function parseName(r: TTFReader, tables: TableDir): string | undefined {
     if (!tables['name']) return undefined;
     try {
@@ -1518,13 +1578,14 @@ function parseTTFRaw(bytes: Uint8Array): RawParsed {
     const kern = parseGPOSKerning(r, tables);
     const otl = parseOtl(r, tables, numGlyphs);
     const name = parseName(r, tables);
+    const copyright = parseCopyright(r, tables);
 
     return {
         metrics: {
             unitsPerEm, ascent, descent, capHeight, stemV,
             bbox: [xMin, yMin, xMax, yMax], defaultWidth, numGlyphs,
         },
-        cmap, widths, gsub, ligatures, features, kern, markAnchors, otl, name,
+        cmap, widths, gsub, ligatures, features, kern, markAnchors, otl, name, copyright,
     };
 }
 
@@ -1649,7 +1710,8 @@ function generateEsmModule(fontName: string, parsed: RawParsed, ttfBase64: strin
  * PRE-BUILT FONT DATA — ${fontName}
  * ===================================
  * Generated by: scripts/build-font-data.cjs
- * Source: ${fontName}.ttf
+ * Source: ${fontName}.ttf${parsed.copyright ? `
+ * Copyright: ${parsed.copyright.replace(/\*\//g, '* /')}` : ''}
  * License: SIL Open Font License 1.1
  *
  * DO NOT EDIT — Regenerate with:

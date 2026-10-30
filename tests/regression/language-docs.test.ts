@@ -112,6 +112,60 @@ describe('language conformance documents', () => {
                     }
                 }
             }, 60_000);
+
+            // 1.9.0 (C26): the sentence-final danda U+0964 is Common and must
+            // not pull a line to the Devanagari shaper — the Odia and Gurmukhi
+            // introductions reached it and lost their split vowel signs and
+            // conjuncts while every table row, danda-free, shaped correctly.
+            it('dispatches every run to the shaper of its own script', async () => {
+                const expected = SHAPER_OF[doc.lang];
+                if (expected === undefined) return;
+                const entry = await entryFor(doc.lang);
+                const texts = [doc.title, doc.intro, ...doc.edgeCases.map(c => c.sample), ...doc.list, doc.footer];
+                for (const text of texts) {
+                    for (const run of splitTextByFont(text, [entry])) {
+                        const id = findShaper(run.text)?.id ?? null;
+                        expect(id === null || id === expected, `${doc.filename}: "${run.text}" dispatched to ${id}`).toBe(true);
+                    }
+                }
+            }, 60_000);
+
+            // A two-part vowel sign is drawn as its parts around the consonant;
+            // the font's composed glyph (drawn around a dotted circle) is what a
+            // shaper without the script's `splitMatras` leaves on the page.
+            it('never draws the composed glyph of a two-part vowel sign', async () => {
+                const signs = SPLIT_SIGNS[doc.lang];
+                if (signs === undefined) return;
+                const entry = await entryFor(doc.lang);
+                const composed = signs.map(cp => entry.fontData.cmap[cp]).filter(g => g !== undefined && g !== 0);
+                expect(composed.length).toBeGreaterThan(0);
+                const texts = [doc.title, doc.intro, ...doc.edgeCases.map(c => c.sample), ...doc.list, doc.footer];
+                for (const text of texts) {
+                    for (const run of splitTextByFont(text, [entry])) {
+                        // A sign shown on its own (an alphabet row) has no consonant to split around.
+                        if (!/\p{L}/u.test(run.text)) continue;
+                        const gids = glyphsOf(run.text, entry.fontData);
+                        expect(gids.some(g => composed.includes(g)), `${doc.filename}: "${run.text}" draws a composed two-part sign`).toBe(false);
+                    }
+                }
+            }, 60_000);
         });
     }
 });
+
+/** The registry entry each language document's runs must reach (none listed: Latin-script or unshaped languages). */
+const SHAPER_OF: Readonly<Record<string, string>> = {
+    th: 'thai', lo: 'lao', bn: 'bengali', ta: 'tamil', te: 'telugu', si: 'sinhala', bo: 'tibetan',
+    km: 'khmer', my: 'myanmar', hi: 'devanagari', gu: 'gujarati', pa: 'gurmukhi', kn: 'kannada',
+    ml: 'malayalam', or: 'odia', nod: 'taitham', cjm: 'cham',
+};
+
+/** The precomposed two-part vowel signs each Indic configuration splits (`splitMatras`). */
+const SPLIT_SIGNS: Readonly<Record<string, readonly number[]>> = {
+    bn: [0x09CB, 0x09CC],
+    ta: [0x0BCA, 0x0BCB, 0x0BCC],
+    si: [0x0DDA, 0x0DDC, 0x0DDD, 0x0DDE],
+    kn: [0x0CC0, 0x0CC7, 0x0CC8, 0x0CCA, 0x0CCB],
+    ml: [0x0D4A, 0x0D4B, 0x0D4C],
+    or: [0x0B48, 0x0B4B, 0x0B4C],
+};

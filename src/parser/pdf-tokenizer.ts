@@ -209,6 +209,13 @@ export function createTokenizer(buf: Uint8Array, startPos: number = 0): PdfToken
     function readKeyword(start: number): PdfToken {
         let end = pos;
         while (end < buf.length && !isWhitespace(buf[end]) && !isDelimiter(buf[end])) end++;
+        // A delimiter no other reader claims — a stray `)`, `{` or `}` (ISO
+        // 32000-1 §7.2.2 reserves the braces for PostScript functions) — would
+        // otherwise yield an empty keyword without advancing, and every
+        // `for (t = next(); t !== null; …)` consumer would spin forever on it
+        // (found by the fuzz targets, v1.9.0). It is consumed as a one-byte
+        // keyword the callers ignore.
+        if (end === pos) end = pos + 1;
         const word = latin1(buf, pos, end);
         pos = end;
 

@@ -71,11 +71,20 @@ The `lang` property triggers:
 - Glyph mirroring for brackets and other paired delimiters (the full 428-pair
   Unicode BidiMirroring table since v1.7.0, per UAX #9 rule L4)
 
-**Reversed digits or backwards parentheses in RTL text?** Fixed in v1.7.0 with
-no API change: digit runs now take even embedding levels (UAX #9 rules I1/I2),
-so a number like `1405` keeps its digit order instead of rendering `5041`, and
-rule L4 mirrors delimiters during reversal, so a logical `(X)` no longer
-renders `)X(`. If you see either symptom, upgrade pdfnative.
+**Right-to-left paragraph aligned to the left, or punctuation on the wrong side?**
+Since v1.9.0 the resolver implements UAX #9 in full (neutrals N1–N2, bracket
+pairs N0, isolates, overrides, per-paragraph resolution). Alignment is a
+separate decision: set `direction: 'auto'` on the layout (or on the paragraph)
+and a paragraph detected as right-to-left is aligned to the right margin and
+justified in visual order; without it the 1.8.0 left alignment stays. A
+punctuation mark that still lands on the wrong side is a text that needs a
+directional mark — `U+200F` RIGHT-TO-LEFT MARK after a trailing number, for
+instance — exactly as in a browser. See the [right-to-left guide](rtl.html).
+
+**Reversed digits or backwards parentheses?** Digit runs take even levels
+(I1/I2) and paired delimiters are mirrored (L4) since v1.7.0; v1.9.0 pairs the
+brackets themselves (N0), so a logical `(X)` inside Arabic keeps both
+parentheses around X. If you see either symptom, upgrade pdfnative.
 
 ## PDF/A Validation Fails
 

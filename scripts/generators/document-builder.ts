@@ -76,14 +76,15 @@ export async function generate(ctx: GenerateContext): Promise<void> {
     }
 
 
-    // ── Unicode: Multi-language (all 27 scripts) ─────────────────
+    // ── Unicode: Multi-language (all 32 scripts) ─────────────────
     {
         const fontEntries = await loadMultiFontEntries();
-        if (fontEntries.length === 27) {
+        if (fontEntries.length !== 32) throw new Error(`doc-multi-language: expected 32 font entries, got ${fontEntries.length}`);
+        {
             const params: DocumentParams = {
-                title: 'Multi-Language Document – 27 Scripts',
+                title: 'Multi-Language Document – 32 Scripts',
                 blocks: [
-                    { type: 'heading', text: 'pdfnative – 27 Scripts, One Engine', level: 1 },
+                    { type: 'heading', text: 'pdfnative – 32 Scripts, One Engine', level: 1 },
                     { type: 'paragraph', text: 'This document renders every script supported by pdfnative in a single PDF. Each section contains a native heading, a sample paragraph, and uses automatic font switching via script-aware Unicode block detection. All content is produced from a single DocumentParams object with a shared fontEntries array.' },
 
                     { type: 'heading', text: 'Supported Scripts', level: 2 },
@@ -115,6 +116,11 @@ export async function generate(ctx: GenerateContext): Promise<void> {
                         { cells: ['New Tai Lue', 'khb', 'LTR', 'Spacing'], type: 'credit', pointed: false },
                         { cells: ['Tai Le', 'tdd', 'LTR', 'Spacing'], type: 'credit', pointed: false },
                         { cells: ['Cham', 'cjm', 'LTR', 'USE engine'], type: 'credit', pointed: true },
+                        { cells: ['Gujarati', 'gu', 'LTR', 'Indic engine'], type: 'credit', pointed: true },
+                        { cells: ['Punjabi (Gurmukhi)', 'pa', 'LTR', 'Indic engine'], type: 'credit', pointed: true },
+                        { cells: ['Kannada', 'kn', 'LTR', 'Indic engine'], type: 'credit', pointed: true },
+                        { cells: ['Malayalam', 'ml', 'LTR', 'Indic engine'], type: 'credit', pointed: true },
+                        { cells: ['Odia', 'or', 'LTR', 'Indic engine'], type: 'credit', pointed: true },
                         { cells: ['Amharic (Ethiopic)', 'am', 'LTR', 'Syllabic'], type: 'credit', pointed: false },
                     ] },
 
@@ -212,6 +218,26 @@ export async function generate(ctx: GenerateContext): Promise<void> {
                     { type: 'heading', text: '\uAA00\uAA2A\uAA0C\uAA32 \u2013 Cham', level: 2 },
                     { type: 'paragraph', text: '\uAA00\uAA2F \uAA00\uAA35\uAA36 \uAA00\uAA4C \u2014 Cham reorders its two pre-base vowels and composes medial consonants, both driven by the engine.' },
 
+                    // Gujarati (v1.9.0)
+                    { type: 'heading', text: 'ગુજરાતી \u2013 Gujarati', level: 2 },
+                    { type: 'paragraph', text: 'આ pdfnative લાઇબ્રેરી દ્વારા ગુજરાતીમાં PDF બનાવવાનું એક ઉદાહરણ છે. \u2014 Gujarati on the Indic engine: pre-base reph, post-base matras, conjuncts through the font\'s own gjr2 features.' },
+
+                    // Punjabi — Gurmukhi (v1.9.0)
+                    { type: 'heading', text: 'ਪੰਜਾਬੀ \u2013 Punjabi (Gurmukhi)', level: 2 },
+                    { type: 'paragraph', text: 'ਇਹ pdfnative ਲਾਇਬ੍ਰੇਰੀ ਰਾਹੀਂ ਪੰਜਾਬੀ ਵਿੱਚ PDF ਬਣਾਉਣ ਦੀ ਇੱਕ ਉਦਾਹਰਣ ਹੈ। \u2014 Gurmukhi: the yakash medial, addak and tippi as marks, reph before the subjoined forms.' },
+
+                    // Kannada (v1.9.0)
+                    { type: 'heading', text: 'ಕನ್ನಡ \u2013 Kannada', level: 2 },
+                    { type: 'paragraph', text: 'ಇದು pdfnative ಲೈಬ್ರರಿಯ ಮೂಲಕ ಕನ್ನಡದಲ್ಲಿ PDF ರಚಿಸುವ ಒಂದು ಉದಾಹರಣೆ. \u2014 Kannada: split vowel signs whose first half sits above the consonant, the reph after the post-base forms.' },
+
+                    // Malayalam (v1.9.0)
+                    { type: 'heading', text: 'മലയാളം \u2013 Malayalam', level: 2 },
+                    { type: 'paragraph', text: 'ഇത് pdfnative ലൈബ്രറി ഉപയോഗിച്ച് മലയാളത്തിൽ PDF നിർമ്മിക്കുന്നതിന്റെ ഒരു ഉദാഹരണമാണ്. \u2014 Malayalam: chillu letters, the dot reph in logical order, pre-base ra reordered by the pref feature.' },
+
+                    // Odia (v1.9.0)
+                    { type: 'heading', text: 'ଓଡ଼ିଆ \u2013 Odia', level: 2 },
+                    { type: 'paragraph', text: 'ଏହା pdfnative ଲାଇବ୍ରେରୀ ଦ୍ୱାରା ଓଡ଼ିଆରେ PDF ତିଆରି କରିବାର ଏକ ଉଦାହରଣ। \u2014 Odia: split vowel signs, post-base ya, the reph after the main consonant.' },
+
                     // Japanese
                     { type: 'heading', text: '\u65E5\u672C\u8A9E \u2013 Japanese', level: 2 },
                     { type: 'paragraph', text: 'pdfnative\u306F\u65E5\u672C\u8A9E\u306EPDF\u6587\u66F8\u3092\u751F\u6210\u3057\u307E\u3059\u3002\u6F22\u5B57\u3001\u3072\u3089\u304C\u306A\u3001\u30AB\u30BF\u30AB\u30CA\u3092CIDFont Type2\u3068Identity-H\u30A8\u30F3\u30B3\u30FC\u30C7\u30A3\u30F3\u30B0\u3067\u5B8C\u5168\u306B\u30B5\u30DD\u30FC\u30C8\u3057\u307E\u3059\u3002' },
@@ -233,9 +259,9 @@ export async function generate(ctx: GenerateContext): Promise<void> {
                     { type: 'paragraph', text: 'pdfnative \u05EA\u05D5\u05DE\u05DA \u05DE\u05DC\u05D0 \u05D1\u05E2\u05D1\u05E8\u05D9\u05EA \u05D5\u05D1\u05DB\u05EA\u05D9\u05D1\u05D4 \u05DE\u05D9\u05DE\u05D9\u05DF \u05DC\u05E9\u05DE\u05D0\u05DC \u05E2\u05DD \u05D9\u05D9\u05E9\u05D5\u05DD \u05D0\u05DC\u05D2\u05D5\u05E8\u05D9\u05EA\u05DD BiDi \u05DC\u05E4\u05D9 Unicode UAX #9.' },
 
                     { type: 'heading', text: 'Conclusion', level: 2 },
-                    { type: 'paragraph', text: 'pdfnative handles all 27 scripts with zero external dependencies, full BiDi support, OpenType shaping, and a single shared fontEntries array. This demonstrates the width of the library, not its depth – script-specific sample PDFs in the same folder show the depth of each implementation.' },
+                    { type: 'paragraph', text: 'pdfnative handles all 32 scripts with zero external dependencies, full BiDi support, OpenType shaping, and a single shared fontEntries array. This demonstrates the width of the library, not its depth – script-specific sample PDFs in the same folder show the depth of each implementation.' },
                 ],
-                footerText: 'pdfnative – Multi-language document sample (27 scripts)',
+                footerText: 'pdfnative – Multi-language document sample (32 scripts)',
                 fontEntries,
             };
             ctx.writeSafe(resolve(ctx.outputDir, 'document', 'doc-multi-language.pdf'), 'document/doc-multi-language.pdf', buildDocumentPDFBytes(params));
@@ -498,7 +524,7 @@ function generateShowcase(ctx: GenerateContext): void {
             { type: 'paragraph', text: 'Standard paragraph with automatic text wrapping.' },
             { type: 'paragraph', text: 'Colored paragraph with custom formatting.', color: '#2563EB' },
             { type: 'heading', text: 'Bullet List', level: 2 },
-            { type: 'list', items: ['Zero external dependencies', '27 Unicode scripts', 'PDF/A-1b, PDF/A-2b, PDF/A-2u', 'AES-128/256 encryption', 'FlateDecode compression'], style: 'bullet' },
+            { type: 'list', items: ['Zero external dependencies', '32 Unicode scripts', 'PDF/A-1b, PDF/A-2b, PDF/A-2u', 'AES-128/256 encryption', 'FlateDecode compression'], style: 'bullet' },
             { type: 'heading', text: 'Numbered List', level: 2 },
             { type: 'list', items: ['Install: npm install pdfnative', 'Import the builder function', 'Define parameters', 'Generate bytes', 'Write to file'], style: 'numbered' },
             { type: 'heading', text: 'Embedded Table', level: 2 },

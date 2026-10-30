@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MCP use cases — pdfnative</title>
-  <meta name="description" content="Three pdfnative-mcp v1.7.0 architectures: one shared Streamable HTTP server with a bearer token and a file sandbox exposed as MCP resources, a token-frugal typesetting loop on inspect_layout, and PDF/A notices in 27 scripts from one tool call.">
+  <meta name="description" content="Three pdfnative-mcp v1.7.0 architectures: one shared Streamable HTTP server with a bearer token and a file sandbox exposed as MCP resources, a token-frugal typesetting loop on inspect_layout, and PDF/A notices in every script the engine shapes from one tool call.">
   <link rel="canonical" href="https://pdfnative.dev/guides/use-cases-mcp.html">
   <link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/use-cases-mcp.html">
   <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/use-cases-mcp.html">
@@ -15,20 +15,21 @@
   <meta property="og:locale" content="en_US">
   <meta property="og:url" content="https://pdfnative.dev/guides/use-cases-mcp.html">
   <meta property="og:title" content="MCP use cases — pdfnative">
-  <meta property="og:description" content="One shared pdfnative-mcp server behind a bearer token with sandboxed file outputs as MCP resources, a preview-produce-read-back typesetting loop that costs a few dozen tokens, and multilingual PDF/A notices in 27 scripts — three architectures with their limits.">
+  <meta property="og:description" content="One shared pdfnative-mcp server behind a bearer token with sandboxed file outputs as MCP resources, a preview-produce-read-back typesetting loop that costs a few dozen tokens, and multilingual PDF/A notices in every script the engine shapes — three architectures with their limits.">
   <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
+  <meta property="og:image:alt" content="pdfnative — pure native PDF generation, zero dependencies">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="MCP use cases — pdfnative">
-  <meta name="twitter:description" content="Three pdfnative-mcp v1.7.0 architectures: shared HTTP server with token and file sandbox, token-frugal inspect_layout loop, and PDF/A notices in 27 scripts.">
+  <meta name="twitter:description" content="Three pdfnative-mcp v1.7.0 architectures: shared HTTP server with token and file sandbox, token-frugal inspect_layout loop, and PDF/A notices in every script the engine shapes.">
   <meta name="twitter:image" content="https://pdfnative.dev/assets/og-image.png">
   <link rel="icon" type="image/svg+xml" href="../favicon.svg">
   <link rel="stylesheet" href="../style.css">
   <link rel="stylesheet" href="guide.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
   <!-- guide:ld:start -->
-  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://pdfnative.dev/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://pdfnative.dev/guides/"},{"@type":"ListItem","position":3,"name":"MCP use cases","item":"https://pdfnative.dev/guides/use-cases-mcp.html"}]},{"@type":"TechArticle","headline":"MCP use cases","description":"Three pdfnative-mcp v1.7.0 architectures: one shared Streamable HTTP server with a bearer token and a file sandbox exposed as MCP resources, a token-frugal typesetting loop on inspect_layout, and PDF/A notices in 27 scripts from one tool call.","inLanguage":"en","author":{"@type":"Organization","name":"Nizoka","url":"https://github.com/Nizoka"},"publisher":{"@type":"Organization","name":"pdfnative","url":"https://pdfnative.dev","logo":{"@type":"ImageObject","url":"https://pdfnative.dev/assets/logo.svg"}},"mainEntityOfPage":{"@type":"WebPage","@id":"https://pdfnative.dev/guides/use-cases-mcp.html"},"isPartOf":{"@type":"WebSite","name":"pdfnative","url":"https://pdfnative.dev"}}]}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://pdfnative.dev/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://pdfnative.dev/guides/"},{"@type":"ListItem","position":3,"name":"MCP use cases","item":"https://pdfnative.dev/guides/use-cases-mcp.html"}]},{"@type":"TechArticle","headline":"MCP use cases","description":"Three pdfnative-mcp v1.7.0 architectures: one shared Streamable HTTP server with a bearer token and a file sandbox exposed as MCP resources, a token-frugal typesetting loop on inspect_layout, and PDF/A notices in every script the engine shapes from one tool call.","inLanguage":"en","author":{"@type":"Organization","name":"Nizoka","url":"https://github.com/Nizoka"},"publisher":{"@type":"Organization","name":"pdfnative","url":"https://pdfnative.dev","logo":{"@type":"ImageObject","url":"https://pdfnative.dev/assets/logo.svg"}},"mainEntityOfPage":{"@type":"WebPage","@id":"https://pdfnative.dev/guides/use-cases-mcp.html"},"isPartOf":{"@type":"WebSite","name":"pdfnative","url":"https://pdfnative.dev"}}]}</script>
   <!-- guide:ld:end -->
 </head>
 <body>
@@ -67,7 +68,7 @@
 <blockquote>
 <p><strong>Three architectures on pdfnative-mcp v1.7.0 (pdfnative ≥ 1.8.0, Node ≥ 22):</strong>
 one shared HTTP server whose outputs are files, a token-frugal typesetting
-loop, and multilingual PDF/A notices in 27 scripts.</p>
+loop, and multilingual PDF/A notices in every script the engine shapes.</p>
 </blockquote>
 <p>pdfnative-mcp v1.7.0 exposes the pdfnative ≥ 1.8.0 engine to conversational
 assistants as 28 tools and seven prompts, over stdio or Streamable HTTP
@@ -230,7 +231,7 @@ Sans (diagnostic <code>TYPOGRAPHY_FEATURE_INEFFECTIVE</code>, an error under
 because the typography fragment is inlined in every tool that carries it —
 hosts should honour its 24 h public cache hint rather than refetch it per
 session.</p>
-<h2 id="case-3--multilingual-notices-in-27-scripts-from-a-conversation">Case 3 — Multilingual notices in 27 scripts from a conversation<a class="heading-anchor" href="#case-3--multilingual-notices-in-27-scripts-from-a-conversation" aria-label="Link to this section">#</a></h2>
+<h2 id="case-3--multilingual-notices-in-every-script-from-a-conversation">Case 3 — Multilingual notices in every script from a conversation<a class="heading-anchor" href="#case-3--multilingual-notices-in-every-script-from-a-conversation" aria-label="Link to this section">#</a></h2>
 <p>A safety notice, a consent form or a receipt that must exist in the reader&#39;s
 own script is usually a font-procurement project before it is a document
 project. <code>add_international_text</code> removes the procurement: it routes each run
@@ -238,7 +239,7 @@ of text to the bundled Noto face that covers it, shapes it with the engine&#39;s
 script shapers, always embeds the fonts, and can claim PDF/A — from a single
 tool call inside a conversation.</p>
 <p>The building blocks: <code>add_international_text</code> with a <code>lang</code> array covering the
-27 scripts — including, since v1.7.0, <code>lo</code> (Lao, dedicated shaper), <code>nod</code>
+every script of the engine it was built on — including, since v1.7.0, <code>lo</code> (Lao, dedicated shaper), <code>nod</code>
 (Tai Tham) and <code>cjm</code> (Cham) through the Universal Shaping Engine, <code>khb</code>
 (New Tai Lue) and <code>tdd</code> (Tai Le), plus the <code>latin</code> aliases <code>ha</code>, <code>yo</code>, <code>ig</code>
 and <code>sw</code> whose tone marks are anchored; <code>pdfA: &quot;pdfa2b&quot;</code> with <code>strict: true</code>
@@ -280,14 +281,15 @@ the bytes are reproducible once <code>creationDate</code> is pinned.</li>
 </ul>
 <p>Honest limits: there are no custom fonts on the MCP surface — the operator-side
 font sandbox (<code>PDFNATIVE_MCP_FONT_DIR</code>) is on the roadmap, not in v1.7.0; a
-house typeface needs the CLI (<code>render --font-file</code>) or the library. Tai Tham
-under PDF/A-2<strong>u</strong> fails veraPDF (one shaped glyph has no <code>ToUnicode</code> entry,
-rule 6.2.11.7.2), so use <code>pdfa2b</code> whenever <code>nod</code> is in the list — the other
-four new scripts pass level U. Text extraction from an <strong>untagged</strong> PDF returns
-visual order for eleven scripts; a <code>pdfA</code> claim makes the output tagged, which
-is what turns extraction exact. And <code>annotate_pdf</code> has no <code>link</code> annotation
-type yet (the engine&#39;s markup union lacks it); the <code>link</code> block of
-<code>generate_basic_pdf</code> covers new documents.</p>
+house typeface needs the CLI (<code>render --font-file</code>) or the library. Every
+script passes PDF/A-2<strong>u</strong> since pdfnative 1.9.0 (every shaper&#39;s glyph is named
+in <code>ToUnicode</code>, and <code>PDFA_GLYPH_WITHOUT_UNICODE</code> names any glyph that still is
+not). Text extraction from an <strong>untagged</strong> PDF returns
+the logical string since pdfnative 1.9.0 (every reordered run, right-to-left
+runs included, carries its text as <code>/ActualText</code>, tagged or not). And
+<code>annotate_pdf</code> in pdfnative-mcp 1.7.0 has no <code>link</code> annotation type yet — the
+engine added <code>{ type: &#39;link&#39; }</code> to its markup union in 1.9.0; the <code>link</code> block
+of <code>generate_basic_pdf</code> covers new documents.</p>
 <h2 id="see-also">See also<a class="heading-anchor" href="#see-also" aria-label="Link to this section">#</a></h2>
 <ul>
 <li><a href="use-cases.html">Ecosystem use cases</a> — the hub: five cross-surface

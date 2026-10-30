@@ -38,6 +38,7 @@ interface ExtractTextOptions {
   pages?: number[];         // 0-based page indices; default: all pages
   includeRuns?: boolean;    // also return positioned runs (default false)
   maxTextLength?: number;   // hard cap on total characters (default 16 000 000)
+  onStreamError?: 'limit' | 'throw' | 'skip'; // v1.9.0 — what an undecodable stream does (see Safety bounds)
 }
 
 interface ExtractedPageText {
@@ -111,6 +112,10 @@ Designed to be safe on untrusted input:
   malformed content streams — unknown operators are skipped, unbalanced
   `BT`/`q` tolerated, inline images (`BI…EI`) byte-skipped.
 
+### Undecodable streams (v1.9.0)
+
+A content stream that cannot be decoded is reported, not silently dropped: a stream whose inflated size would exceed the cap (`setMaxInflateOutputSize`) throws `PdfStreamLimitError` (`code: 'PDF_STREAM_LIMIT'`) from `extractText()` — the default, `onStreamError: 'limit'`, since an over-cap stream is the one case where a page without its text would hide an attack rather than a defect. `'throw'` reports any stream that fails to decode (a corrupt Flate stream, an unsupported filter); `'skip'` restores the pre-1.9.0 lenience and returns the page without that stream's text. The same error class is thrown by `inflateSync()` and the other decode filters, and by the native zlib wrapper when Node's buffer limit is hit.
+
 ## Limitations
 
 By design (documented, not bugs):
@@ -130,19 +135,38 @@ By design (documented, not bugs):
   and the Latin combining-mark shaper report the code points behind every
   glyph they emit, and pdfnative writes them into `/ToUnicode` as
   multi-code-point entries, so a conjunct such as क्ष or a composed ẹ́
-  extracts as its letters even in an untagged document. The **other
-  shaped scripts** (Thai, Lao, Khmer, Myanmar, Tibetan, Tai Tham, Cham,
-  Arabic presentation forms) still extract with U+FFFD for a ligature or
-  contextual glyph that has no single-code-point mapping in an untagged
-  document — the PDF *renders* correctly; only extraction of those
-  clusters is lossy. Build with `tagged: 'pdfa2u'` (or any tagged level)
-  and the spans carry the source text. Latin, CJK and emoji round-trip
-  cleanly. One decomposition extracts as *text* rather than U+FFFD: Thai
-  and Lao sara am (ำ U+0E33, ຳ U+0EB3) is set as nikhahit + sara aa, so
-  an untagged document yields two code points where the author wrote one
-  — น้ำ extracts as no nu, its two stacked marks in geometric order, sara
-  aa. Under any tagged level the span's `/ActualText` carries ำ and
-  extraction is exact.
+  extracts as its letters even in an untagged document. Since v1.9.0
+  **every shaper** reports the code points behind every glyph it emits —
+  Thai, Lao, Khmer, Myanmar, Tibetan, Tai Tham, Cham, the Arabic
+  positional forms and lam-alef ligatures — and the code point that was
+  actually encoded has priority over the font's inverted cmap, so a CJK
+  glyph reachable from U+2E80 and U+4E00 is named by the one typed and
+  Persian digits stay Persian. A run whose glyphs are not in the order of
+  its text — an Indic pre-base vowel sign drawn before its consonant, a
+  reph moved after the base, a split vowel sign set as its two parts, a
+  Khmer or Myanmar pre-base vowel, Thai and Lao sara am (ำ U+0E33, ຳ U+0EB3)
+  set as nikhahit + sara aa, a Thai tone mark set before a below vowel —
+  carries its text as `/Span /ActualText` even in untagged output (opt out
+  with `layout.actualText: false`), which is what Chrome and Skia write,
+  so extraction of an untagged Hindi, Tamil or Khmer document returns the
+  words as typed rather than in drawing order. Every right-to-left run
+  carries its logical text the same way (what Skia writes for every
+  reversed cluster), so an untagged Arabic or Hebrew line comes back as
+  typed from `extractText()`, Acrobat Reader and Chrome alike; a line
+  mixing directions returns its runs in geometric order, each one
+  logical. Every such span wraps a single text
+  object: since v1.9.0 a line or cell is one `BT … ET` and a shaped run one
+  `TJ` array, because Acrobat applies `/ActualText` once per text object
+  — a cell drawn as one text object per glyph pasted its text once per
+  glyph in Acrobat Reader, while pdfnative's own extractor and Chrome,
+  which apply the span once, never showed it. Under `tagged: 'pdfa2u'`
+  the `PDFA_GLYPH_WITHOUT_UNICODE` diagnostic names any glyph that still
+  has no mapping (a character the font does not cover) — see the
+  [PDF/A guide](pdfa.html). What remains geometric is the **order of the
+  runs**: they are sorted by position, so a line that mixes a Latin
+  island with Arabic comes back island and runs in visual order, each
+  run logical, and a tagged document returns the whole line as its
+  structure span wrote it — see the [right-to-left guide](rtl.html).
 
 ## Samples
 

@@ -18,6 +18,9 @@ import { toBytes } from '../core/pdf-stream.js';
 declare const self: DedicatedWorkerGlobalScope;
 
 self.onmessage = (e: MessageEvent<WorkerInputMessage>) => {
+    // Messages from the owning page reach a dedicated worker with an empty
+    // origin; anything that carries one did not come through `worker.postMessage`.
+    if (typeof e.origin === 'string' && e.origin !== '') return;
     const msg = e.data;
 
     if (msg.type !== 'GENERATE_PDF') return;

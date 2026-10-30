@@ -544,20 +544,38 @@ function rotr32(x: number, n: number): number {
 }
 
 /**
+ * Write a message length as the 64-bit big-endian bit count FIPS 180-4
+ * §5.1.1 appends to a padded message (the low 64 bits of the 128-bit field
+ * for SHA-384/512). Both words are written: from 2^29 octets (512 MiB) on,
+ * `byteLength * 8` no longer fits in 32 bits, and a digest that only writes
+ * the low word is silently wrong. `Math.floor(byteLength / 2^29)` is exact
+ * over the whole safe-integer range, where `byteLength * 8 / 2^32` stops
+ * being exact once the bit count exceeds 2^53.
+ *
+ * @param view - DataView over the padded message
+ * @param offset - Byte offset of the 8-byte length field
+ * @param byteLength - Length of the unpadded message in octets
+ * @since 1.9.0
+ */
+export function writeBitLengthBE(view: DataView, offset: number, byteLength: number): void {
+    view.setUint32(offset, Math.floor(byteLength / 0x20000000), false);
+    view.setUint32(offset + 4, (byteLength % 0x20000000) * 8, false);
+}
+
+/**
  * SHA-256 hash (FIPS 180-4).
  * @param input - Bytes to hash
  * @returns 32-byte SHA-256 digest
  */
 export function sha256(input: Uint8Array): Uint8Array {
     const len = input.length;
-    const totalBits = len * 8;
     const padLen = ((55 - (len % 64)) + 64) % 64;
     const padded = new Uint8Array(len + 1 + padLen + 8);
     padded.set(input);
     padded[len] = 0x80;
-    // Length as 64-bit big-endian
+    // Length as 64-bit big-endian — both words (inputs of 512 MiB and more).
     const dv = new DataView(padded.buffer);
-    dv.setUint32(padded.length - 4, totalBits >>> 0, false);
+    writeBitLengthBE(dv, padded.length - 8, len);
 
     let h0 = 0x6a09e667 >>> 0;
     let h1 = 0xbb67ae85 >>> 0;
@@ -678,12 +696,9 @@ function sha512Core(input: Uint8Array, ivH: Uint32Array, ivL: Uint32Array, outBy
     const padded = new Uint8Array(len + 1 + padLen + 16);
     padded.set(input);
     padded[len] = 0x80;
-    // 128-bit big-endian bit length; high 64 bits stay 0 for realistic sizes.
-    const bitLen = len * 8;
-    padded[padded.length - 4] = (bitLen >>> 24) & 0xff;
-    padded[padded.length - 3] = (bitLen >>> 16) & 0xff;
-    padded[padded.length - 2] = (bitLen >>> 8) & 0xff;
-    padded[padded.length - 1] = bitLen & 0xff;
+    // 128-bit big-endian bit length; the high 64 bits stay 0 (an input of
+    // 2^61 octets is out of reach), the low 64 bits carry both words.
+    writeBitLengthBE(new DataView(padded.buffer), padded.length - 8, len);
 
     const hH = new Uint32Array(ivH);
     const hL = new Uint32Array(ivL);

@@ -352,6 +352,7 @@ const moduleSource = `/**
  * @module shaping/use-data
  * @since 1.8.0
  */
+/*! @license Unicode-3.0 — © 1991-2026 Unicode, Inc. — https://www.unicode.org/license.txt; and MIT — © Microsoft Corporation (the Indic_Syllabic_Category / Indic_Positional_Category override values) — full texts in THIRD-PARTY-NOTICES.md of the pdfnative package. */
 
 /** The Unicode release this table was derived from. */
 export const USE_UNICODE_VERSION = '${UNICODE_VERSION}';

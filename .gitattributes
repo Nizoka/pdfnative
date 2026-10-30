@@ -8,8 +8,8 @@
 # Text files are LF in the repository AND in every working copy (eol=lf), so
 # a Windows checkout produces the same bytes as CI and the byte manifests of
 # generated files (llms, api.json, guides, rules) do not depend on the OS.
-# Blobs committed as CRLF before this line are rewritten by the maintainer's
-# renormalisation commit; `verify:docs` (rule eol-lf) lists them until then.
+# The blobs committed as CRLF before this line were rewritten in the 1.9.0
+# renormalisation commit; `verify:docs` (rule eol-lf) now fails on any new one.
 * text=auto eol=lf
 
 *.pdf   binary

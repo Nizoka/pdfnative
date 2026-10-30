@@ -106,6 +106,21 @@ function sourceFontsPresent(): boolean {
     return fonts.some(f => present.has(f.local));
 }
 
+/**
+ * The previous release's tag, as tests/compat/allow-<version>.json names it,
+ * is present in this clone — the skip condition of compat:previous. CI's
+ * shallow checkout has no tags; ci.yml and publish.yml fetch exactly this one.
+ */
+function previousTagAvailable(): boolean {
+    const dir = join(REPO_ROOT, 'tests', 'compat');
+    if (!existsSync(dir)) return false;
+    const allow = readdirSync(dir).filter(f => /^allow-\d+\.\d+\.\d+\.json$/.test(f)).sort().pop();
+    if (!allow) return false;
+    const { tag } = JSON.parse(readFileSync(join(dir, allow), 'utf8')) as { tag: string };
+    const probe = spawnSync('git', ['rev-parse', '--verify', '--quiet', `${tag}^{commit}`], { cwd: REPO_ROOT, windowsHide: true });
+    return probe.status === 0;
+}
+
 // ── Notes (figures shown next to PASS) ──────────────────────────────
 
 function testCount(): string | null {
@@ -172,6 +187,10 @@ export const STEPS: readonly Step[] = [
     {
         id: 'verify:fonts', npmScript: 'verify:fonts', profiles: ['publish'],
         skipWhen: () => (sourceFontsPresent() ? null : 'fonts/ttf is absent'),
+    },
+    {
+        id: 'compat:previous', npmScript: 'compat:previous', profiles: ['publish'],
+        skipWhen: () => (previousTagAvailable() ? null : 'previous release tag not fetched (see tests/compat/allow-*.json)'),
     },
     {
         id: 'verify:diagrams', npmScript: 'verify:diagrams', profiles: ['publish'],

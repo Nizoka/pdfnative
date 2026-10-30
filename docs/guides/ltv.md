@@ -122,6 +122,19 @@ const archive = await addDocumentTimestamp(ltv);
 
 Appends a signature field whose dictionary is `/Type /DocTimeStamp /SubFilter /ETSI.RFC3161` with a **bare** TimeStampToken as `/Contents` (ISO 32000-2 §12.8.5 — no `/M`: the token's genTime is the time assertion). Field names auto-suffix (`DocTimeStamp1`, `DocTimeStamp2`, …) so periodic re-timestamping chains naturally.
 
+### Offline material — `composeLtvData()` (v1.9.0)
+
+When the certificates, OCSP responses and CRLs were fetched by another system — an archive, a CA hand-over, a batch job without network — compose the `LtvData` from flat lists instead of a provider:
+
+```ts
+import { composeLtvData, embedValidationInfo } from 'pdfnative';
+
+const data = composeLtvData(signed, { certificates, ocspResponses, crls }, { match: 'chain' });
+const ltv = embedValidationInfo(signed, data);
+```
+
+`match: 'all'` (the default) references everything from every `/VRI`; `match: 'chain'` keeps only what validates each signature — issuers found by verifying the signatures along the chain, OCSP responses by their `CertID` (`parseOcspResponse()` exposes it, `ocspResponseMatchesCertificate()` compares it), CRLs by issuer name — so unrelated material never lands in the file ([#90](https://github.com/Nizoka/pdfnative/issues/90)). `extraCertificates` passed to `collectValidationInfo` are referenced from every `/VRI` entry since 1.9.0. The [ltv-compose-offline recipe](https://github.com/Nizoka/pdfnative/blob/main/recipes/ltv-compose-offline.ts) runs this against a mock PKI in CI.
+
 ## Multiple signatures
 
 ```ts
@@ -145,10 +158,10 @@ The repository ships a deterministic offline mock PKI (`scripts/helpers/mock-pki
 - `openssl ts -reply -in token.der -text` inspects extracted timestamp tokens.
 - pdfnative itself ships **no signature verifier** — validation belongs to dedicated tooling (veraPDF for PDF/A, Adobe/DSS for signatures, `pdfnative-cli verify` for full cryptographic verification: CMS signature values, certificate chain and trust, RFC 3161 timestamps, OCSP/CRL revocation).
 
-## Limits & scope (v1.7.0)
+## Limits & scope (v1.9.0)
 
 - ECDSA stays P-256 with SHA-256; RSA supports SHA-256/384/512.
-- Chain building uses exact issuer-name matching over the embedded pool; cross-certification and bridge PKIs are out of scope.
+- Chain building uses exact issuer-name matching over the embedded pool (`composeLtvData`'s `'chain'` mode verifies issuer signatures as well); cross-certification and bridge PKIs are out of scope.
 - `collectValidationInfo` fetches from the **first** advertised OCSP/CRL URL; provider-side failover is your transport's business.
 - Encrypted documents cannot take signature placeholders (unchanged from v1.2).
 - PDF 2.0 `/Extensions` declarations are not emitted; the ISO 32000-2 constructs used here are accepted by all mainstream validators.

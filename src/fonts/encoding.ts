@@ -12,9 +12,11 @@ import { stripBidiControls } from '../shaping/bidi.js';
 
 /**
  * Encode a JavaScript string to WinAnsiEncoding (ISO-8859-1 superset).
- * Characters outside this encoding are replaced with '?'.
+ * Characters outside this encoding are replaced with '?'; `onMiss` receives
+ * the code point of each such character (the `TEXT_GLYPH_NOT_COVERED`
+ * diagnostic, 1.9.0). The output never depends on it.
  */
-export function toWinAnsi(str: string): string {
+export function toWinAnsi(str: string, onMiss?: (codePoint: number) => void): string {
     if (!str) return '';
     let r = '';
     for (let i = 0; i < str.length; i++) {
@@ -55,7 +57,11 @@ export function toWinAnsi(str: string): string {
         else if (c === 0x202F) r += ' ';
         else if (c === 0x09 || c === 0x0A || c === 0x0D) r += ' ';
         else if (c < 0x20) { /* skip control chars */ }
-        else r += '?';
+        else {
+            r += '?';
+            // A surrogate pair is two '?' but one character: report it once.
+            if (onMiss && (c < 0xDC00 || c > 0xDFFF)) onMiss(str.codePointAt(i) ?? c);
+        }
     }
     return r;
 }
@@ -68,8 +74,8 @@ export function toWinAnsi(str: string): string {
  * visible width per UAX #9 and would otherwise become '?' under
  * WinAnsi.
  */
-export function pdfString(str: string): string {
-    const s = toWinAnsi(stripBidiControls(str));
+export function pdfString(str: string, onMiss?: (codePoint: number) => void): string {
+    const s = toWinAnsi(stripBidiControls(str), onMiss);
     return '(' + s.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)') + ')';
 }
 
@@ -208,6 +214,31 @@ export function stripSoftHyphens(str: string): string {
     return str.includes('­') ? str.split('­').join('') : str;
 }
 
+/**
+ * Advance of a narrow no-break space (U+202F) on the base-14 path, in
+ * thousandths of an em: WinAnsi has no such glyph, so the text emitter shows
+ * an ordinary space (278) and pulls the pen back by 111 with a `TJ`
+ * adjustment (`pdf-text.ts`). Both estimates below and the exact AFM path
+ * must measure the same 167.
+ *
+ * @since 1.9.0
+ */
+export const NARROW_NO_BREAK_SPACE_WIDTH = 167;
+
+/**
+ * What the exact AFM measurement over-counts for a string's narrow no-break
+ * spaces: `toWinAnsi` maps U+202F to an ordinary space (278), while the
+ * emitter narrows each to {@link NARROW_NO_BREAK_SPACE_WIDTH}. Subtract from
+ * `exactBase14Width(toWinAnsi(str))`.
+ *
+ * @since 1.9.0
+ */
+export function narrowNoBreakSpaceCorrection(str: string, sz: number): number {
+    let n = 0;
+    for (let i = 0; i < str.length; i++) if (str.charCodeAt(i) === 0x202F) n++;
+    return n === 0 ? 0 : n * (278 - NARROW_NO_BREAK_SPACE_WIDTH) / 1000 * sz;
+}
+
 export function helveticaWidth(str: string, sz: number): number {
     str = stripSoftHyphens(stripBidiControls(str));
     let w = 0;
@@ -222,7 +253,8 @@ export function helveticaWidth(str: string, sz: number): number {
         // WinAnsi (which has no narrow space glyph), so they must MEASURE as
         // one too — they previously fell through to the 556 default, making
         // every "150 €" or "12 kg" measure roughly twice its drawn width.
-        else if (cp === 0xA0 || cp === 0x202F) w += 278;
+        else if (cp === 0xA0) w += 278;
+        else if (cp === 0x202F) w += NARROW_NO_BREAK_SPACE_WIDTH; // narrowed by a TJ adjustment on the base-14 path (1.9.0)
         else if (cp === 46 || cp === 44) w += 278;
         else if (cp === 43) w += 584;
         else if (cp === 45) w += 333;
@@ -262,7 +294,8 @@ export function helveticaBoldWidth(str: string, sz: number): number {
         else if (cp >= 65 && cp <= 90) w += 722;  // A–Z bold (was 680 regular)
         else if (cp >= 97 && cp <= 122) w += 611; // a–z bold (was 500 regular)
         else if (cp === 32) w += 278;             // space
-        else if (cp === 0xA0 || cp === 0x202F) w += 278; // NBSP / narrow NBSP
+        else if (cp === 0xA0) w += 278;             // NBSP
+        else if (cp === 0x202F) w += NARROW_NO_BREAK_SPACE_WIDTH; // narrow NBSP (TJ-narrowed, 1.9.0)
         else if (cp === 46 || cp === 44) w += 278; // . ,
         else if (cp === 43) w += 584;             // +
         else if (cp === 45) w += 333;             // -

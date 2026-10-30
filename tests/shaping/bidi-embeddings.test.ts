@@ -125,19 +125,23 @@ describe('UAX #9 X4/X5 character-level overrides (v1.3.0)', () => {
     });
 
     it('LRO forces content to a single LTR run in logical order', () => {
+        // X4: LRO opens the next even level — 2 in a level-0 paragraph (the
+        // pre-1.9.0 resolver flattened it to 0). Even, so logical order.
         const runs = resolveBidiRuns(`${LRO}123${PDF}`);
         expect(runs).toHaveLength(1);
-        expect(runs[0].level).toBe(0);
+        expect(runs[0].level).toBe(2);
         expect(runs[0].text).toBe('123');
     });
 
     it('LRO forces Arabic to LTR logical order (no RTL reordering)', () => {
         // Without the override Arabic would form an RTL (reversed) run; LRO
-        // forces it to lay out left-to-right in logical order.
+        // forces it to lay out left-to-right in logical order at level 2. The
+        // paragraph level is 1 (P2 reads the original types), so the override
+        // opens the next even level above it.
         const ar = 'ابج';
         const runs = resolveBidiRuns(`${LRO}${ar}${PDF}`);
         expect(runs).toHaveLength(1);
-        expect(runs[0].level).toBe(0);
+        expect(runs[0].level % 2).toBe(0);
         expect(runs[0].text).toBe(ar);
     });
 
@@ -157,12 +161,12 @@ describe('UAX #9 X4/X5 character-level overrides (v1.3.0)', () => {
         expect(joined).not.toContain(PDF);
     });
 
-    it('strips inner controls inside an override scope (lite forcing)', () => {
-        // Nested override inside an override is absorbed by the uniform forcing.
+    it('resolves a nested override inside an override (X4/X5, full since 1.9.0)', () => {
+        // The RLO nested in the LRO opens level 3 for "bc": it is reversed,
+        // the "a" and "d" around it stay at the LRO's level 2. Until 1.9.0 the
+        // whole scope was flattened to one direction ("lite forcing").
         const runs = resolveBidiRuns(`${LRO}a${RLO}bc${PDF}d${PDF}`);
-        expect(runs).toHaveLength(1);
-        expect(runs[0].level).toBe(0);
-        expect(runs[0].text).toBe('abcd');
+        expect(runs.map(r => [r.level, r.text])).toEqual([[2, 'a'], [3, 'cb'], [2, 'd']]);
     });
 
     it('ignores an unmatched override opener (no matching PDF)', () => {

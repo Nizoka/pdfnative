@@ -86,16 +86,37 @@ applyTo: 'src/core/pdf-tags.ts,src/core/pdf-builder.ts,src/core/pdf-document.ts,
   `PDFA_NO_FONT_ENTRIES` (base-14 text without embedded fonts under a claim),
   `PDFA_UNEMBEDDED_FORM_FONT` (any form field under a claim — the AcroForm
   `/DR /Helv` is an unembedded Type 1), `PDFA_DEVICE_CMYK_IMAGE` (CMYK JPEG
-  against the sRGB OutputIntent).
+  against the sRGB OutputIntent), `PDFA1_JPX_IMAGE` (v1.9.0 — a JPEG 2000 image
+  under PDF/A-1, which is PDF 1.4 and has no JPXDecode), `PDFA_JPX_IMAGE`
+  (v1.9.0 — a JPEG 2000 image under PDF/A-2+ with an opacity channel or a
+  channel count outside one, three and four, ISO 19005-2 §6.2.8.3), `PDFA_GLYPH_WITHOUT_UNICODE` (v1.9.0 — a used
+  glyph the ToUnicode CMap cannot name under level U), and outside any claim
+  `TEXT_GLYPH_NOT_COVERED` (v1.9.0 — a character no registered font covers,
+  drawn as `.notdef` or written as `?` by the WinAnsi path; `reportUncoveredGlyphs`
+  reads `EncodingContext.getUncoveredCodepoints()` after layout).
 - When adding a new guard: extend the union (never remove or rename a code),
   include the remedy in the message, and cover both the warn path and the
   `strict` throw path in tests.
+
+## Subset names and the dual claim (v1.9.0)
+
+- Every embedded subset's `/BaseFont` and `/FontName` carry the six-letter
+  tag of ISO 32000-1 §9.6.4 (`ABCDEF+NotoSans-Regular`, deterministic from the
+  glyph set) — except under PDF/A-1, where the name stays bare: ISO 19005-1
+  §6.3.5 wants a `/CIDSet` stream next to a tagged CIDFont subset, which the
+  builders do not write yet (roadmap), and veraPDF 6.3.5-3 fails without it.
+- `tagged: 'pdfa2b' | 'pdfa2u'` combines with `pdfx: 'pdfx4'`: one XMP packet
+  carries `pdfaid` and `pdfxid` (with the PDF/X ID extension schema), two
+  OutputIntents share one ICC stream, the header is 1.6. PDF/A-1 and PDF/A-3
+  are refused with a level-specific message (`docs/data/errors.json`).
 
 ## Validator workflow
 
 1. `npm run test:generate` — regenerate `test-output/`.
 2. `npm run validate:pdfa` — runs every PDF/A-claiming sample through
-   the official veraPDF CLI. Skips silently when veraPDF isn't on
+   the official veraPDF CLI, and (v1.9.0) every PDF/X-claiming sample —
+   `pdfxid:GTS_PDFXVersion` in its XMP — through `validatePdfX()`, since
+   veraPDF never covers PDF/X; `declared.pdfxSamples` is the second canary. Skips silently when veraPDF isn't on
    `$PATH` and `VERAPDF_HOME` is unset.
 3. CI workflow `.github/workflows/verapdf.yml` enforces the same on
    every PR.

@@ -16,7 +16,9 @@
  * Source font (one of):
  *   --ttf <path>          Path to NotoColorEmoji-Regular.ttf (COLRv1/CPAL).
  *   --download            Fetch the official Noto Color Emoji (OFL-1.1) from
- *                         Google Fonts and verify its checksum.
+ *                         Google Fonts and verify its SHA-256.
+ *   --allow-unverified    Keep a download whose SHA-256 differs from the tested build
+ *                         (a newer upstream revision); without it the mismatch is fatal.
  *
  * Glyph selection (combine freely; default: --preset curated):
  *   --all                 Every colour glyph in the font (~3 600, large module).
@@ -67,7 +69,8 @@ const HELP = `pdfnative-build-emoji-font — colour-emoji font data module gener
 
 Source font (one of):
   --ttf <path>            Path to a COLRv1/CPAL colour font (NotoColorEmoji-Regular.ttf).
-  --download              Fetch the official Noto Color Emoji (OFL-1.1) and verify checksum.
+  --download              Fetch the official Noto Color Emoji (OFL-1.1) and verify its SHA-256.
+  --allow-unverified      Keep a download whose SHA-256 differs from the tested build.
 
 Glyph selection (combine freely; default: --preset curated):
   --all                   Every colour glyph in the font (large module).
@@ -97,7 +100,7 @@ Examples:
   pdfnative-build-emoji-font --download --ranges 1F600-1F64F,2600-27BF --out ./emoji.js
 `;
 
-async function fetchFont(): Promise<Uint8Array> {
+async function fetchFont(allowUnverified: boolean): Promise<Uint8Array> {
     console.log(`Downloading Noto Color Emoji (OFL-1.1) …`);
     console.log(`  ${DOWNLOAD_URL}`);
     const res = await fetch(DOWNLOAD_URL);
@@ -110,7 +113,10 @@ async function fetchFont(): Promise<Uint8Array> {
         console.warn(`  WARNING: checksum differs from the tested build.`);
         console.warn(`    expected ${DOWNLOAD_SHA256}`);
         console.warn(`    actual   ${hash}`);
-        console.warn(`  Upstream may have shipped a newer Unicode revision; proceeding.`);
+        if (!allowUnverified) {
+            throw new Error('Downloaded font does not match the tested build — upstream may have shipped a newer revision. Re-run with --allow-unverified to keep it, or pass the file you verified with --ttf <path>.');
+        }
+        console.warn(`  --allow-unverified given; proceeding with the unverified download.`);
     }
     return bytes;
 }
@@ -127,7 +133,7 @@ async function main(): Promise<void> {
     }
 
     const ttf = opts.download
-        ? await fetchFont()
+        ? await fetchFont(opts.allowUnverified)
         : new Uint8Array(readFileSync(resolve(opts.ttf as string)));
 
     const codepoints = resolveCodepoints(opts, () => allColorCodepoints(ttf));
