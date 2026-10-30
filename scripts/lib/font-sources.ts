@@ -92,6 +92,18 @@ export interface SourcesManifest {
     readonly derived: readonly DerivedFont[];
 }
 
+/**
+ * Whether the file at `path` holds exactly `bytes`. A missing or unreadable
+ * file is "no", without an existence check first (one read, no race).
+ */
+export function fileHolds(path: string, bytes: Uint8Array): boolean {
+    try {
+        return Buffer.from(readFileSync(path)).equals(Buffer.from(bytes));
+    } catch {
+        return false;
+    }
+}
+
 export function isReleaseFont(f: UpstreamFont | ReleaseFont): f is ReleaseFont {
     return (f as ReleaseFont).origin === 'release';
 }

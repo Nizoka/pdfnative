@@ -29,10 +29,10 @@
  * subsets are Modified Versions under the same licence.
  */
 
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { DEFAULT_TTF_DIR, MANIFEST_PATH, REPO_ROOT, readManifest } from './lib/font-sources.js';
+import { DEFAULT_TTF_DIR, MANIFEST_PATH, REPO_ROOT, fileHolds, readManifest } from './lib/font-sources.js';
 import type { DerivedFont } from './lib/font-sources.js';
 import { buildAllLatinSubsets, codepointsPath, formatCodepointList, withDerivedHashes } from './lib/latin-subsets.js';
 
@@ -117,7 +117,7 @@ async function main(): Promise<number> {
         const matches = r.sha256 === r.entry.sha256 && r.bytes.length === r.entry.bytes;
         const dest = join(parsed.dir, r.entry.local);
         if (!parsed.check) {
-            const same = existsSync(dest) && Buffer.from(readFileSync(dest)).equals(Buffer.from(r.bytes));
+            const same = fileHolds(dest, r.bytes);
             if (!same) { mkdirSync(parsed.dir, { recursive: true }); writeFileSync(dest, r.bytes); }
         }
         const state = matches ? 'matches fonts/SOURCES.json' : `DRIFT — manifest ${r.entry.sha256.slice(0, 12)}…/${r.entry.bytes} B`;

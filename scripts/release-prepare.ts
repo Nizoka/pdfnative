@@ -51,6 +51,15 @@ import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from '
 import { join, relative, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
+/** The file's text, or null when it cannot be read — one call, no exists-then-read race. */
+function readTextOr(path: string): string | null {
+    try {
+        return readFileSync(path, 'utf8');
+    } catch {
+        return null;
+    }
+}
+
 // ── Types ───────────────────────────────────────────────────────────
 
 /** Result of one targeted edit. `text` equals the input when nothing changed. */
@@ -417,12 +426,12 @@ function main(): number {
     /** Read, rewrite, report, and write unless --dry-run. */
     const edit = (relPath: string, what: string, fn: (text: string) => Rewrite): void => {
         const abs = join(root, relPath);
-        if (!existsSync(abs)) {
+        const before = readTextOr(abs);
+        if (before === null) {
             console.log(`  !  ${relPath} — missing`);
             problems++;
             return;
         }
-        const before = readFileSync(abs, 'utf8');
         const r = fn(before);
         if (r.matched === 0) {
             console.log(`  !  ${relPath} — ${what}: pattern not found, edit by hand`);
@@ -500,11 +509,11 @@ function main(): number {
     } else {
         const changed = `${diff}\n${untracked ?? ''}`.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
         const sitemapPath = join(root, 'docs', 'sitemap.xml');
-        if (!existsSync(sitemapPath)) {
+        const xml = readTextOr(sitemapPath);
+        if (xml === null) {
             console.log('  !  docs/sitemap.xml — missing');
             problems++;
         } else {
-            const xml = readFileSync(sitemapPath, 'utf8');
             const candidates = sitemapCandidates(xml, changed, date);
             for (const c of candidates) console.log(`  ${mark}  ${c.loc}  (${c.because})`);
             if (candidates.length === 0) {
@@ -520,14 +529,23 @@ function main(): number {
     console.log('\n9. Release note');
     const notePath = join(root, 'release-notes', `v${version}.md`);
     const templatePath = join(root, 'release-notes', 'TEMPLATE.md');
-    if (existsSync(notePath)) {
-        console.log(`  =  ${rel(notePath)} — exists, left alone`);
-    } else if (!existsSync(templatePath)) {
+    const template = readTextOr(templatePath);
+    if (template === null) {
         console.log('  !  release-notes/TEMPLATE.md — missing');
         problems++;
+    } else if (dryRun) {
+        console.log(existsSync(notePath)
+            ? `  =  ${rel(notePath)} — exists, left alone`
+            : `  ${mark}  ${rel(notePath)} — scaffolded from release-notes/TEMPLATE.md`);
     } else {
-        console.log(`  ${mark}  ${rel(notePath)} — scaffolded from release-notes/TEMPLATE.md`);
-        if (!dryRun) writeFileSync(notePath, scaffoldReleaseNote(readFileSync(templatePath, 'utf8'), version, date, previousTag));
+        try {
+            // 'wx' creates the note only if it does not exist yet: one call decides, no check-then-write.
+            writeFileSync(notePath, scaffoldReleaseNote(template, version, date, previousTag), { flag: 'wx' });
+            console.log(`  ${mark}  ${rel(notePath)} — scaffolded from release-notes/TEMPLATE.md`);
+        } catch (e) {
+            if ((e as { code?: string }).code !== 'EEXIST') throw e;
+            console.log(`  =  ${rel(notePath)} — exists, left alone`);
+        }
     }
 
     console.log(`
