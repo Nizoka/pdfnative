@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CLI use cases — pdfnative</title>
-  <meta name="description" content="Four pdfnative-cli v1.5.0 architectures: byte-reproducible builds, a PDF/X-4 press handoff from a JSON template, a house font and book typesetting without a code change, and a process contract any orchestrator can drive.">
+  <meta name="description" content="Five pdfnative-cli v1.6.0 architectures: byte-reproducible builds, a PDF/X-4 press handoff from a JSON template, a house font and book typesetting without a code change, a process contract any orchestrator can drive, and a right-to-left letter that extracts in logical order.">
   <link rel="canonical" href="https://pdfnative.dev/guides/use-cases-cli.html">
   <link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/use-cases-cli.html">
   <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/use-cases-cli.html">
@@ -15,21 +15,21 @@
   <meta property="og:locale" content="en_US">
   <meta property="og:url" content="https://pdfnative.dev/guides/use-cases-cli.html">
   <meta property="og:title" content="CLI use cases — pdfnative">
-  <meta property="og:description" content="Byte-reproducible document builds, a PDF/X-4 press handoff from a JSON template, a house font and book typesetting without a code change, and an any-language orchestrator on the process contract — four CLI architectures, three with diagrams, each built from shipped flags.">
+  <meta property="og:description" content="Byte-reproducible document builds, a PDF/X-4 press handoff from a JSON template, a house font and book typesetting without a code change, an any-language orchestrator on the process contract, and a right-to-left letter that extracts as typed — five CLI architectures, four with diagrams, each built from shipped flags.">
   <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
   <meta property="og:image:alt" content="pdfnative — pure native PDF generation, zero dependencies">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="CLI use cases — pdfnative">
-  <meta name="twitter:description" content="Four pdfnative-cli v1.5.0 use cases: reproducible builds, PDF/X-4 press handoff, a house font from disk, and a process contract for any orchestrator.">
+  <meta name="twitter:description" content="Five pdfnative-cli v1.6.0 use cases: reproducible builds, PDF/X-4 press handoff, a house font from disk, a process contract for any orchestrator, and right-to-left text that extracts as typed.">
   <meta name="twitter:image" content="https://pdfnative.dev/assets/og-image.png">
   <link rel="icon" type="image/svg+xml" href="../favicon.svg">
   <link rel="stylesheet" href="../style.css">
   <link rel="stylesheet" href="guide.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
   <!-- guide:ld:start -->
-  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://pdfnative.dev/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://pdfnative.dev/guides/"},{"@type":"ListItem","position":3,"name":"CLI use cases","item":"https://pdfnative.dev/guides/use-cases-cli.html"}]},{"@type":"TechArticle","headline":"CLI use cases","description":"Four pdfnative-cli v1.5.0 architectures: byte-reproducible builds, a PDF/X-4 press handoff from a JSON template, a house font and book typesetting without a code change, and a process contract any orchestrator can drive.","inLanguage":"en","author":{"@type":"Organization","name":"Nizoka","url":"https://github.com/Nizoka"},"publisher":{"@type":"Organization","name":"pdfnative","url":"https://pdfnative.dev","logo":{"@type":"ImageObject","url":"https://pdfnative.dev/assets/logo.svg"}},"mainEntityOfPage":{"@type":"WebPage","@id":"https://pdfnative.dev/guides/use-cases-cli.html"},"isPartOf":{"@type":"WebSite","name":"pdfnative","url":"https://pdfnative.dev"}}]}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://pdfnative.dev/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://pdfnative.dev/guides/"},{"@type":"ListItem","position":3,"name":"CLI use cases","item":"https://pdfnative.dev/guides/use-cases-cli.html"}]},{"@type":"TechArticle","headline":"CLI use cases","description":"Five pdfnative-cli v1.6.0 architectures: byte-reproducible builds, a PDF/X-4 press handoff from a JSON template, a house font and book typesetting without a code change, a process contract any orchestrator can drive, and a right-to-left letter that extracts in logical order.","inLanguage":"en","author":{"@type":"Organization","name":"Nizoka","url":"https://github.com/Nizoka"},"publisher":{"@type":"Organization","name":"pdfnative","url":"https://pdfnative.dev","logo":{"@type":"ImageObject","url":"https://pdfnative.dev/assets/logo.svg"}},"mainEntityOfPage":{"@type":"WebPage","@id":"https://pdfnative.dev/guides/use-cases-cli.html"},"isPartOf":{"@type":"WebSite","name":"pdfnative","url":"https://pdfnative.dev"}}]}</script>
   <!-- guide:ld:end -->
 </head>
 <body>
@@ -66,12 +66,13 @@
 <!-- guide:render:start -->
 <h1 id="cli-use-cases">CLI use cases</h1>
 <blockquote>
-<p><strong>Four architectures on pdfnative-cli v1.5.0 (pdfnative ≥ 1.8.0, Node ≥ 22),
-each assembled from flags that ship today.</strong> They extend the
-<a href="use-cases.html">ecosystem use cases</a> with what only a command line does
-well — byte-reproducible builds, a PDF/X-4 press handoff, a house font
-without a code change and a process contract any language can drive — and
-every flag below is documented in the <a href="cli.html">CLI guide</a>.</p>
+<p><strong>Five architectures on pdfnative-cli v1.6.0 (requires pdfnative ≥ 1.9.0 —
+pins <code>^1.9.0</code>; Node ≥ 22), each assembled from flags that ship today.</strong> They
+extend the <a href="use-cases.html">ecosystem use cases</a> with what only a command
+line does well — byte-reproducible builds, a PDF/X-4 press handoff, a house
+font without a code change, a process contract any language can drive and a
+right-to-left letter that extracts as typed — and every flag below is
+documented in the <a href="cli.html">CLI guide</a>.</p>
 </blockquote>
 <p>Each case follows the hub&#39;s convention: the problem, the load-bearing
 invocation, what you gain and where it stops — with an architecture diagram
@@ -144,13 +145,15 @@ gate with <code>compare --mode both</code>, which survives exactly that.</p>
 <p>A printer&#39;s preflight is the most expensive place to learn that a logo was
 RGB, a form font was not embedded or the output intent was missing: the job is
 already late. PDF/X-4 (ISO 15930-7) is the exchange format press workflows
-expect, and v1.5.0 writes it from the same JSON template as every other
-document — with the claim <strong>refused at build time</strong> when its prerequisites do
+expect, and the CLI has written it since v1.5.0 from the same JSON template
+as every other document — since v1.6.0 with spot plates and next to a PDF/A-2
+claim — with the claim <strong>refused at build time</strong> when its prerequisites do
 not hold, rather than discovered at the printer.</p>
 <p><img src="../assets/use-case-press-pdfx.svg" alt="Architecture: a JSON template with CMYK colours, colour bars and a trim box, together with the printer&#39;s ICC output profile, is rendered by pdfnative render with the PDF/X-4 claim and the strict gate; engine coherence errors and PDF/X diagnostics fail the build before the first byte. The resulting PDF is asserted by pdfnative inspect --check pdfx, whose exit code 0 or 1 gates the handoff. A dry run of the same render gives the same verdict without writing a file. The final printer preflight, drawn dashed, happens outside pdfnative."></p>
 <pre><code class="language-bash"># The template carries CMYK colours (&quot;c m y k&quot; in 0–1 or [c,m,y,k] in percent),
-# layout.print.bleed (derives the TrimBox) and layout.print.marks.colourBars.
-# --output-intent-icc: the printer&#39;s prtr profile (16 MiB cap);
+# layout.print.bleed (derives the TrimBox), layout.print.marks.colourBars and,
+# since v1.6.0, layout.print.spotColours painted by { &quot;spot&quot;: … } values.
+# --output-intent-icc: the printer&#39;s prtr profile, CMYK or Gray (16 MiB cap);
 # --trapped: PDF/X needs true|false, never unknown;
 # --font latin --lang latin: every font embedded;
 # --strict: PDFX_* diagnostics fail before any byte.
@@ -169,11 +172,20 @@ pdfnative --json --dry-run render --input templates/brochure.json \
 
 # Assert the claim on any file: exit 0 when the prerequisites hold, 1 otherwise.
 pdfnative inspect --input out/brochure.pdf --check pdfx --json --summary
+
+# Since v1.6.0: archive and press in one file — PDF/A-2b and PDF/X-4 together,
+# both asserted by one inspect run (--check takes a comma list).
+pdfnative render --input templates/brochure.json --output out/brochure-dual.pdf \
+  --tagged pdfa2b --pdfx pdfx4 \
+  --output-intent-icc press/printer.icc --trapped false \
+  --font latin --lang latin --strict
+pdfnative inspect --input out/brochure-dual.pdf --check pdfa,pdfx --json --summary
 </code></pre>
 <p>Two layers refuse a bad file. Engine coherence errors — no output intent, an
-ICC profile without the <code>acsp</code> signature, <code>layout.pdfx</code> combined with
-<code>layout.tagged</code>, an unknown trapping state — map to <code>E_INPUT</code> and produce no
-output at all. Under <code>--strict</code>, the conformance diagnostics
+ICC profile without the <code>acsp</code> signature, <code>layout.pdfx</code> combined with a
+PDF/A-1 or PDF/A-3 <code>layout.tagged</code> level, an unknown trapping state, a spot
+plate painted but never declared — map to <code>E_INPUT</code> and produce no output at
+all. Under <code>--strict</code>, the conformance diagnostics
 <code>PDFX_NO_FONT_ENTRIES</code>, <code>PDFX_DEVICE_CMYK</code> and <code>PDFX_ANNOTATIONS</code> escalate to
 <code>E_CHECK_FAILED</code> before the first output byte; without it they are stderr
 warnings and a <code>diagnostics[]</code> array in the envelope, which also carries
@@ -192,8 +204,15 @@ envelope; nothing touches the disk.</li>
 path you name (or the layout JSON carries the profile as an inline byte
 array, under the same 16 MiB cap); no JSON payload can ever name a file on
 disk.</li>
-<li><strong>One template, two markets</strong> — the same JSON renders to PDF/A for the
-archive and PDF/X-4 for the press by changing the conformance flags.</li>
+<li><strong>One template, two markets — or one file for both</strong> — the same JSON
+renders to PDF/A for the archive and PDF/X-4 for the press by changing the
+conformance flags, and since v1.6.0 <code>--tagged pdfa2b</code> (or <code>pdfa2u</code>) next to
+<code>--pdfx pdfx4</code> writes both claims into one file.</li>
+<li><strong>Spot plates from the JSON</strong> — <code>layout.print.spotColours</code> declares the
+inks (name plus a CMYK or RGB alternate) and <code>{ &quot;spot&quot;: &quot;PANTONE 300 C&quot; }</code>,
+<code>{ &quot;spot&quot;: …, &quot;tint&quot;: 0.5 }</code> or <code>{ &quot;inks&quot;: … }</code> colour values paint them as
+<code>/Separation</code> and <code>/DeviceN</code>; like every <code>print.*</code> option it is JSON-only,
+with no flag.</li>
 </ul>
 <p>The MCP server exposes the same claim as <code>pdfx: &#39;pdfx4&#39;</code> on its generation
 tools and checks it with <code>validate_pdf</code> and <code>standard: &#39;pdf-x-4&#39;</code>; the React
@@ -203,12 +222,18 @@ engine&#39;s <code>validatePdfX</code>, one import away.</p>
 not a certified preflight</strong> — it checks the output intent, the page boxes,
 font embedding and forbidden annotations, not colour appearance or rendering;
 the printer&#39;s preflight still runs. Only PDF/X-4 is exposed: no PDF/X-1a, no
-PDF/X-3, and no spot colours through the CLI yet — the engine&#39;s
-<code>print.spotColours</code> (1.9.0) waits for a CLI release. <code>metadata</code> rewrites the
-XMP without the PDF/X identification, so re-check any file you edit afterwards.
-In CLI 1.5.0 the claim is exclusive with PDF/A (<code>--tagged</code>) and with
-encryption — the pre-check exits 2 before the build — although the engine
-writes the dual PDF/A-2 + PDF/X-4 claim since 1.9.0. And no press profile ships: the <code>synthetic-cmyk.icc</code> under
+PDF/X-3. Spot colours are JSON-only since v1.6.0 — <code>layout.print.spotColours</code>
+plus <code>{ &quot;spot&quot; }</code> / <code>{ &quot;inks&quot; }</code> values — and the CLI adds no validator of its
+own: an undeclared plate or a mix across alternate spaces is the engine&#39;s
+<code>Spot colour …</code> / <code>Ink mix …</code> error, transmitted as <code>E_INPUT</code> (its
+<code>Invalid spot colour</code> / <code>Invalid ink mix</code> shape errors come back as <code>E_RUNTIME</code>), and there is no RGB-to-CMYK
+conversion of a process colour. <code>metadata</code> rewrites the XMP without the PDF/X
+identification, so re-check any file you edit afterwards. Since v1.6.0 the
+claim combines with PDF/A-2b or PDF/A-2u (<code>--tagged pdfa2b --pdfx pdfx4</code>,
+verified in one run by <code>inspect --check pdfa,pdfx</code>); PDF/A-1b and PDF/A-3b
+with <code>--pdfx</code> are refused by the engine (<code>E_INPUT</code>, no CLI pre-check), and
+encryption stays exclusive — PDF/X forbids it, and the usage error exits 2
+before the build. And no press profile ships: the <code>synthetic-cmyk.icc</code> under
 the CLI&#39;s samples is structurally valid and colourimetrically meaningless —
 ask the printer for theirs.</p>
 <h2 id="case-3--a-house-font-and-book-typesetting-without-a-code-change">Case 3 — A house font and book typesetting without a code change<a class="heading-anchor" href="#case-3--a-house-font-and-book-typesetting-without-a-code-change" aria-label="Link to this section">#</a></h2>
@@ -327,7 +352,11 @@ any path, and the JSON is compact by default under <code>--json</code>.</li>
 <li><strong>Offline by default</strong> — the only network opt-ins are explicit flags
 (<code>sign --timestamp</code>, <code>ltv collect|add --online</code>, <code>doc-timestamp --url</code>,
 <code>verify --revocation online</code>), each behind an SSRF guard, each failing with
-<code>E_NETWORK</code> rather than a silent fallback.</li>
+<code>E_NETWORK</code> rather than a silent fallback. Since v1.6.0 the air-gapped
+ladder has a second offline rung next to <code>ltv embed --data</code>: <code>ltv embed --cert &lt;pem|der&gt; --ocsp &lt;der&gt; --crl &lt;der&gt; --match all|chain</code> builds the
+<code>/DSS</code> from material you already hold — every flag repeatable, 16 MiB per
+file, nothing fetched, exclusive with <code>--data</code> (one or the other, exit 2
+for both).</li>
 </ul>
 <p>Honest limits: <code>inspect</code>, <code>verify</code> and <code>batch</code> put their result <strong>on stdout as
 JSON</strong>, not in the envelope — on success there may be no stderr line at all,
@@ -336,15 +365,126 @@ positional arguments and are not callable from a <code>batch --manifest</code> p
 yet; run them as their own process. And the CLI is stateless by design — one
 process per task, no daemon, no session — so concurrency, retries and queueing
 are the orchestrator&#39;s job, driven by the exit code.</p>
+<h2 id="case-5--right-to-left-letter-in-logical-order-text-out">Case 5 — Right-to-left letter in, logical-order text out<a class="heading-anchor" href="#case-5--right-to-left-letter-in-logical-order-text-out" aria-label="Link to this section">#</a></h2>
+<!-- demo-language: ar (one word in visual and in logical order) -->
+<p>A customer letter arrives as a JSON template with an Arabic body, a Hebrew
+body and a Latin closing, and the rendered PDF has to feed a search or RAG
+index afterwards. Right-to-left text breaks a PDF pipeline in two places. On
+the way in, the paragraphs are set like Latin — left-aligned, justified from
+the wrong edge — unless somebody annotates each block. On the way out, what
+extracts from the file comes back letter by letter in <strong>visual</strong> order, <code>ةيبرع</code>
+for <code>عربية</code>, because a content stream stores glyphs as drawn and nothing says
+which way to read them. Since v1.6.0 (pdfnative ≥ 1.9.0) one flag fixes the
+first and the engine fixes the second: <code>--direction auto</code> resolves each
+paragraph&#39;s base direction from its first strong character (full UAX #9), and
+every untagged right-to-left run leaves the writer as a <code>/Span /ActualText</code>
+carrying its logical text — which <code>extract-text</code> returns <strong>as typed, with no
+flag and no PDF/A claim</strong>.</p>
+<p><img src="../assets/use-case-rtl-roundtrip.svg" alt="Architecture: a JSON letter with Arabic and Hebrew paragraphs under layout.direction auto is rendered by pdfnative render with --direction auto and the ar, he and latin font modules into an untagged letter.pdf, where every right-to-left run is a /Span /ActualText span carrying its logical text inside one text object per line. pdfnative extract-text --format ndjson reads the file with no extra flag — the span is applied once, as Chrome and Acrobat Reader do — and writes one JSON object per page in logical order, which a search or RAG index ingests page by page without a reversal heuristic or an OCR step. The footer names --actual-text false as the switch that drops the spans (bare runs in visual order, not the 1.8.0 bytes), and the limits: a Thai above vowel and tone mark pair and a line mixing directions extract geometrically, and watermark and form-label text carries no span."></p>
+<!-- demo-language: ar, he (right-to-left sample text) -->
+<pre><code class="language-json">{
+  &quot;title&quot;: &quot;Right-to-left letter&quot;,
+  &quot;layout&quot;: { &quot;direction&quot;: &quot;auto&quot; },
+  &quot;blocks&quot;: [
+    { &quot;type&quot;: &quot;heading&quot;, &quot;text&quot;: &quot;Right-to-left letter&quot;, &quot;level&quot;: 1 },
+    { &quot;type&quot;: &quot;paragraph&quot;, &quot;text&quot;: &quot;السلام عليكم ورحمة الله وبركاته. هذه الفقرة مكتوبة من اليمين إلى اليسار، وتحتوي على أرقام مثل 2026 وكلمات لاتينية مثل pdfnative داخل الجملة.&quot;, &quot;align&quot;: &quot;justify&quot; },
+    { &quot;type&quot;: &quot;paragraph&quot;, &quot;text&quot;: &quot;שלום עולם, ברוכים הבאים. פסקה זו נכתבת מימין לשמאל ומיושרת לימין באופן אוטומטי.&quot;, &quot;align&quot;: &quot;justify&quot; },
+    { &quot;type&quot;: &quot;paragraph&quot;, &quot;text&quot;: &quot;هذه الفقرة تُجبر على الاتجاه من اليسار إلى اليمين عبر direction: ltr على الكتلة نفسها.&quot;, &quot;direction&quot;: &quot;ltr&quot; },
+    { &quot;type&quot;: &quot;paragraph&quot;, &quot;text&quot;: &quot;Signed on 2026-01-01 — the Latin closing is set left to right.&quot; }
+  ]
+}
+</code></pre>
+<pre><code class="language-bash"># --direction auto: every paragraph resolves its own base direction (UAX #9
+# P2–P3); omit the flag and the 1.8.0 left-aligned paragraphs stay — there
+# is no default. --font registers the three modules, --lang orders the
+# fallback; --json: the envelope carries &quot;direction&quot;: &quot;auto&quot;.
+pdfnative --json render --input letter.json --output letter.pdf \
+  --direction auto \
+  --font ar --font he --font latin --lang ar,he,latin
+
+# Logical order, as typed — one JSON object per page for the index.
+pdfnative extract-text --input letter.pdf --format ndjson &gt; letter.ndjson
+
+# The same page without the spans (not the 1.8.0 bytes): every letter is
+# still there, in visual order.
+pdfnative render --input letter.json --output letter-bare.pdf \
+  --direction auto --actual-text false \
+  --font ar --font he --font latin --lang ar,he,latin
+</code></pre>
+<pre><code class="language-python">import json
+
+# index is your own search or RAG client; its add() signature is yours
+with open(&quot;letter.ndjson&quot;, encoding=&quot;utf-8&quot;) as pages:   # {&quot;pageIndex&quot;: 0, &quot;text&quot;: &quot;…&quot;} per line
+    for line in pages:
+        page = json.loads(line)
+        index.add(doc_id=&quot;letter&quot;, page=page[&quot;pageIndex&quot;], text=page[&quot;text&quot;])  # logical order, as typed
+</code></pre>
+<p><code>--direction</code> has no default. Omitted, nothing is set and the output is the
+1.8.0 behaviour: the bidi algorithm already orders the letters correctly, but
+every paragraph is set left-aligned, like Latin. <code>auto</code> aligns right-to-left
+paragraphs to the right and justifies them in visual order; <code>rtl</code> and <code>ltr</code>
+force a base direction on every paragraph; a paragraph block&#39;s own
+<code>direction</code> wins over all three, which is how the third paragraph above stays
+left to right. The value also travels as <code>layout.direction</code> through the
+document JSON or a <code>--layout</code> file, flags winning, and the <code>--json</code> envelope
+carries <code>direction</code> whenever it was set. <code>actualText: false</code> appears in the
+envelope only when the opt-out was used — the default emits nothing, so an
+envelope without the key means the spans are there.</p>
+<p>The extraction side needs no flag. pdfnative 1.9.0 wraps every untagged
+right-to-left run, and every shaped run whose glyph order differs from its
+text (an Indic pre-base vowel sign or reph, a Khmer or Myanmar pre-base vowel,
+a Thai tone mark set before a below vowel), in a <code>/Span /ActualText</code> carrying
+its logical text, inside one text object per line — the structure Skia and
+Chrome write — so Acrobat Reader, Chrome and <code>extract-text</code> all return the
+source string once. Tagged output (<code>--tagged</code>) carried it already in its
+structure spans; the untagged letter above needs no PDF/A claim to extract as
+typed. <code>--actual-text false</code> is the one switch that drops the spans: the bare runs
+come back in visual order, as 1.8.0 wrote them — not the 1.8.0 bytes, since
+the 1.9.0 subsets and line structure still apply — and the logical-order
+guarantee goes with them.</p>
+<p>What you gain, concretely:</p>
+<!-- demo-language: ar (the greeting of the second item, logical order) -->
+<ul>
+<li><strong>A letter set the way its readers expect</strong> — right-aligned, justified in
+visual order, with the Latin closing left to right and no per-block
+annotation.</li>
+<li><strong>Logical-order text for the index, tagged or not</strong> — <code>extract-text</code>
+returns <code>السلام عليكم</code>, not its mirror image, from an untagged file; the
+NDJSON streams page by page into a retrieval pipeline with no reversal
+heuristic and no OCR step. <code>--runs</code> adds <code>{ text, x, y, fontSize, fontName }</code> when the index wants positions.</li>
+<li><strong>One switch for the spans</strong> — <code>--actual-text false</code> is the only knob,
+named in the envelope, for a pipeline that must keep the bare runs (it
+removes the spans; it does not restore 1.8.0 bytes).</li>
+<li><strong>The same letter, three surfaces</strong> — the MCP server takes <code>direction</code> and
+<code>actualText</code> on its nine document tools and <code>onStreamError</code> on
+<code>extract_text</code>; the React renderer takes <code>&lt;Document direction&gt;</code> and
+<code>&lt;Paragraph direction&gt;</code>, with <code>layout.actualText: false</code> as its layout-only
+opt-out.</li>
+</ul>
+<!-- demo-language: th (one Thai cluster in geometric and in logical order) -->
+<p>Honest limits: a Thai above vowel and tone mark pair may still extract in
+<strong>geometric order</strong> from untagged output (<code>ตั้ง</code> comes back as <code>ตัง้</code>) — the
+ToUnicode is right and the span covers reordered clusters, not that pair. A
+line that mixes directions extracts <strong>run by run</strong>: each right-to-left run
+logical, the runs in geometric order, what a Chrome-printed page gives — so
+keep a sentence the index must quote verbatim in one direction. Text drawn
+outside the paragraph flow — a watermark, a form label — carries no span.
+And <code>extract-text</code> refuses rather than guesses: under <code>--on-stream-error limit</code> (the default) a content or font stream past the global
+<code>--max-inflate-size</code> (100 MiB) is <code>E_INPUT</code>, with the message naming both
+remedies — raise the cap, or <code>--on-stream-error skip</code> to read the page without
+that stream&#39;s text; <code>throw</code> fails on any undecodable stream, while <code>limit</code>
+still skips a corrupt one as before. Branch on the code and prefer <code>limit</code> for
+untrusted input; <code>compare</code> takes the same flag, and only <code>throw</code> rules out an
+equal verdict over an unread stream.</p>
 <h2 id="see-also">See also<a class="heading-anchor" href="#see-also" aria-label="Link to this section">#</a></h2>
 <ul>
 <li><a href="use-cases.html">Ecosystem use cases</a> — the hub: five cross-surface
 architectures, including the CI regression gate and the air-gapped PAdES
 ladder these cases build on.</li>
-<li><a href="cli.html">CLI guide</a> — the complete v1.5.0 command reference behind every
+<li><a href="cli.html">CLI guide</a> — the complete v1.6.0 command reference behind every
 flag above.</li>
 <li><a href="use-cases-mcp.html">MCP use cases</a> and <a href="use-cases-react.html">React use cases</a>
-— three cases each, the same engine seen from the other two surfaces.</li>
+— four cases each, the same engine seen from the other two surfaces.</li>
 <li><a href="../playgrounds/cli.html">CLI playground</a> — compose a <code>pdfnative</code> invocation
 in the browser.</li>
 <li><a href="../playgrounds/reproducible.html">Reproducible output playground</a> — pin a

@@ -175,15 +175,23 @@ into the resolved local install, wire up the local mapping, and the very next
 MCP tool call renders with it — no release of either package in the loop. That
 is exactly how the mathematical-symbols gap above was closed locally before
 Noto Sans Math shipped upstream.</p>
-<p>Two honest limits, so the pattern is used with open eyes:</p>
+<p>One honest limit and one shipped alternative, so the pattern is used with open
+eyes:</p>
 <ul>
 <li>The <strong>published</strong> <code>add_international_text</code> tool exposes a closed <code>lang</code> enum
 in its JSON Schema (an unknown code is rejected with <code>UNSUPPORTED_LANG</code>), so
 serving a <em>new</em> language code requires the agent to adjust the local mapping
 too — it is a local code-level extension, not a configuration flag.</li>
-<li>There is <strong>no operator-facing extension point yet</strong> (no fonts-directory
-environment variable). Exposing one is a roadmap candidate, not a shipped
-capability.</li>
+<li>Since pdfnative-mcp 1.8.0 there <strong>is an operator-facing extension point</strong>:
+<code>PDFNATIVE_MCP_FONT_DIR</code>. The operator points it at a directory of
+<code>.ttf</code> / <code>.otf</code> files; at boot every file is compiled by the engine&#39;s own
+font compiler (<code>parseFontData</code> from <code>pdfnative/tools</code>) and registered under
+a slug (the file&#39;s base name folded to <code>[a-z0-9-]</code>), which a call then names
+through the <code>font</code> input of <code>generate_basic_pdf</code>, <code>add_international_text</code>
+and <code>inspect_layout</code> — an unknown slug is <code>FONT_NOT_FOUND</code>. No tool argument
+ever carries a path, and an invalid directory refuses to start. The
+local-install pattern above remains the way to add a <em>language code</em> to the
+closed <code>lang</code> enum; the font directory is the way to add a <em>face</em>.</li>
 </ul>
 <p>Local, in-place extension by an agent and upstreaming through the
 <a href="ai-governance.md">governance contract</a> are complementary: the first unblocks
@@ -204,7 +212,8 @@ photos. Image-generating agents (for example Antigravity, ChatGPT, and other
 multimodal assistants) can pipe that output straight into a pdfnative document.
 pdfnative treats a generated PNG/JPEG exactly like any other image: it parses it
 natively and embeds it as an Image XObject (<code>/DCTDecode</code> for JPEG,
-<code>/FlateDecode</code> for PNG) — no rasterization, no headless browser.</p>
+<code>/FlateDecode</code> for PNG, and since 1.9.0 <code>/JPXDecode</code> for JPEG 2000) — no
+rasterization, no headless browser.</p>
 <h3 id="via-the-mcp-server--embed_image">Via the MCP server — <code>embed_image</code><a class="heading-anchor" href="#via-the-mcp-server--embed_image" aria-label="Link to this section">#</a></h3>
 <p>An agent that produced an image returns it as base64 and calls <code>embed_image</code>:</p>
 <pre><code class="language-jsonc">{
@@ -217,6 +226,9 @@ natively and embeds it as an Image XObject (<code>/DCTDecode</code> for JPEG,
   }
 }
 </code></pre>
+<p><code>mimeType</code> is <code>image/png</code>, <code>image/jpeg</code> or — since pdfnative-mcp 1.8.0 —
+<code>image/jp2</code> (a JP2 file or a raw JPEG 2000 codestream); the magic bytes are
+checked against it, so a mislabelled payload is rejected rather than embedded.</p>
 <p>For a richer layout, the same base64 payload can be dropped into an <code>image</code>
 block on <code>generate_basic_pdf</code>, alongside headings, tables, and barcodes the agent
 assembles in the same call.</p>

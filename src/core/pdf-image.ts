@@ -5,7 +5,8 @@
  * Zero dependencies — pure binary parsing from Uint8Array.
  *
  * JPEG: DCTDecode — raw bytes injected directly into PDF stream.
- * PNG: FlateDecode — IDAT chunks concatenated; alpha separated to SMask.
+ * PNG: FlateDecode — IDAT chunks concatenated; alpha-channel PNGs (colour types 4 and 6)
+ *      are refused by parsePNG, so buildSMaskXObject is exported but not reached.
  *
  * ISO 32000-1 §8.9 — Image XObjects
  * ISO 32000-1 §7.4.4 — DCTDecode filter (JPEG)
@@ -191,7 +192,8 @@ export function parseJPEG(bytes: Uint8Array): ParsedImage {
 
 /**
  * Parse a PNG image to extract dimensions, color type, and compressed image data.
- * Concatenates all IDAT chunks for FlateDecode. Separates alpha channel into SMask.
+ * Concatenates all IDAT chunks for FlateDecode. Alpha-channel PNGs (colour types 4 and 6)
+ * are refused — `smask` is always null and buildSMaskXObject is not reached.
  *
  * Limitations:
  *   - Interlaced PNGs (interlace method 1) are rejected

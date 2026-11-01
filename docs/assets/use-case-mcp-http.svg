@@ -16,7 +16,7 @@
 
   <rect width="960" height="560" fill="#F8FAFC"/>
   <text x="480" y="40" text-anchor="middle" font-size="21" font-weight="700" fill="#0F172A">One shared server, sandboxed files, bearer token</text>
-  <text x="480" y="62" text-anchor="middle" font-size="13" fill="#64748B">Streamable HTTP on loopback, file outputs as MCP resources — pdfnative-mcp v1.7.0</text>
+  <text x="480" y="62" text-anchor="middle" font-size="13" fill="#64748B">Streamable HTTP on loopback, file outputs as MCP resources — pdfnative-mcp v1.8.0</text>
 
   <!-- Result path: resource_link back to the clients (routed above the row) -->
   <path d="M700 116 L700 96 L140 96 L140 114" fill="none" stroke="#16A34A" stroke-width="1.75" stroke-dasharray="6 5" marker-end="url(#ucm-ah-green)"/>
@@ -41,7 +41,7 @@
 
   <!-- Server -->
   <rect x="606" y="116" width="314" height="88" rx="10" fill="#F0FDF4" stroke="#86EFAC" stroke-width="1.25"/>
-  <text x="763" y="143" text-anchor="middle" font-size="13.5" font-weight="700" fill="#166534">pdfnative-mcp v1.7.0 — 28 tools</text>
+  <text x="763" y="143" text-anchor="middle" font-size="13.5" font-weight="700" fill="#166534">pdfnative-mcp v1.8.0 — 28 tools</text>
   <text x="763" y="163" text-anchor="middle" font-size="11.5" fill="#16A34A">stateless · MCP 2026-07-28 + legacy fallback</text>
   <text x="763" y="181" text-anchor="middle" font-size="11.5" fill="#16A34A">one process for every client</text>
 

@@ -66,7 +66,7 @@
 <!-- guide:render:start -->
 <h1 id="images--jpeg-png-and-jpeg-2000">Images — JPEG, PNG and JPEG 2000</h1>
 <blockquote>
-<p><strong>JPEG and PNG since v1.0.0; JPEG 2000 since v1.9.0.</strong> An <code>image</code> block embeds the file&#39;s own bytes — nothing is decoded, recompressed or rasterised: a JPEG travels as <code>/DCTDecode</code>, a PNG as <code>/FlateDecode</code> with its alpha channel split into a soft mask, a JPEG 2000 file as <code>/JPXDecode</code> with the colour and opacity the codestream declares. The library reads only the headers it needs to write the Image XObject.</p>
+<p><strong>JPEG and PNG since v1.0.0; JPEG 2000 since v1.9.0.</strong> An <code>image</code> block embeds the file&#39;s own bytes — nothing is decoded, recompressed or rasterised: a JPEG travels as <code>/DCTDecode</code>, a PNG as <code>/FlateDecode</code> (greyscale or RGB, 8-bit, no alpha channel — flatten a transparent PNG first), a JPEG 2000 file as <code>/JPXDecode</code> with the colour and opacity the codestream declares. The library reads only the headers it needs to write the Image XObject.</p>
 </blockquote>
 <h2 id="tldr">TL;DR<a class="heading-anchor" href="#tldr" aria-label="Link to this section">#</a></h2>
 <pre><code class="language-ts">import { readFileSync } from &#39;node:fs&#39;;
@@ -103,7 +103,7 @@ const pdf = buildDocumentPDFBytes({
 <td>PNG</td>
 <td>the 8-byte signature</td>
 <td><code>/FlateDecode</code> with a PNG predictor (<code>/Predictor 15</code>), the IDAT chunks concatenated</td>
-<td>Width, height, bit depth and colour type from IHDR. Greyscale and RGB, with or without alpha; an alpha channel is separated into an <code>/SMask</code> image. 8-bit only; interlaced files are refused.</td>
+<td>Width, height, bit depth and colour type from IHDR. Greyscale (colour type 0) and RGB (2), 8-bit, non-interlaced. An alpha channel (colour types 4 and 6) is refused with <code>parsePNG: alpha channel PNGs (color type N) are not supported</code> — flatten the image before embedding it; palette PNGs (3), 16-bit depth and interlaced files are refused too.</td>
 </tr>
 <tr>
 <td>JPEG 2000 (v1.9.0)</td>
@@ -113,7 +113,7 @@ const pdf = buildDocumentPDFBytes({
 </tr>
 </tbody></table>
 <p>A JPEG 2000 image is a pass-through in the strictest sense: ISO 32000-1 §7.4.9 lets the viewer take the colour space, bit depth and opacity from the codestream, so the XObject omits <code>/ColorSpace</code> and <code>/BitsPerComponent</code> when the file declares its colour (<code>colr</code> box) and sets <code>/SMaskInData 1</code> when it carries an opacity channel. A raw codestream without a <code>colr</code> box is written with the device space its channel count implies. The file header becomes <code>%PDF-1.5</code>, the version that introduced <code>/JPXDecode</code>.</p>
-<p>What the library does <strong>not</strong> do: decode a JPEG 2000 codestream (no wavelet transform exists in pdfnative; viewers with JPX support — Acrobat, Chrome&#39;s PDFium, Firefox&#39;s pdf.js — draw it), convert formats, resample, or read TIFF and WebP (see the <a href="https://github.com/Nizoka/pdfnative/blob/main/ROADMAP.md" target="_blank" rel="noopener">roadmap</a>).</p>
+<p>What the library does <strong>not</strong> do: decode a JPEG 2000 codestream (no wavelet transform exists in pdfnative; viewers with JPX support — Acrobat, Chrome&#39;s PDFium, Firefox&#39;s pdf.js — draw it), split a PNG&#39;s alpha channel into a soft mask (the <code>buildSMaskXObject</code> writer is exported, but no parser feeds it: a transparent PNG is refused, not flattened), convert formats, resample, or read TIFF and WebP (see the <a href="https://github.com/Nizoka/pdfnative/blob/main/ROADMAP.md" target="_blank" rel="noopener">roadmap</a>).</p>
 <h2 id="inspecting-an-image-before-embedding-it">Inspecting an image before embedding it<a class="heading-anchor" href="#inspecting-an-image-before-embedding-it" aria-label="Link to this section">#</a></h2>
 <p>The parsers behind the block are exported:</p>
 <pre><code class="language-ts">import { detectImageFormat, parseImage, parseJPX } from &#39;pdfnative&#39;;
@@ -127,7 +127,7 @@ if (img.jpx) {
   img.jpx.bitDepth;
 }
 </code></pre>
-<p><code>parseJPX(bytes)</code> reads a JPEG 2000 file directly; <code>parseImage</code> dispatches on the detected format and throws a plain <code>Error</code> naming the defect for a truncated or unsupported file (a 16-bit or interlaced PNG, an image with no header).</p>
+<p><code>parseJPX(bytes)</code> reads a JPEG 2000 file directly; <code>parseImage</code> dispatches on the detected format and throws a plain <code>Error</code> naming the defect for a truncated or unsupported file (a PNG with an alpha channel, a palette, 16-bit depth or interlacing; an image with no header). <code>smask</code> is always <code>null</code> in the current release.</p>
 <h2 id="images-under-pdfa-and-pdfx">Images under PDF/A and PDF/X<a class="heading-anchor" href="#images-under-pdfa-and-pdfx" aria-label="Link to this section">#</a></h2>
 <ul>
 <li><strong>PDF/A-1</strong> (<code>tagged: &#39;pdfa1b&#39;</code>) forbids <code>/JPXDecode</code> (ISO 19005-1 §6.1.10): a JPEG 2000 image under PDF/A-1 raises <code>PDFA1_JPX_IMAGE</code> — a warning through <code>onDiagnostic</code> (the file is still written, with the PDF 1.4 header the claim demands, and veraPDF rejects it), an error that stops the build under <code>strict</code>.</li>

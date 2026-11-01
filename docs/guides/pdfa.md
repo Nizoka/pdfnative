@@ -127,7 +127,10 @@ claim (v1.8.0) reports through the same channel with `PDFX_NO_FONT_ENTRIES`,
 > `PDFA_DEVICE_CMYK_IMAGE`) in the tool result. Known engine limitation:
 > `add_form` (or a `formField` block) under a PDF/A claim still fails
 > veraPDF even with `embedFonts` — the AcroForm `/DR /Helv` font is an
-> unembedded Type1 (ISO 19005-2 §6.2.11.4.1).
+> unembedded Type1 (ISO 19005-2 §6.2.11.4.1). Since pdfnative-mcp 1.8.0,
+> `pdfA: 'pdfa2b' | 'pdfa2u'` combines with `pdfx: 'pdfx4'` for the dual
+> claim; on the CLI the same file comes from `--tagged pdfa2b --pdfx pdfx4`
+> (`pdfa1b` and `pdfa3b` are refused by the engine).
 
 ## v1.1.0 status — fully validated
 

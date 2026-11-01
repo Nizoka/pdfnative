@@ -256,7 +256,9 @@ pdfnative extract-text --input invoice.pdf --format text | grep -q 'Invoice #202
 ```
 
 - `inspect --check` takes repeatable, ANDed assertions — `pdfa`, `signed`,
-  `encrypted`, `pdfua` _(v1.1.0)_ — and sets the exit code accordingly; under
+  `encrypted`, `pdfua` _(v1.1.0)_, `pdfx` _(v1.5.0)_, and since v1.6.0 a
+  comma list (`--check pdfa,pdfx` asserts the dual claim) — and sets the exit
+  code accordingly; under
   `--json`, a failed assertion also emits the stable error class
   `E_CHECK_FAILED` in the machine-readable envelope on stderr
   (`{ ok: false, command, error: { code, message } }`).
@@ -268,6 +270,12 @@ pdfnative extract-text --input invoice.pdf --format text | grep -q 'Invoice #202
   digest, CMS signature value (RSA and ECDSA), certificate chain and trust
   against `--trust` roots, RFC 3161 timestamps, OCSP/CRL revocation — exit 1
   and `E_VERIFY_FAILED` on any failure *or on zero signatures*.
+- `extract-text --on-stream-error limit|throw|skip` _(v1.6.0)_ decides what an
+  over-budget content stream does to the verdict: the default `limit` fails
+  with `E_INPUT` naming the two remedies, so an over-cap stream never passes a
+  content assertion silently; a corrupt stream is still skipped under `limit`,
+  and `throw` fails on any undecodable stream (`compare` takes the same flag —
+  only `throw` rules out an equal verdict over an unread stream).
 
 The full command reference, including every `--check` flag and the `E_*`
 catalogue, is in the [CLI guide](cli.html).
@@ -283,6 +291,7 @@ read-only tools — the natural final step after any document tool call:
 | `inspect_layout` _(v1.6.0)_ | Pagination dry run for a prospective document — page count and block geometry, no PDF produced, no base64 output tokens spent. |
 | `validate_pdf` | Structural PDF/UA — `{ valid, errors, warnings }`. |
 | `verify_pdf` | Cryptographic signature verification; `ltv: true` _(v1.6.0)_ reports the achieved PAdES level (B-B → B-LTA). |
+| `extract_text` | Content presence — the text of every page; `onStreamError: 'limit' \| 'skip' \| 'throw'` _(v1.8.0)_ decides what an over-budget content stream does: `limit` (the default) fails the call with `PDF_PARSE_FAILED` and names the remedy, `skip` reads the rest (that page comes back empty, the 1.7.0 behaviour), `throw` fails on any undecodable stream. |
 
 ```jsonc
 { "tool": "inspect_pdf",

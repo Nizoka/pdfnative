@@ -140,7 +140,14 @@ without parsing prose. Key fields:
 ```
 
 The contract `applies_to` the whole ecosystem — `pdfnative`, `pdfnative-cli`,
-`pdfnative-mcp`, and `pdfnative-react`.
+`pdfnative-mcp`, and `pdfnative-react` — and each package serves it to the
+agent driving it: the CLI prints it with `pdfnative govern rules` /
+`govern policy` and validates a draft with `govern verify-issue`; since
+pdfnative-mcp 1.8.0 the server exposes it as the resources
+`pdfnative://governance/policy` (the JSON policy) and
+`pdfnative://governance/rules` (the protocol), always listed, sandbox or not;
+pdfnative-react exports the same two texts as `aiGovernancePolicy` and
+`agentRulesText`, plus `validateIssueDraft` for the draft check.
 
 <!-- verify-docs:allow version-token (historical release entry) -->
 Since pdfnative-mcp 1.6.0, that package's mirror of the charter also states

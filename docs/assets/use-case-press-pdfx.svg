@@ -16,7 +16,7 @@
 
   <rect width="960" height="560" fill="#F8FAFC"/>
   <text x="480" y="42" text-anchor="middle" font-size="21" font-weight="700" fill="#0F172A">Press handoff: PDF/X-4 from a JSON template</text>
-  <text x="480" y="66" text-anchor="middle" font-size="13" fill="#64748B">A claim the build refuses unless it holds — pdfnative-cli v1.5.0</text>
+  <text x="480" y="66" text-anchor="middle" font-size="13" fill="#64748B">A claim the build refuses unless it holds — pdfnative-cli v1.6.0</text>
 
   <!-- Inputs -->
   <rect x="40" y="104" width="210" height="64" rx="10" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.25"/>
@@ -73,6 +73,6 @@
 
   <!-- Footer -->
   <rect x="40" y="480" width="880" height="64" rx="12" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="1"/>
-  <text x="480" y="504" text-anchor="middle" font-size="12.5" font-weight="600" fill="#334155">Structural validation evidence, not a certified preflight. PDF/X-4 only: no PDF/X-1a, no PDF/X-3; spot colours are engine-only (1.9.0).</text>
-  <text x="480" y="524" text-anchor="middle" font-size="12.5" fill="#475569">The CLI claims PDF/X-4 or PDF/A, never both (the engine does since 1.9.0); metadata drops the PDF/X identification — re-check.</text>
+  <text x="480" y="504" text-anchor="middle" font-size="12.5" font-weight="600" fill="#334155">Structural validation evidence, not a certified preflight. PDF/X-4 only (no X-1a/X-3); spot colours via print.spotColours since 1.6.0.</text>
+  <text x="480" y="524" text-anchor="middle" font-size="12.5" fill="#475569">PDF/A-2b|2u + PDF/X-4 together since 1.6.0 (inspect --check pdfa,pdfx); metadata drops the PDF/X identification — re-check.</text>
 </svg>

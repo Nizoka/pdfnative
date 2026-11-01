@@ -357,16 +357,15 @@
       </li>
       <li>
         <a href="use-cases-cli.html">CLI use cases →</a>
-        <span class="guide-toc-desc">Four pdfnative-cli v1.5.0 architectures — byte-reproducible builds with <code>--creation-date</code> / <code>SOURCE_DATE_EPOCH</code> hashed and gated in CI, a PDF/X-4 press handoff refused at build time and checked by <code>inspect --check pdfx</code>, a house font with <code>--font-file</code> and the typography flags, and the exit-code / JSON-envelope contract that lets a Python or Go orchestrator drive all 21 commands.</span>
+        <span class="guide-toc-desc">Five pdfnative-cli v1.6.0 architectures — byte-reproducible builds with <code>--creation-date</code> / <code>SOURCE_DATE_EPOCH</code> hashed and gated in CI, a PDF/X-4 press handoff refused at build time and checked by <code>inspect --check pdfx</code>, a house font with <code>--font-file</code> and the typography flags, the exit-code / JSON-envelope contract that lets a Python or Go orchestrator drive all 21 commands, and a right-to-left letter rendered with <code>--direction auto</code> whose text comes back in logical order from <code>extract-text</code>.</span>
       </li>
       <li>
         <a href="use-cases-mcp.html">MCP use cases →</a>
-<!-- verify-docs:allow stale-token (historical: this companion release was built on pdfnative 1.8.0 (27 scripts)) -->
-        <span class="guide-toc-desc">Three pdfnative-mcp v1.7.0 architectures — one shared Streamable HTTP server behind a bearer token whose outputs are MCP resources, a preview-then-produce typesetting loop on <code>inspect_layout</code> that costs a few dozen tokens, and multilingual PDF/A notices in every script the engine shapes from one tool call. Each with its building blocks, one load-bearing call and its honest limits.</span>
+        <span class="guide-toc-desc">Four pdfnative-mcp v1.8.0 architectures — one shared Streamable HTTP server behind a bearer token whose outputs are MCP resources, a preview-then-produce typesetting loop on <code>inspect_layout</code> that costs a few dozen tokens, multilingual PDF/A notices in every script the engine shapes from one tool call, and an operator font sandbox (<code>PDFNATIVE_MCP_FONT_DIR</code>) whose file results carry a public <code>url</code> (<code>PDFNATIVE_MCP_OUTPUT_BASE_URL</code>) the server never requests. Each with its building blocks, one load-bearing call and its honest limits.</span>
       </li>
       <li>
         <a href="use-cases-react.html">React use cases →</a>
-        <span class="guide-toc-desc">Three pdfnative-react v1.3.0 architectures — lint JSX and stored DocSpecs in CI with the 37 rules before a byte is written, typeset long-form documents with the twelve typography keys, and render one component tree to a tagged PDF/A-2b portal file and a CMYK PDF/X-4 press file, with the lint rule that catches a leaked plate colour.</span>
+        <span class="guide-toc-desc">Four pdfnative-react v1.4.0 architectures — lint JSX and stored DocSpecs in CI with the 41 rules before a byte is written, typeset long-form documents with the twelve typography keys, render one component tree to a tagged PDF/A-2b portal file and a CMYK PDF/X-4 press file, with the lint rule that catches a leaked plate colour, and a spot-colour press sheet declared in <code>print.spotColours</code> that claims PDF/A-2b and PDF/X-4 together.</span>
       </li>
       <li>
         <a href="native-family.html">The native family →</a>
@@ -529,15 +528,15 @@
       </li>
       <li>
         <a href="../playgrounds/cli.html">CLI command builder →</a>
-        <span class="guide-toc-desc">Compose <code>pdfnative-cli</code> commands interactively — all twenty-one commands, from <code>render</code> and <code>fill</code> to the full PAdES ladder (<code>sign --timestamp</code> / <code>ltv</code> / <code>doc-timestamp</code>), <code>metadata</code>, <code>compare</code>, <code>batch --manifest</code> and <code>govern</code> — with inline validation and one-click presets, including the v1.5.0 typography, PDF/X-4, <code>--font-file</code> and <code>--creation-date</code> flags. The <a href="cli.html">CLI guide</a> is the complete flag reference.</span>
+        <span class="guide-toc-desc">Compose <code>pdfnative-cli</code> commands interactively — all 21 commands, from <code>render</code> and <code>fill</code> to the full PAdES ladder (<code>sign --timestamp</code> / <code>ltv</code> / <code>doc-timestamp</code>), <code>metadata</code>, <code>compare</code>, <code>batch --manifest</code> and <code>govern</code> — with inline validation and one-click presets, including the v1.6.0 ones — right-to-left text (<code>--direction</code>), spot colours, the PDF/A-2b + PDF/X-4 dual claim, JPEG 2000, the <code>extract-text</code> stream policy and offline LTV (<code>ltv embed</code>) — next to the typography, PDF/X-4, <code>--font-file</code> and <code>--creation-date</code> flags. The <a href="cli.html">CLI guide</a> is the complete flag reference.</span>
       </li>
       <li>
         <a href="../playgrounds/mcp.html">MCP tool explorer →</a>
-        <span class="guide-toc-desc">Browse the pdfnative-mcp toolset (28 tools), copy a ready-to-paste config snippet for Claude / Cursor / Continue / Zed, and generate the same PDFs an AI assistant would receive — including the v1.7.0 <code>typography</code>, CMYK and PDF/X-4 payloads — all in your browser.</span>
+        <span class="guide-toc-desc">Browse the pdfnative-mcp toolset (28 tools), copy a ready-to-paste config snippet for Claude / Cursor / Continue / Zed, and generate the same PDFs an AI assistant would receive — including the v1.8.0 payloads (<code>direction</code>, <code>print.spotColours</code>, the PDF/A + PDF/X-4 dual claim, JPEG 2000, operator fonts) next to <code>typography</code>, CMYK and PDF/X-4 — all in your browser.</span>
       </li>
       <li>
         <a href="../playgrounds/react.html">React renderer →</a>
-        <span class="guide-toc-desc">Write JSX in the browser and render a real PDF on-device via pdfnative-react — components compile to pdfnative blocks with no SaaS round-trip. Loaded from a CDN for the demo; the published package stays zero-dependency at its core. Presets cover the v1.3.0 typography, PDF/X-4, reproducible-output and lint surfaces.</span>
+        <span class="guide-toc-desc">Write JSX in the browser and render a real PDF on-device via pdfnative-react — components compile to pdfnative blocks with no SaaS round-trip. Loaded from a CDN for the demo; the published package stays zero-dependency at its core. Presets cover the v1.4.0 surfaces — <code>direction</code>, spot colours, the PDF/A-2b + PDF/X-4 dual claim, JPEG 2000 — next to typography, PDF/X-4, reproducible output and the 41-rule linter.</span>
       </li>
       <li>
         <a href="../playgrounds/reproducible.html">Reproducible output →</a>
@@ -545,7 +544,7 @@
       </li>
       <li>
         <a href="../playgrounds/docspec-lint.html">DocSpec lint →</a>
-        <span class="guide-toc-desc">Run pdfnative-react's <code>validateSpec</code> and <code>lintSpec</code> (37 rules) on a JSON <code>DocSpec</code> in your browser, read the findings before a byte is rendered, then render the fixed spec.</span>
+        <span class="guide-toc-desc">Run pdfnative-react's <code>validateSpec</code> and <code>lintSpec</code> (41 rules) on a JSON <code>DocSpec</code> in your browser, read the findings before a byte is rendered, then render the fixed spec.</span>
       </li>
     </ul>
 

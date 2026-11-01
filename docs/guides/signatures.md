@@ -368,4 +368,4 @@ for the idempotency proof.
 - [PDF/A conformance →](pdfa.html) — how signatures interact with PDF/A-2b/3b.
 - [Architecture →](architecture.html) — where the crypto module sits in the dependency graph.
 - [CLI →](cli.html) — `pdfnative-cli sign` wraps this exact pipeline.
-- [MCP integration →](mcp.html) — `pdfnative-mcp` exposes signing as an AI tool, and since v1.6.0 the complete PAdES ladder: `sign_pdf` (`profile: 'pades'`, RFC 3161 `timestamp`) → `add_ltv` (`/DSS` + `/VRI`, B-LT) → `timestamp_pdf` (`/DocTimeStamp`, B-LTA), verified with `verify_pdf ltv: true`.
+- [MCP integration →](mcp.html) — `pdfnative-mcp` exposes signing as an AI tool, and since v1.6.0 the complete PAdES ladder: `sign_pdf` (`profile: 'pades'`, RFC 3161 `timestamp`) → `add_ltv` (`/DSS` + `/VRI`, B-LT) → `timestamp_pdf` (`/DocTimeStamp`, B-LTA), verified with `verify_pdf ltv: true`. Since pdfnative-mcp 1.8.0, `add_ltv` also takes offline material (`mode: 'offline'` with DER certificates, OCSP responses and CRLs, filtered by `match: 'all' | 'chain'`); the CLI equivalent is `pdfnative ltv embed --cert/--ocsp/--crl --match` since pdfnative-cli 1.6.0 — zero network either way.
