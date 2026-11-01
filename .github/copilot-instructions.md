@@ -63,7 +63,7 @@ Other top-level directories: `fonts/` (generated font-data modules + git-ignored
 ```bash
 npm run gate                 # CI profile (default)
 npm run gate -- --fast       # typecheck:all, lint, test, verify:docs — before every commit
-npm run gate -- --publish    # + test:generate, verify:samples, validate:pdfa, verify:fonts, compat:previous, verify:diagrams, verify:bundle
+npm run gate -- --publish    # + test:generate, verify:samples, validate:pdfa, verify:fonts, compat:previous, verify:diagrams, verify:overflow, verify:bundle
 npm run gate -- --only <step>   # one step; --json for machine output
 ```
 

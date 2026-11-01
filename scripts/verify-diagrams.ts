@@ -26,13 +26,12 @@
  * `CHROME_PATH` selects the browser. No npm dependency.
  */
 
-import { spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 import { analyseDiagram, type DiagramGeometry } from './lib/diagram-geometry.js';
-import { findChromium } from './lib/chromium.js';
+import { dumpDom, findChromium } from './lib/chromium.js';
 
 const ROOT = resolve(import.meta.dirname, '..');
 const ASSETS = join(ROOT, 'docs', 'assets');
@@ -91,27 +90,22 @@ const ARIAL = '<style>svg text { font-family: Arial, "Liberation Sans", sans-ser
 
 interface Finding { readonly file: string; readonly pass: string; readonly kind: string; readonly message: string }
 
-function measure(browser: string, dir: string, file: string, svg: string, pass: 'site fonts' | 'Arial'): DiagramGeometry | null {
+async function measure(browser: string, dir: string, file: string, svg: string, pass: 'site fonts' | 'Arial'): Promise<DiagramGeometry | null> {
     const width = /viewBox="[\d.]+ [\d.]+ ([\d.]+) ([\d.]+)"/.exec(svg);
     const sized = width ? svg.replace('<svg ', `<svg width="${width[1]}" height="${width[2]}" `) : svg;
     const page = join(dir, `${file}.${pass === 'Arial' ? 'arial' : 'site'}.html`);
     writeFileSync(page, `<!doctype html><html><head><meta charset="utf-8">${pass === 'Arial' ? ARIAL : ''}</head>` +
         `<body style="margin:0">${sized}<script>${COLLECTOR}</script></body></html>`);
-    const run = spawnSync(browser, [
-        '--headless=new', '--disable-gpu', '--no-sandbox', '--hide-scrollbars', '--no-first-run',
-        '--virtual-time-budget=3000', '--dump-dom', pathToFileURL(page).href,
-    ], { encoding: 'utf8', timeout: 60_000, maxBuffer: 64 * 1024 * 1024 });
-    if (run.error || run.status !== 0) {
-        const reason = run.error ? run.error.message : `exit ${String(run.status)}`;
-        process.stderr.write(`verify-diagrams: ${browser} failed on ${file} (${pass}): ${reason}\n${(run.stderr ?? '').slice(-2000)}\n`);
-        return null;
-    }
-    const encoded = /data-geometry="([A-Za-z0-9+/=]+)"/.exec(run.stdout ?? '')?.[1];
+    const dom = await dumpDom(browser, pathToFileURL(page).href, [], (reason, stderr) => {
+        process.stderr.write(`verify-diagrams: ${browser} failed on ${file} (${pass}): ${reason}\n${stderr.slice(-2000)}\n`);
+    });
+    if (dom === null) return null;
+    const encoded = /data-geometry="([A-Za-z0-9+/=]+)"/.exec(dom)?.[1];
     if (encoded === undefined) return null;
     return JSON.parse(Buffer.from(encoded, 'base64').toString('utf8')) as DiagramGeometry;
 }
 
-function main(): void {
+async function main(): Promise<void> {
     const browser = findChromium();
     if (!browser) {
         const reason = 'no Chromium-family browser found (set CHROME_PATH)';
@@ -130,7 +124,7 @@ function main(): void {
         for (const file of files) {
             const svg = readFileSync(join(ASSETS, file), 'utf8');
             for (const pass of ['site fonts', 'Arial'] as const) {
-                const geometry = measure(browser, dir, file, svg, pass);
+                const geometry = await measure(browser, dir, file, svg, pass);
                 if (!geometry) {
                     const error = `${file} (${pass}): the browser could not be launched or returned no measurement`;
                     process.stderr.write(`verify-diagrams: ${error}\n`);
@@ -154,4 +148,4 @@ function main(): void {
     if (findings.length > 0) process.exitCode = 1;
 }
 
-main();
+void main();

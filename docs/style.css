@@ -41,9 +41,10 @@
   --c-text:       #f1f5f9;
   --c-text-dim:   #aab6c6;
   --c-text-muted: #a3b0c2;
-  --c-primary:    #3b82f6;
+  --c-primary:    #60a5fa;
+  --c-primary-fg: #0f172a;
   --c-primary-dim:#60a5fa;
-  --c-accent:     #60a5fa;
+  --c-accent:     #93c5fd;
   --c-code-bg:    #0f172a;
   --c-code-text:  #e2e8f0;
   --c-bar:        #60a5fa;
@@ -62,9 +63,10 @@
     --c-text:       #f1f5f9;
     --c-text-dim:   #aab6c6;
     --c-text-muted: #a3b0c2;
-    --c-primary:    #3b82f6;
+    --c-primary:    #60a5fa;
+    --c-primary-fg: #0f172a;
     --c-primary-dim:#60a5fa;
-    --c-accent:     #60a5fa;
+    --c-accent:     #93c5fd;
     --c-code-bg:    #0f172a;
     --c-code-text:  #e2e8f0;
     --c-bar:        #60a5fa;
@@ -87,6 +89,13 @@ a { color: var(--c-primary); text-decoration: none; }
 a:hover { text-decoration: underline; }
 
 img, svg { max-width: 100%; height: auto; }
+
+/* Every code block scrolls inside itself: a long command must never widen
+   the page (the component rules below only repeat this for their own pre). */
+pre { max-width: 100%; overflow-x: auto; }
+/* A select is as wide as its longest option (the playground presets reach
+   ~400px); cap it so a phone-width form never pushes the page sideways. */
+select { max-width: 100%; }
 
 /* The [hidden] attribute must always win: author display rules on the same
    element (.btn { display: inline-flex }, .bench-live-grid { display: grid })
@@ -119,7 +128,16 @@ img, svg { max-width: 100%; height: auto; }
   flex-shrink: 0; white-space: nowrap;
 }
 .nav-brand img { width: 28px; height: 28px; flex-shrink: 0; }
-.nav-links { display: flex; align-items: center; gap: 24px; list-style: none; min-width: 0; }
+.nav-links {
+  display: flex; align-items: center; gap: 24px; list-style: none; min-width: 0;
+  /* Entries that do not fit between the wordmark and the toggle stay reachable
+     by scrolling the list itself, without a visible scrollbar. */
+  overflow-x: auto; scrollbar-width: none;
+  /* Room for the 2 px focus ring (+2 px offset) of a link, which the scroll
+     container would otherwise clip. */
+  padding: 4px; margin: -4px;
+}
+.nav-links::-webkit-scrollbar { display: none; }
 .nav-links a { color: var(--c-text-dim); font-size: 14px; font-weight: 500; transition: color .15s; }
 .nav-links a:hover { color: var(--c-text); text-decoration: none; }
 .theme-toggle {
@@ -192,7 +210,8 @@ img, svg { max-width: 100%; height: auto; }
 }
 .install-cmd code { color: #93c5fd; }
 .copy-btn {
-  background: none; border: none; color: var(--c-text-muted);
+  /* Sits on --c-code-bg (.install-cmd); --c-text-muted was 1.91:1 there in light. */
+  background: none; border: none; color: #94a3b8;
   cursor: pointer; padding: 4px; border-radius: 4px;
   transition: color .15s;
 }
@@ -242,7 +261,7 @@ img, svg { max-width: 100%; height: auto; }
 .fi-iso { background: #d1fae5; color: #059669; }
 .fi-security { background: #fee2e2; color: #dc2626; }
 .fi-content { background: #ffedd5; color: #ea580c; }
-.fi-production { background: #fef3c7; color: #d97706; }
+.fi-production { background: #fef3c7; color: #b45309; }
 .fi-mcp { background: #eef2ff; color: #4338ca; }
 .fi-cli { background: #ecfeff; color: #0e7490; }
 
@@ -450,10 +469,10 @@ textarea:focus-visible,
 .mcp-table td:first-child code {
   font-size: 12px;
   white-space: nowrap;
-  background: var(--c-code-bg, rgba(99,102,241,.08));
+  background: var(--c-code-bg);
   padding: 2px 6px;
   border-radius: 4px;
-  color: #6366F1;
+  color: #93c5fd;
 }
 .mcp-config pre {
   font-size: 13px;
@@ -519,10 +538,14 @@ textarea:focus-visible,
 .footer-links a:hover { color: var(--c-text); }
 
 /* ── Responsive ────────────────────────────────────────────── */
-/* The primary nav carries many links (Features … CLI); collapse it to the
-   hamburger flyout well before the links can crowd the wordmark. This is a
-   dedicated, wider breakpoint so the content layout below keeps its own. */
-@media (max-width: 1024px) {
+/* The primary nav carries eleven links (Features … GitHub) and the theme
+   toggle; collapse it to the hamburger flyout well before the links can crowd
+   the wordmark. At 1025 px the full row fits the system font stack with a few
+   pixels to spare — a wider face would clip the last entries (the list hides
+   its scrollbar), so the flyout takes over up to 1100 px. This is a dedicated,
+   wider breakpoint so the content layout below keeps its own; verify:overflow
+   measures just above it (1101 px). */
+@media (max-width: 1100px) {
   .nav-links { display: none; }
   .nav-links.open {
     display: flex; flex-direction: column;
@@ -552,8 +575,9 @@ textarea:focus-visible,
 @media (max-width: 480px) {
   .hero h1 { font-size: 26px; line-height: 1.2; }
   .hero p { font-size: 15px; }
-  .hero-cta { flex-direction: column; align-items: stretch; gap: 10px; }
-  .hero-cta .btn { width: 100%; text-align: center; }
+  .hero-actions { flex-direction: column; align-items: stretch; gap: 10px; }
+  /* .btn is inline-flex: justify-content centres label + icon in a full-width button. */
+  .hero-actions .btn { width: 100%; justify-content: center; }
   .section { padding: 44px 14px; }
   .section-title { font-size: 22px; }
   .nav-inner { padding-inline: 14px; }
@@ -593,17 +617,10 @@ textarea:focus-visible,
   transition: background 0.15s, color 0.15s;
 }
 .playground-switcher a:hover { background: var(--c-surface); }
-.playground-switcher a[aria-current="page"] { background: var(--c-primary); color: #fff; }
+.playground-switcher a[aria-current="page"] { background: var(--c-primary); color: var(--c-primary-fg); }
 .playground-switcher a[aria-current="page"]:hover { background: var(--c-accent); }
 
-/* ── Live version widget (v1.1.0) ─────────────────────────────────── */
-.pn-versions {
-  border: 1px solid var(--c-border, #e2e8f0);
-  border-radius: 12px;
-  padding: 18px 20px;
-  background: var(--c-surface, #fff);
-  margin: 24px 0;
-}
+/* ── Live version widget (v1.1.0) — the detailed renderer of assets/versions.js ── */
 .pn-versions-title {
   margin: 0 0 4px;
   font-size: 14px;
@@ -736,6 +753,7 @@ textarea:focus-visible,
   border-radius: var(--radius);
   background: var(--c-bg-card);
   padding: 22px;
+  min-width: 0; /* grid items default to min-width: auto — a wide pre would widen the column */
   display: flex; flex-direction: column;
   box-shadow: var(--shadow-sm);
 }
@@ -761,7 +779,7 @@ textarea:focus-visible,
   margin-top: auto; font-size: 13px; font-weight: 600;
 }
 @media (max-width: 600px) {
-  .onboarding-grid { grid-template-columns: 1fr; }
+  .onboarding-grid { grid-template-columns: minmax(0, 1fr); }
 }
 
 /* ── Inline star CTA (discreet, 2026 OSS norm) ───────────────── */
@@ -849,10 +867,6 @@ textarea:focus-visible,
 .cmp-quiz-options label { font-size: 14px; color: var(--c-text); display: flex; gap: 8px; align-items: baseline; cursor: pointer; }
 .cmp-quiz-verdict { margin: 14px 0 0; font-size: 14px; color: var(--c-text); border-left: 3px solid var(--c-primary); background: var(--c-surface); padding: 10px 14px; border-radius: 0 8px 8px 0; }
 .cmp-table tr.cmp-hot td { background: color-mix(in srgb, var(--c-primary) 10%, transparent); }
-
-/* Dark theme: --c-primary lightens to #3b82f6 while --c-primary-fg stays
-   white (3.7:1 at 13px — below AA). Use a darker active background there. */
-[data-theme="dark"] .demo-mode-btn.active { background: #1d4ed8; }
 
 /* ── Print ───────────────────────────────────────────────────────── */
 
