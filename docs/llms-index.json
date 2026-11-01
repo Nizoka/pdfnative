@@ -21,7 +21,7 @@
       "description": "Full corpus: index + README + every guide, one request.",
       "bytes": 918995,
       "approxTokens": 229749,
-      "sha256": "675346d9d8e542002f603752025244245b8b6c039a24379d13a19c57063dcd6a"
+      "sha256": "35493bde3cca5bd686cfc16587fa1ade6aba716c296521fe1d6577475d9b4533"
     },
     {
       "url": "https://pdfnative.dev/llms-recipes.txt",
@@ -63,7 +63,7 @@
       "description": "Complete feature and API reference (also embedded in llms-full.txt).",
       "bytes": 140336,
       "approxTokens": 35084,
-      "sha256": "efdfddeff824e60439644345c2b17700fc7928adae97b95513d69891171e87c2"
+      "sha256": "b5936372b051e67b172186614a916d53855b0eea44c5446fd5e9d35b2ea8f76e"
     }
   ],
   "guides": [
