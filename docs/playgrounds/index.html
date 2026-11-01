@@ -37,7 +37,7 @@
     .pg-card:hover { border-color: var(--c-primary); transform: translateY(-2px); box-shadow: 0 6px 18px -8px rgba(37,99,235,0.35); }
     .pg-card .pg-icon { font-size: 28px; line-height: 1; }
     .pg-card h3 { font-size: 18px; margin: 0; color: var(--c-text); display: flex; align-items: center; gap: 10px; }
-    .pg-card h3 .badge { font-size: 11px; padding: 2px 7px; border-radius: 4px; background: var(--c-primary); color: #fff; font-weight: 700; letter-spacing: 0.04em; }
+    .pg-card h3 .badge { font-size: 11px; padding: 2px 7px; border-radius: 4px; background: var(--c-primary); color: var(--c-primary-fg); font-weight: 700; letter-spacing: 0.04em; }
     .pg-card h3 .badge.alt { background: #16a34a; }
     .pg-card p { font-size: 14px; color: var(--c-text-dim); line-height: 1.55; margin: 0; }
     .pg-card .pg-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
@@ -145,7 +145,7 @@
             {
               "@type": "ListItem",
               "position": 14,
-              "name": "DocSpec lint — 37 pdfnative-react rules on a JSON document spec",
+              "name": "DocSpec lint — 41 pdfnative-react rules on a JSON document spec",
               "url": "https://pdfnative.dev/playgrounds/docspec-lint.html"
             },
             {
@@ -285,7 +285,7 @@
       <a class="pg-card" href="./cli.html">
         <div class="pg-icon" aria-hidden="true">⌨️</div>
         <h3>CLI builder <span class="badge alt">CLI</span></h3>
-        <p>Compose <code>pdfnative-cli</code> commands interactively — all 21 commands, from <code>render</code> and <code>fill</code> to the PAdES ladder (<code>sign --timestamp</code> · <code>ltv</code> · <code>doc-timestamp</code>), <code>metadata</code>, <code>compare</code> and <code>batch --manifest</code>. Live shell preview, validation rules, copy-to-clipboard, and one-click presets.</p>
+        <p>Compose <code>pdfnative-cli</code> commands interactively — all 21 commands, from <code>render</code> and <code>fill</code> to the PAdES ladder (<code>sign --timestamp</code> · <code>ltv</code> · <code>doc-timestamp</code>), <code>metadata</code>, <code>compare</code> and <code>batch --manifest</code>. Live shell preview, validation rules, copy-to-clipboard, and one-click presets — including the v1.6.0 flags: <code>--direction</code>, <code>--tagged pdfa2b --pdfx pdfx4</code>, <code>extract-text --on-stream-error</code> and <code>ltv embed --cert</code>.</p>
         <div class="pg-tags">
           <span class="pg-tag">render</span><span class="pg-tag">sign</span><span class="pg-tag">ltv</span><span class="pg-tag">compare</span><span class="pg-tag">batch</span>
         </div>
@@ -295,7 +295,7 @@
       <a class="pg-card" href="./mcp.html">
         <div class="pg-icon" aria-hidden="true">🤖</div>
         <h3>MCP tool explorer <span class="badge alt">MCP</span></h3>
-        <p>Browse the <strong>pdfnative-mcp</strong> v1.7.0 toolset (28 tools: incl. the PAdES ladder <code>sign_pdf</code> / <code>add_ltv</code> / <code>timestamp_pdf</code>, <code>update_metadata</code>, the read-only <code>inspect_layout</code> preview, page-tree <code>merge_pdfs</code> / <code>split_pdf</code> / <code>extract_pages</code>, markup <code>annotate_pdf</code>, the network-free <code>draft_governance_issue</code>), copy a ready-to-paste config snippet for Claude Desktop, Cursor, Continue, Zed (or any MCP client), and generate the same PDFs an AI assistant would receive — directly in your browser.</p>
+        <p>Browse the <strong>pdfnative-mcp</strong> v1.8.0 toolset (28 tools: incl. the PAdES ladder <code>sign_pdf</code> / <code>add_ltv</code> / <code>timestamp_pdf</code>, <code>update_metadata</code>, the read-only <code>inspect_layout</code> preview, page-tree <code>merge_pdfs</code> / <code>split_pdf</code> / <code>extract_pages</code>, markup <code>annotate_pdf</code>, the network-free <code>draft_governance_issue</code>), copy a ready-to-paste config snippet for Claude Desktop, Cursor, Continue, Zed (or any MCP client), and generate the same PDFs an AI assistant would receive — directly in your browser.</p>
         <div class="pg-tags">
           <span class="pg-tag">stdio tools</span><span class="pg-tag">Claude</span><span class="pg-tag">Cursor</span><span class="pg-tag">Zed</span><span class="pg-tag">+ any stdio client</span>
         </div>
@@ -305,7 +305,7 @@
       <a class="pg-card" href="./react.html">
         <div class="pg-icon" aria-hidden="true">⚛️</div>
         <h3>React renderer <span class="badge alt">React</span></h3>
-        <p>Write JSX with <strong>pdfnative-react</strong> v1.3.0 and render a real PDF on-device — a custom React 19 reconciler compiles <code>&lt;Document&gt;</code>/<code>&lt;Table&gt;</code>/<code>&lt;Barcode&gt;</code>/<code>&lt;Chart&gt;</code> straight to pdfnative blocks, no SaaS round-trip. Charts v2 and print production included. The demo loads React + the renderer from a CDN; the published package keeps the engine zero-dependency.</p>
+        <p>Write JSX with <strong>pdfnative-react</strong> v1.4.0 and render a real PDF on-device — a custom React 19 reconciler compiles <code>&lt;Document&gt;</code>/<code>&lt;Table&gt;</code>/<code>&lt;Barcode&gt;</code>/<code>&lt;Chart&gt;</code> straight to pdfnative blocks, no SaaS round-trip. Charts v2 and print production included. The demo loads React + the renderer from a CDN; the published package keeps the engine zero-dependency.</p>
         <div class="pg-tags">
           <span class="pg-tag">JSX</span><span class="pg-tag">reconciler</span><span class="pg-tag">DocSpec</span><span class="pg-tag">on-device</span>
         </div>
@@ -344,10 +344,10 @@
 
       <a class="pg-card" href="./docspec-lint.html">
         <div class="pg-icon" aria-hidden="true">🧹</div>
-        <h3>DocSpec lint <span class="badge">React</span> <span class="badge alt">pdfnative-react 1.3.0</span></h3>
-        <p>Paste or pick a <code>DocSpec</code> — the token-frugal JSON grammar agents and content systems store — and run <code>validateSpec</code> + <code>lintSpec</code> in your browser: 37 deterministic rules (PDF/X coherence, colour bars, ineffective typography, PDF/A without fonts) reported before a single byte is rendered, then render the fixed spec to a PDF.</p>
+        <h3>DocSpec lint <span class="badge">React</span> <span class="badge alt">pdfnative-react 1.4.0</span></h3>
+        <p>Paste or pick a <code>DocSpec</code> — the token-frugal JSON grammar agents and content systems store — and run <code>validateSpec</code> + <code>lintSpec</code> in your browser: 41 deterministic rules (PDF/X coherence, colour bars, ineffective typography, PDF/A without fonts) reported before a single byte is rendered, then render the fixed spec to a PDF.</p>
         <div class="pg-tags">
-          <span class="pg-tag">DocSpec</span><span class="pg-tag">37 rules</span><span class="pg-tag">PDF/X</span><span class="pg-tag">renderSpecToBytes</span>
+          <span class="pg-tag">DocSpec</span><span class="pg-tag">41 rules</span><span class="pg-tag">PDF/X</span><span class="pg-tag">renderSpecToBytes</span>
         </div>
         <div class="pg-cta">Open DocSpec lint playground →</div>
       </a>
