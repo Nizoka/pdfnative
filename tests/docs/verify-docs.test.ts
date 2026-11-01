@@ -17,6 +17,9 @@ import { tmpdir } from 'node:os';
 const ROOT = resolve(import.meta.dirname, '..', '..');
 /** The engine version the manifest declares — the perturbation tests must not pin a release number. */
 const CURRENT = (JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')) as { version: string }).version;
+const MANIFEST = JSON.parse(readFileSync(join(ROOT, 'docs', 'assets', 'ecosystem.json'), 'utf8')) as {
+    packages: Record<string, { version: string }>;
+};
 const SCRIPT = join(ROOT, 'scripts', 'verify-docs.ts');
 
 interface Run {
@@ -456,7 +459,9 @@ describe('verify-docs', () => {
 
         it('jsonld-version rejects a softwareVersion that disagrees with the manifest', () => {
             withSandbox((dir) => {
-                patch(dir, 'docs/index.html', '"softwareVersion": "1.6.0"', '"softwareVersion": "1.3.0"');
+                // The CLI card's JSON-LD; the needle follows the manifest so a
+                // CLI bump cannot turn this test vacuous.
+                patch(dir, 'docs/index.html', `"softwareVersion": "${MANIFEST.packages['pdfnative-cli'].version}"`, '"softwareVersion": "1.3.0"');
                 const run = runVerifier(dir);
                 expect(run.output).toContain('jsonld-version');
                 expect(run.status).toBe(1);
@@ -726,6 +731,51 @@ describe('verify-docs', () => {
                 expect(run.output).toContain('claude-rules-sync');
                 expect(run.output).toContain('.claude/rules/worker.md');
                 expect(run.output).toContain('npm run agents:rules');
+                expect(run.status).toBe(1);
+            });
+        }, 120_000);
+
+        it('manifest-shape ties packages.<name>.counts to the lists the manifest carries', () => {
+            withSandbox((dir) => {
+                // counts.commands is what the prose tokens police; commandGroups
+                // is the list — the two must agree or one of them is stale.
+                patch(dir, 'docs/assets/ecosystem.json', '"commands": 21,', '"commands": 22,');
+                const run = runVerifier(dir);
+                expect(run.output).toContain('manifest-shape');
+                expect(run.output).toContain('pdfnative-cli.counts.commands is 22 but 21 commands are grouped');
+                expect(run.status).toBe(1);
+            });
+        }, 120_000);
+
+        it('count-tokens polices a satellite counter written as a word numeral inside a companion guide', () => {
+            withSandbox((dir) => {
+                // "seven prompts" lives in the MCP guide, which the engine tokens
+                // skip; the satellite tokens read it, numeral included.
+                patch(dir, 'docs/guides/mcp.md', 'seven prompts', 'eight prompts');
+                const run = runVerifier(dir);
+                expect(run.output).toContain('count-tokens');
+                expect(run.output).toContain('the manifest says 7');
+                expect(run.status).toBe(1);
+            });
+        }, 120_000);
+
+        it('satellite-stamps rejects a versions.js fallback that disagrees with the manifest', () => {
+            withSandbox((dir) => {
+                const cli = MANIFEST.packages['pdfnative-cli'].version;
+                patch(dir, 'docs/assets/versions.js', `'pdfnative-cli': { version: '${cli}'`, "'pdfnative-cli': { version: '1.5.0'");
+                const run = runVerifier(dir);
+                expect(run.output).toContain('satellite-stamps');
+                expect(run.output).toContain(`the manifest says pdfnative-cli is ${cli}`);
+                expect(run.status).toBe(1);
+            });
+        }, 120_000);
+
+        it('surfaces-shape rejects an MCP tool name the manifest does not list', () => {
+            withSandbox((dir) => {
+                patch(dir, 'docs/data/surfaces.json', '"tool": "add_table"', '"tool": "add_tables"');
+                const run = runVerifier(dir);
+                expect(run.output).toContain('surfaces-shape');
+                expect(run.output).toContain('names tool "add_tables"');
                 expect(run.status).toBe(1);
             });
         }, 120_000);
