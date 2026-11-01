@@ -26,4 +26,7 @@ word; keep the two in step when you change either.
 Runtime changes also need a ROADMAP.md entry and a line in the next
 release-notes/vX.Y.Z.md; a public-API addition, removal or behaviour shift is
 described there under "Downstream integration notes" (AGENTS.md §Releasing).
+A satellite docs pass never touches og-image / social-preview; an engine release
+re-renders both PNGs (command in the SVG header) and the maintainer re-uploads
+the social preview in the repository settings.
 -->
