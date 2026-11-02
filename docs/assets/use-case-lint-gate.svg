@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 560" role="img" aria-labelledby="uclg-title uclg-desc" font-family="Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif">
   <title id="uclg-title">A DocSpec lint gate in CI, before any PDF exists</title>
-  <desc id="uclg-desc">Architecture: a pull request carries two kinds of input, a JSX document tree and stored DocSpec JSON records. Both flow into the same lint stage, lintDocument for JSX and lintSpec for JSON, preceded by validateSpec for the JSON shape. The stage runs 37 rules on the compiled document model and writes no PDF bytes. A report with ok equal to true passes the pull-request check; a report with error findings fails it and prints each finding's code, message and hint. A dashed arrow leads from the passing report to a separate bytes stage, the hub's Case 3, where the document is rendered and compared against a golden PDF.</desc>
+  <desc id="uclg-desc">Architecture: a pull request carries two kinds of input, a JSX document tree and stored DocSpec JSON records. Both flow into the same lint stage, lintDocument for JSX and lintSpec for JSON, preceded by validateSpec for the JSON shape. The stage runs 41 rules on the compiled document model and writes no PDF bytes. A report with ok equal to true passes the pull-request check; a report with error findings fails it and prints each finding's code, message and hint. A dashed arrow leads from the passing report to a separate bytes stage, the hub's Case 3, where the document is rendered and compared against a golden PDF.</desc>
 
   <defs>
     <marker id="uclg-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
@@ -19,7 +19,7 @@
 
   <rect width="960" height="560" fill="#F8FAFC"/>
   <text x="480" y="42" text-anchor="middle" font-size="21" font-weight="700" fill="#0F172A">A DocSpec lint gate in CI, before any PDF exists</text>
-  <text x="480" y="66" text-anchor="middle" font-size="13" fill="#64748B">37 rules on the compiled document model, no bytes written — pdfnative-react v1.3.0</text>
+  <text x="480" y="66" text-anchor="middle" font-size="13" fill="#64748B">41 rules on the compiled document model, no bytes written — pdfnative-react v1.4.0</text>
 
   <!-- Inputs -->
   <rect x="40" y="110" width="200" height="72" rx="10" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.25"/>
@@ -34,7 +34,7 @@
   <line x1="240" y1="268" x2="286" y2="268" stroke="#475569" stroke-width="1.75" marker-end="url(#uclg-ah)"/>
   <rect x="288" y="240" width="150" height="56" rx="10" fill="#EEF2FF" stroke="#A5B4FC" stroke-width="1.25"/>
   <text x="363" y="263" text-anchor="middle" font-size="13" font-weight="700" fill="#3730A3">validateSpec</text>
-  <text x="363" y="281" text-anchor="middle" font-size="11" fill="#4F46E5">18 fields, types</text>
+  <text x="363" y="281" text-anchor="middle" font-size="11" fill="#4F46E5">19 fields, types</text>
 
   <!-- Arrows into the lint stage -->
   <line x1="240" y1="146" x2="486" y2="146" stroke="#475569" stroke-width="1.75" marker-end="url(#uclg-ah)"/>
@@ -46,9 +46,9 @@
   <text x="638" y="162" text-anchor="middle" font-size="11.5" fill="#3B82F6">compiles the tree to DocumentParams</text>
   <line x1="508" y1="178" x2="768" y2="178" stroke="#BFDBFE" stroke-width="1"/>
   <text x="638" y="202" text-anchor="middle" font-size="13.5" font-weight="700" fill="#1E40AF">lintSpec(spec)</text>
-  <text x="638" y="224" text-anchor="middle" font-size="11.5" fill="#3B82F6">same model, same 37 rules</text>
+  <text x="638" y="224" text-anchor="middle" font-size="11.5" fill="#3B82F6">same model, same 41 rules</text>
   <line x1="508" y1="240" x2="768" y2="240" stroke="#BFDBFE" stroke-width="1"/>
-  <text x="638" y="262" text-anchor="middle" font-size="11.5" fill="#1D4ED8">23 errors · 13 warnings · 1 info</text>
+  <text x="638" y="262" text-anchor="middle" font-size="11.5" fill="#1D4ED8">26 errors · 14 warnings · 1 info</text>
   <text x="638" y="282" text-anchor="middle" font-size="11.5" fill="#1D4ED8">e.g. L_PDFX_*, L_CMYK_INTENT_MISMATCH…</text>
 
   <!-- Report -->

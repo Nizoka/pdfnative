@@ -1,6 +1,6 @@
 {
   "$comment": "Machine-readable inventory of the live playgrounds (docs/playgrounds/*.html, redirect stubs excluded). Hand-maintained; the playgrounds-manifest rule of scripts/verify-docs.ts checks that every live page is listed and every listed page exists, and that the count equals derived.playgrounds in docs/assets/ecosystem.json. Control ids are DOM ids on the page. selfContained: true means every code view of the page (the CODE object shown in #code-view and copied by the Copy button) declares all it uses and imports only from 'pdfnative', so it reproduces the result outside the browser; tests/docs/playgrounds.test.ts runs each such view in Node and locks that promise. false carries a note saying why the page is not covered.",
-  "verifiedOn": "2026-10-30",
+  "verifiedOn": "2026-11-01",
   "engine": "pdfnative@1.9.0 loaded from a CDN (esm.sh, jsdelivr or unpkg); nothing runs server-side",
   "playgrounds": [
     {
@@ -429,7 +429,62 @@
         {
           "id": "preset",
           "kind": "select",
-          "meaning": "worked examples that fill the form; one option value per scenario (render-basic, render-pdfa, sign-meta, verify-strict, merge-basic, ltv-add, doc-timestamp-lta, compare-ci, batch-manifest…; v1.5.0 presets render-typography, render-pdfx4-cmyk, render-font-file, render-reproducible, render-dry-run, inspect-pdfx, annotate-link, sign-timestamp-timeout, verify-weak-digest, doctor-conformance, global-flags-first)"
+          "meaning": "worked examples that fill the form; one option value per scenario (render-basic, render-pdfa, sign-meta, verify-strict, merge-basic, ltv-add, doc-timestamp-lta, compare-ci, batch-manifest…; v1.5.0 presets render-typography, render-pdfx4-cmyk, render-font-file, render-reproducible, render-dry-run, inspect-pdfx, annotate-link, sign-timestamp-timeout, verify-weak-digest, doctor-conformance, global-flags-first; v1.6.0 presets render-rtl-direction, render-actual-text-off, render-spot-colours, render-dual-claim, inspect-dual-check, render-jpeg2000, render-indic-five, extract-text-stream-policy, compare-stream-policy, ltv-embed-offline, schema-status)"
+        },
+        {
+          "id": "r-direction",
+          "kind": "select",
+          "values": ["", "auto", "ltr", "rtl"],
+          "meaning": "render --direction (v1.6.0); no CLI default — omitted means nothing is set and the 1.8.0 left-aligned layout"
+        },
+        {
+          "id": "r-actual-text",
+          "kind": "select",
+          "values": ["", "true", "false"],
+          "meaning": "render --actual-text (v1.6.0); only false changes the bytes (untagged right-to-left and shaped runs lose their /Span /ActualText)"
+        },
+        {
+          "id": "r-font",
+          "kind": "select",
+          "meaning": "render --font: the four utility faces and the 32 script codes (36 bundled font modules; gu, pa, kn, ml, or since v1.6.0)"
+        },
+        {
+          "id": "r-font-extra",
+          "kind": "textarea",
+          "meaning": "extra --font codes, one per line, emitted as repeated --font flags"
+        },
+        {
+          "id": "et-stream-error",
+          "kind": "select",
+          "values": ["", "limit", "throw", "skip"],
+          "meaning": "extract-text --on-stream-error (v1.6.0); limit is the default and fails with E_INPUT on an over-cap stream"
+        },
+        {
+          "id": "c-stream-error",
+          "kind": "select",
+          "values": ["", "limit", "throw", "skip"],
+          "meaning": "compare --on-stream-error (v1.6.0); an over-cap stream is E_INPUT under limit, throw fails on any undecodable stream"
+        },
+        {
+          "id": "l-cert",
+          "kind": "textarea",
+          "meaning": "ltv embed --cert files (PEM bundle or DER, one path per line, repeatable; v1.6.0)"
+        },
+        {
+          "id": "l-ocsp",
+          "kind": "textarea",
+          "meaning": "ltv embed --ocsp DER responses, one path per line"
+        },
+        {
+          "id": "l-crl",
+          "kind": "textarea",
+          "meaning": "ltv embed --crl DER lists, one path per line"
+        },
+        {
+          "id": "l-match",
+          "kind": "select",
+          "values": ["", "all", "chain"],
+          "meaning": "ltv embed --match (v1.6.0): all references every item from every VRI, chain only what validates each signature"
         },
         {
           "id": "cmd-output",
@@ -458,7 +513,14 @@
         "shell completion (#co-shell)",
         "v1.5.0 render flags: --split-paragraphs, --keep-headings-with-next, --kerning, --font-features, --pdfx pdfx4, --output-intent-icc, --output-intent-id, --trapped, --font-file",
         "global --creation-date (SOURCE_DATE_EPOCH fallback) and global flags placed before the command (#gl-position)",
-        "inspect --pdfx / --check pdfx / --iso-dates; annotate link; sign --timestamp-timeout; verify weak-digest note; doctor fonts / unicode / conformance"
+        "inspect --pdfx / --check pdfx / --iso-dates; annotate link; sign --timestamp-timeout; verify weak-digest note; doctor fonts / unicode / conformance",
+        "render --direction auto|ltr|rtl (#r-direction, no CLI default) and --actual-text false (#r-actual-text): right-to-left paragraphs, /Span /ActualText opt-out",
+        "the 32 script codes of --font (#r-font) and repeated --font lines (#r-font-extra); gu, pa, kn, ml, or since v1.6.0; 36 bundled font modules",
+        "spot colours in the JSON (layout.print.spotColours, { spot }, { inks }) under --pdfx pdfx4; the PDF/A-2b + PDF/X-4 dual claim (--tagged pdfa2b --pdfx pdfx4, pdfa1b/pdfa3b refused with E_INPUT); inspect --check pdfa,pdfx",
+        "JPEG 2000 image blocks (/JPXDecode, PDFA1_JPX_IMAGE, PDFA_JPX_IMAGE) and --watermark-image format sniffing",
+        "extract-text / compare --on-stream-error limit|throw|skip (#et-stream-error, #c-stream-error)",
+        "ltv embed offline material --cert / --ocsp / --crl with --match all|chain (#l-cert, #l-ocsp, #l-crl, #l-match), exclusive with --data",
+        "schema status — 35 fields (match, tagged, direction, actualText); --strict with 13 codes"
       ],
       "codeView": "#cmd-output",
       "selfContained": false,
@@ -489,6 +551,21 @@
           "id": "cards",
           "kind": "container",
           "meaning": "tool cards; each has data-action buttons (generate, copy-args) and a [data-status] line"
+        },
+        {
+          "id": "env-panel",
+          "kind": "container",
+          "meaning": "the fourteen operator variables (PDFNATIVE_MCP_FONT_DIR and PDFNATIVE_MCP_OUTPUT_BASE_URL since v1.8.0)"
+        },
+        {
+          "id": "prompts-panel",
+          "kind": "container",
+          "meaning": "the seven MCP prompts"
+        },
+        {
+          "id": "resources-panel",
+          "kind": "container",
+          "meaning": "resources/list: the two governance resources (always listed) and the pdfnative://output/{+path} template (v1.8.0)"
         }
       ],
       "exercises": [
@@ -508,8 +585,19 @@
         "inspect_pdf pdfX claim",
         "five more scripts (lo, nod, khb, tdd, cjm)",
         "reproducible output (creationDate, SHA-256)",
-        "operator environment (12 variables, #env-panel)",
-        "7 MCP prompts (#prompts-panel)"
+        "operator environment (14 variables, #env-panel)",
+        "7 MCP prompts (#prompts-panel)",
+        "spot colours (print.spotColours, /Separation, /DeviceN, VALIDATION_ERROR)",
+        "direction and /ActualText (layout.direction, actualText, extractText)",
+        "PDF/A-2b + PDF/X-4 dual claim (pdfaid:part, validatePdfX)",
+        "JPEG 2000 (parseImage, /JPXDecode, PDFA_JPX_IMAGE)",
+        "link annotations (buildAnnotationBody, /URI, getAnnotations)",
+        "chart series colors (CHART_ERROR)",
+        "five Indic scripts (gu, pa, kn, ml, or) — 32 scripts",
+        "extract_text onStreamError (limit, skip, throw, PdfStreamLimitError)",
+        "add_ltv offline material (match, composeLtvData)",
+        "operator font sandbox (PDFNATIVE_MCP_FONT_DIR, FONT_NOT_FOUND)",
+        "governance resources (#resources-panel)"
       ],
       "codeView": "#config-output",
       "selfContained": false,
@@ -525,7 +613,7 @@
       "purpose": "Edit JSX and render a PDF in the browser with pdfnative-react (React 19 reconciler to pdfnative blocks), including charts v2 and print production presets, plus the DocSpec alternative.",
       "since": "1.5.0",
       "requires": [
-        "React 19, pdfnative-react 1.3.0 and Babel standalone loaded from the CDN by the page"
+        "React 19, pdfnative-react 1.4.0 and Babel standalone loaded from the CDN by the page"
       ],
       "controls": [
         {
@@ -540,8 +628,14 @@
             "typography-justify",
             "print-pdfx4-cmyk",
             "reproducible-creationDate",
-            "scripts-27",
-            "lint-gate"
+            "lint-gate",
+            "rtl-direction",
+            "spot-colours",
+            "dual-claim",
+            "charts-series-colors",
+            "image-jpx",
+            "scripts-32",
+            "diagnostics-uncovered"
           ]
         },
         {
@@ -578,8 +672,14 @@
         "Document typography + Heading keepWithNext + Paragraph align=\"justify\" splittable (typography-justify)",
         "Document pdfx=\"pdfx4\" + outputIntent (synthetic prtr ICC) + metadata.trapped + print.marks.colourBars, CMYK colours, resolveFonts, lintDocument, validatePdfX (print-pdfx4-cmyk)",
         "Document creationDate: two renderToBytes runs compared by length + SHA-256 (reproducible-creationDate)",
-        "resolveFonts for Lao and Cham font modules (scripts-27)",
-        "lintDocument + Object.keys(LINT_RULES).length read live, fixed tree re-linted and rendered (lint-gate)"
+        "lintDocument + Object.keys(LINT_RULES).length read live, fixed tree re-linted and rendered (lint-gate)",
+        "Document direction=\"auto\" + Paragraph direction=\"ltr\"/\"rtl\", resolveFonts for the Arabic and Hebrew modules (rtl-direction)",
+        "print.spotColours + { spot }, { spot, tint }, { inks } on Heading, Paragraph, Table zebra/cellBorders and Chart series colors, lintDocument, validatePdfX (spot-colours)",
+        "Document tagged=\"pdfa2b\" + pdfx=\"pdfx4\" + outputIntent + metadata.trapped, lintDocument without L_PDFX_TAGGED_CONFLICT, validatePdfX + pdfaid:part check (dual-claim)",
+        "Chart series colors per value + unlabelled series, L_CHART_SERIES_COLORS on a length mismatch (charts-series-colors)",
+        "Image + watermark.image from inline JPEG 2000 bytes, L_PDFA_JPX_IMAGE under tagged=\"pdfa1b\" and \"pdfa2b\" (image-jpx)",
+        "resolveFonts for the Gujarati, Gurmukhi, Kannada, Malayalam and Odia font modules (scripts-32)",
+        "layout.onDiagnostic collecting TEXT_GLYPH_NOT_COVERED, layout.strict thrown error (diagnostics-uncovered)"
       ],
       "codeView": "#rx-editor",
       "selfContained": false,
@@ -790,10 +890,10 @@
       "file": "docspec-lint.html",
       "url": "https://pdfnative.dev/playgrounds/docspec-lint.html",
       "title": "DocSpec lint",
-      "purpose": "Paste or pick a DocSpec JSON, run pdfnative-react 1.3.0's validateSpec (shape tier) and lintSpec (37 rules) in the browser, read the report with rule ids and hints, fix the spec, and render a clean spec to a PDF with renderSpecToBytes.",
+      "purpose": "Paste or pick a DocSpec JSON, run pdfnative-react 1.4.0's validateSpec (shape tier) and lintSpec (41 rules) in the browser, read the report with rule ids and hints, fix the spec, and render a clean spec to a PDF with renderSpecToBytes.",
       "since": "1.8.0",
       "requires": [
-        "React 19 and pdfnative-react 1.3.0 loaded from the CDN by the page"
+        "React 19 and pdfnative-react 1.4.0 loaded from the CDN by the page"
       ],
       "controls": [
         {
@@ -802,6 +902,10 @@
           "values": [
             "valid-invoice",
             "pdfx-incoherent",
+            "dual-claim",
+            "spot-undeclared",
+            "spot-ink-mix",
+            "chart-series-colors",
             "typography-ineffective",
             "tagged-no-fonts",
             "colour-bars-off-print",
@@ -846,13 +950,16 @@
       "exercises": [
         "validateSpec (V_ARITY, V_UNKNOWN_KIND, V_PAYLOAD_TYPE, V_BLOCK_SHAPE, V_UNKNOWN_FIELD)",
         "lintSpec",
-        "LINT_RULES (37 rules)",
+        "LINT_RULES (41 rules)",
         "renderSpecToBytes",
         "DocSpec pdfx / outputIntent / typography / creationDate fields",
         "L_PDFX_TAGGED_CONFLICT, L_PDFX_OUTPUT_INTENT, L_PDFX_NO_FONTS, L_PDFX_ANNOTATIONS",
         "L_TYPOGRAPHY_INEFFECTIVE",
         "L_TAGGED_NO_FONTS",
-        "L_PRINT_COLOUR_BARS"
+        "L_PRINT_COLOUR_BARS",
+        "the dual claim: pdfx pdfx4 with tagged pdfa2b raises no L_PDFX_TAGGED_CONFLICT (dual-claim); pdfa1b still does (pdfx-incoherent)",
+        "L_SPOT_UNDECLARED (spot-undeclared), L_SPOT_INK_MIX (spot-ink-mix), L_CHART_SERIES_COLORS (chart-series-colors)",
+        "direction as the 19th DocSpec field (valid-invoice)"
       ],
       "codeView": "#code-view",
       "selfContained": false,

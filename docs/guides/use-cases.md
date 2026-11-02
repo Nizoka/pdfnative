@@ -12,9 +12,10 @@ The [capability × surface matrix](choose.html) tells you *what* each surface
 can do; this guide shows *how the surfaces compose* into systems. Each case
 names its exact building blocks, shows the load-bearing code, and states its
 limits. Three companion pages take one surface each and go deeper on the
-releases of September 2026: [CLI use cases](use-cases-cli.html)
-(pdfnative-cli v1.5.0), [MCP use cases](use-cases-mcp.html) (pdfnative-mcp
-v1.7.0) and [React use cases](use-cases-react.html) (pdfnative-react v1.3.0).
+releases of 2026-11-01: [CLI use cases](use-cases-cli.html)
+(pdfnative-cli v1.6.0, five cases), [MCP use cases](use-cases-mcp.html)
+(pdfnative-mcp v1.8.0, four cases) and [React use cases](use-cases-react.html)
+(pdfnative-react v1.4.0, four cases).
 A fourth steps outside this engine: [the native family](native-family.html)
 composes pdfnative with its siblings zipnative and pkinative — sign, pack,
 verify.
@@ -285,10 +286,13 @@ from the others as they become relevant.
   loop that pairs naturally with Case 3.
 - [React guide](react.html) — `DocSpec`, rendering entry points and the
   HTTP caching options.
-- [CLI guide](cli.html) — the complete v1.5.0 command reference.
+- [CLI guide](cli.html) — the complete v1.6.0 command reference.
 - [CLI use cases](use-cases-cli.html) · [MCP use cases](use-cases-mcp.html) ·
   [React use cases](use-cases-react.html) — one surface each, on
-  pdfnative-cli v1.5.0, pdfnative-mcp v1.7.0 and pdfnative-react v1.3.0.
+  pdfnative-cli v1.6.0 (five cases, up to "Case 5 — Right-to-left letter in,
+  logical-order text out"), pdfnative-mcp v1.8.0 (four, up to "Case 4 —
+  Operator font sandbox and public result URLs") and pdfnative-react v1.4.0
+  (four, up to "Case 4 — Spot-colour press sheet with the dual claim").
 - [The native family](native-family.html) — pdfnative, zipnative and
   pkinative composed: sign with pdfnative, prove it with pkinative, archive
   it with zipnative.

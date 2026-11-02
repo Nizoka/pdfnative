@@ -199,7 +199,10 @@ and <code>includeDiagnostics: true</code> echoes the engine&#39;s diagnostics
 <code>PDFA_DEVICE_CMYK_IMAGE</code>) in the tool result. Known engine limitation:
 <code>add_form</code> (or a <code>formField</code> block) under a PDF/A claim still fails
 veraPDF even with <code>embedFonts</code> — the AcroForm <code>/DR /Helv</code> font is an
-unembedded Type1 (ISO 19005-2 §6.2.11.4.1).</p>
+unembedded Type1 (ISO 19005-2 §6.2.11.4.1). Since pdfnative-mcp 1.8.0,
+<code>pdfA: &#39;pdfa2b&#39; | &#39;pdfa2u&#39;</code> combines with <code>pdfx: &#39;pdfx4&#39;</code> for the dual
+claim; on the CLI the same file comes from <code>--tagged pdfa2b --pdfx pdfx4</code>
+(<code>pdfa1b</code> and <code>pdfa3b</code> are refused by the engine).</p>
 </blockquote>
 <h2 id="v110-status--fully-validated">v1.1.0 status — fully validated<a class="heading-anchor" href="#v110-status--fully-validated" aria-label="Link to this section">#</a></h2>
 <p>v1.1.0 ships full PDF/A-1b / 2b / 2u / 3b conformance against the

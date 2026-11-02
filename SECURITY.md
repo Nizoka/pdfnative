@@ -65,7 +65,7 @@ pdfnative is a pure TypeScript library with **zero runtime dependencies**. This 
 - **Cryptographically secure randomness is required.** All random material
   (document `/ID`, AES IVs, key salts) is sourced exclusively from the platform
   CSPRNG via `globalThis.crypto.getRandomValues` (Web Crypto — available in
-  Node.js ≥ 18, browsers, Deno, Bun, and Web Workers). pdfnative **never** falls
+  Node.js ≥ 22 (see Supported runtimes above), browsers, Deno, Bun, and Web Workers). pdfnative **never** falls
   back to `Math.random()` for cryptographic material: if no secure source is
   available the encryption path **throws** rather than producing predictable
   output (since 1.3.0).
@@ -106,6 +106,8 @@ setCryptoProvider({
   },
 });
 ```
+
+The provider is bound to the copy of pdfnative it was imported from: a process that loads both the ESM and the CJS build holds two independent settings, so install it on the copy that signs — see the FAQ, [One copy per build](https://pdfnative.dev/guides/faq.html#one-copy-per-build).
 
 ### Input Validation
 

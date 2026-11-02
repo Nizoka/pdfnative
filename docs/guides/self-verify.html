@@ -294,7 +294,9 @@ pdfnative extract-text --input invoice.pdf --format text | grep -q &#39;Invoice 
 </code></pre>
 <ul>
 <li><code>inspect --check</code> takes repeatable, ANDed assertions — <code>pdfa</code>, <code>signed</code>,
-<code>encrypted</code>, <code>pdfua</code> <em>(v1.1.0)</em> — and sets the exit code accordingly; under
+<code>encrypted</code>, <code>pdfua</code> <em>(v1.1.0)</em>, <code>pdfx</code> <em>(v1.5.0)</em>, and since v1.6.0 a
+comma list (<code>--check pdfa,pdfx</code> asserts the dual claim) — and sets the exit
+code accordingly; under
 <code>--json</code>, a failed assertion also emits the stable error class
 <code>E_CHECK_FAILED</code> in the machine-readable envelope on stderr
 (<code>{ ok: false, command, error: { code, message } }</code>).</li>
@@ -306,6 +308,12 @@ report.</li>
 digest, CMS signature value (RSA and ECDSA), certificate chain and trust
 against <code>--trust</code> roots, RFC 3161 timestamps, OCSP/CRL revocation — exit 1
 and <code>E_VERIFY_FAILED</code> on any failure <em>or on zero signatures</em>.</li>
+<li><code>extract-text --on-stream-error limit|throw|skip</code> <em>(v1.6.0)</em> decides what an
+over-budget content stream does to the verdict: the default <code>limit</code> fails
+with <code>E_INPUT</code> naming the two remedies, so an over-cap stream never passes a
+content assertion silently; a corrupt stream is still skipped under <code>limit</code>,
+and <code>throw</code> fails on any undecodable stream (<code>compare</code> takes the same flag —
+only <code>throw</code> rules out an equal verdict over an unread stream).</li>
 </ul>
 <p>The full command reference, including every <code>--check</code> flag and the <code>E_*</code>
 catalogue, is in the <a href="cli.html">CLI guide</a>.</p>
@@ -334,6 +342,10 @@ read-only tools — the natural final step after any document tool call:</p>
 <tr>
 <td><code>verify_pdf</code></td>
 <td>Cryptographic signature verification; <code>ltv: true</code> <em>(v1.6.0)</em> reports the achieved PAdES level (B-B → B-LTA).</td>
+</tr>
+<tr>
+<td><code>extract_text</code></td>
+<td>Content presence — the text of every page; <code>onStreamError: &#39;limit&#39; | &#39;skip&#39; | &#39;throw&#39;</code> <em>(v1.8.0)</em> decides what an over-budget content stream does: <code>limit</code> (the default) fails the call with <code>PDF_PARSE_FAILED</code> and names the remedy, <code>skip</code> reads the rest (that page comes back empty, the 1.7.0 behaviour), <code>throw</code> fails on any undecodable stream.</td>
 </tr>
 </tbody></table>
 <pre><code class="language-jsonc">{ &quot;tool&quot;: &quot;inspect_pdf&quot;,

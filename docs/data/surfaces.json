@@ -1,6 +1,6 @@
 {
   "$comment": "Machine-readable form of the capability × surface table in docs/guides/choose.md. Hand-maintained, verified against the sources on the date below: library `call` names against src/index.ts exports, CLI `command` names against packages.pdfnative-cli.commandGroups and MCP `tool` names against packages.pdfnative-mcp.tools in docs/assets/ecosystem.json (the single source of truth for names and counts — regenerate nothing from this file), React entries against docs/guides/react.md. Each `since` is a version of that surface's OWN package (pdfnative, pdfnative-cli, pdfnative-mcp or pdfnative-react); it is omitted where the capability predates 1.0.0 or the introducing release is not documented. `supported: false` cells carry a note naming the honest alternative where one exists.",
-  "verifiedOn": "2026-10-30",
+  "verifiedOn": "2026-11-01",
   "capabilities": [
     {
       "id": "generate",
@@ -21,10 +21,10 @@
     {
       "id": "charts",
       "label": "Native vector charts",
-      "library": { "supported": true, "call": "chart block in buildDocumentPDFBytes", "since": "1.6.0" },
-      "cli": { "supported": true, "command": "render", "since": "1.3.0", "notes": "chart blocks in the document JSON." },
-      "mcp": { "supported": true, "tool": "add_chart", "since": "1.5.0", "notes": "Also as a chart block inside generate_basic_pdf." },
-      "react": { "supported": true, "call": "<Chart>", "since": "1.1.0", "notes": "Charts v2 — nine kinds incl. stacked/area/scatter, secondary axis, category/linear/time X axes, log scale, data labels — since 1.2.0 (engine 1.7.0)." }
+      "library": { "supported": true, "call": "chart block in buildDocumentPDFBytes", "since": "1.6.0", "notes": "Since 1.9.0 ChartSeries.colors paints one colour per value on the four bar kinds (bar, barH, stackedBar, stackedBarH — exactly one entry per value, the legend swatch keeps the series colour, other kinds ignore it) and ChartSeries.label is optional (a series without one is listed as Series N)." },
+      "cli": { "supported": true, "command": "render", "since": "1.3.0", "notes": "chart blocks in the document JSON; since 1.6.0 series[].colors (one colour per value on bar charts, spot values included) and an optional series label." },
+      "mcp": { "supported": true, "tool": "add_chart", "since": "1.5.0", "notes": "Also as a chart block inside generate_basic_pdf. Since 1.8.0 series[].colors (1–1000 entries, exactly as many as values — CHART_ERROR otherwise; painted on the four bar kinds) and label is optional." },
+      "react": { "supported": true, "call": "<Chart>", "since": "1.1.0", "notes": "Charts v2 — nine kinds incl. stacked/area/scatter, secondary axis, category/linear/time X axes, log scale, data labels — since 1.2.0 (engine 1.7.0). Since 1.4.0 ChartSeries.colors (per-value bar colours, length checked by L_CHART_SERIES_COLORS) and an optional label." }
     },
     {
       "id": "sign",
@@ -38,8 +38,8 @@
       "id": "ltv",
       "label": "LTV ladder (PAdES B-T → B-LTA)",
       "library": { "supported": true, "call": "signPdfBytesWithTimestamp + addValidationInfo + addDocumentTimestamp", "since": "1.7.0", "notes": "Network transport is injected by the caller via setTimestampProvider / setRevocationProvider — the engine opens no socket." },
-      "cli": { "supported": true, "command": "sign / ltv / doc-timestamp", "since": "1.4.0", "notes": "sign --timestamp <url> (B-T), ltv collect|embed|add (B-LT — collect gathers evidence as replayable JSON, embed is fully offline for air-gapped workflows), doc-timestamp (B-LTA). Every network touch is an explicit per-invocation opt-in behind an SSRF guard; verify --revocation validates the ladder." },
-      "mcp": { "supported": true, "tool": "add_ltv + timestamp_pdf", "since": "1.6.0", "notes": "Transport is operator-configured via PDFNATIVE_MCP_TSA_URL / PDFNATIVE_MCP_REVOCATION and a host allow-list — never from tool arguments. verify_pdf with ltv: true reports the achieved level." },
+      "cli": { "supported": true, "command": "sign / ltv / doc-timestamp", "since": "1.4.0", "notes": "sign --timestamp <url> (B-T), ltv collect|embed|add (B-LT — collect gathers evidence as replayable JSON, embed is fully offline for air-gapped workflows), doc-timestamp (B-LTA). Every network touch is an explicit per-invocation opt-in behind an SSRF guard; verify --revocation validates the ladder. Since 1.6.0 ltv embed also takes material you already hold — --cert <pem|der>, --ocsp <der>, --crl <der>, each repeatable and capped at 16 MiB — attributed to the signatures with --match all|chain (default all; exclusive with --data) through the engine's composeLtvData, still without any network." },
+      "mcp": { "supported": true, "tool": "add_ltv + timestamp_pdf", "since": "1.6.0", "notes": "Transport is operator-configured via PDFNATIVE_MCP_TSA_URL / PDFNATIVE_MCP_REVOCATION and a host allow-list — never from tool arguments. verify_pdf with ltv: true reports the achieved level. Since 1.8.0 add_ltv mode: 'offline' embeds caller-supplied material — certificatesDerBase64 (≤ 64), ocspResponsesDerBase64 (≤ 64), crlsDerBase64 (≤ 16) — attributed with match: 'all' | 'chain' (default all); mode: 'online' (default) still needs the operator provider." },
       "react": { "supported": false }
     },
     {
@@ -61,9 +61,9 @@
     {
       "id": "extract-text",
       "label": "Extract text",
-      "library": { "supported": true, "call": "extractText", "since": "1.6.0", "notes": "Since 1.9.0 every shaper's glyph has a ToUnicode entry and reordered or right-to-left runs come back in logical order through /ActualText; onStreamError: 'throw' | 'skip' | 'partial' (PdfStreamLimitError, StreamErrorPolicy) decides what a stream past the decode cap does; decodePdfTextString reads a PDF text string." },
-      "cli": { "supported": true, "command": "extract-text", "since": "1.3.0" },
-      "mcp": { "supported": true, "tool": "extract_text" },
+      "library": { "supported": true, "call": "extractText", "since": "1.6.0", "notes": "Since 1.9.0 every shaper's glyph has a ToUnicode entry and reordered or right-to-left runs come back in logical order through /ActualText; onStreamError: 'limit' (default — a stream past the decompression cap rethrows PdfStreamLimitError so an unread page is never mistaken for an empty one, a corrupt stream is skipped) | 'throw' | 'skip' (StreamErrorPolicy) decides what an undecodable stream does; decodePdfTextString reads a PDF text string." },
+      "cli": { "supported": true, "command": "extract-text", "since": "1.3.0", "notes": "Since 1.6.0 --on-stream-error limit|throw|skip (default limit: a stream past the decompression cap is E_INPUT naming the two remedies, a corrupt stream is skipped; throw fails on any undecodable stream; skip restores the earlier silent skip) — compare takes the same flag (only throw rules out an equal verdict over an unread stream; limit still skips a corrupt one); right-to-left and reordered runs of untagged PDFs come back in logical order through /ActualText." },
+      "mcp": { "supported": true, "tool": "extract_text", "notes": "Since 1.8.0 onStreamError: 'limit' | 'skip' | 'throw' (default limit — a stream past the decompression cap is PDF_PARSE_FAILED with the remedy; skip restores the earlier behaviour); untagged right-to-left and reordered shaped runs come back in logical order through /ActualText." },
       "react": { "supported": false }
     },
     {
@@ -78,8 +78,8 @@
       "id": "annotate",
       "label": "Markup annotations",
       "library": { "supported": true, "call": "buildAnnotation + PdfModifier.addAnnotation", "since": "1.5.0", "notes": "Ten MarkupAnnotation types; { type: 'link', rect, url } (LinkMarkupAnnotation, a /URI action through the URL allow-list) since 1.9.0." },
-      "cli": { "supported": true, "command": "annotate", "since": "1.2.0" },
-      "mcp": { "supported": true, "tool": "annotate_pdf", "since": "1.4.0", "notes": "No link type in 1.7.0; the link block of generate_basic_pdf covers new documents." },
+      "cli": { "supported": true, "command": "annotate", "since": "1.2.0", "notes": "type: 'link' ({ rect, url } — http, https or mailto) since 1.5.0; its body built by the engine's buildAnnotationBody since 1.6.0." },
+      "mcp": { "supported": true, "tool": "annotate_pdf", "since": "1.4.0", "notes": "{ type: 'link', page (0-based), rect, url } (http, https or mailto, ≤ 2048 chars) since 1.8.0 — the engine's buildAnnotationBody builds the /Link + /URI body. Colours stay hex / RGB / CMYK: no spot form on annotate_pdf." },
       "react": { "supported": false }
     },
     {
@@ -118,8 +118,8 @@
       "id": "register-fonts",
       "label": "Runtime font registration",
       "library": { "supported": true, "call": "registerFont / registerFonts + loadFontData", "since": "1.5.0", "notes": "The loader is any () => Promise of a font-data module — including one you compile yourself from a TTF/OTF with compileFontData (pdfnative/tools) or the pdfnative-build-font binary. No engine release needed to add a font." },
-      "cli": { "supported": true, "command": "render", "since": "1.1.0", "notes": "--font registers bundled fonts only (fixed allow-list); for a font you ship yourself, call the library — in-memory registration does not cross a process boundary." },
-      "mcp": { "supported": false, "notes": "The server resolves fonts from the locally installed pdfnative package at runtime and bundles none itself; the lang list is a fixed enum. An operator-level extension point is on the roadmap — see the agentic-workflows guide for what an agent can already do locally." },
+      "cli": { "supported": true, "command": "render", "since": "1.1.0", "notes": "--font registers the 36 bundled font modules (latin, emoji, color-emoji, math and the 32 script codes — a fixed allow-list); --font-file <path.ttf|otf> (repeatable, 32 MiB each) compiles and registers a font you ship yourself, since 1.5.0. Registration lives for one invocation — nothing crosses a process boundary." },
+      "mcp": { "supported": true, "tool": "generate_basic_pdf / add_international_text / inspect_layout (font input)", "since": "1.8.0", "notes": "Operator-level only: PDFNATIVE_MCP_FONT_DIR (an absolute, existing directory of at most 64 .ttf / .otf files, 16 MiB each) is parsed at boot by the engine's parseFontData and registered as custom:<slug> (slug = lower-case basename folded to [a-z0-9-], ≤ 64 chars; two files folding to the same slug refuse to start). A call names a face with font: '<slug>' on those three tools only; an unknown slug is FONT_NOT_FOUND listing the registered ones. No tool argument ever carries a path, the lang enum stays fixed and the server still bundles no font itself." },
       "react": { "supported": true, "call": "registerFont / registerFonts (re-exported from the engine)", "notes": "Pass the loaded data via fontEntries." }
     },
     {
@@ -136,31 +136,31 @@
       "library": { "supported": true, "call": "[c, m, y, k] tuples (percent) or 'c m y k' strings on any color field; parseColor / resolveColor / fillOp / strokeOp", "since": "1.8.0", "notes": "Emitted as DeviceCMYK (k / K). Under a PDF/A claim whose OutputIntent is not CMYK the PDFA_DEVICE_CMYK_CONTENT diagnostic fires." },
       "cli": { "supported": true, "command": "render", "since": "1.4.0", "notes": "Colour fields in the document JSON accept 'c m y k' strings or [c, m, y, k] tuples (percent); documented and sampled since 1.5.0." },
       "mcp": { "supported": true, "tool": "generate_basic_pdf", "since": "1.7.0", "notes": "'0 0.6 1 0' or [0, 60, 100, 0] accepted on every colour input of every document tool and annotate_pdf. A 0–1 RGB triple renders the intended colour since 1.7.0." },
-      "react": { "supported": true, "call": "Color = hex | RGB tuple | PdfCmykTuple | PdfCmykString on every colour prop", "since": "1.3.0", "notes": "No RGB→CMYK conversion: plate values are authored. L_CMYK_INTENT_MISMATCH warns when CMYK content meets a non-CMYK OutputIntent." }
+      "react": { "supported": true, "call": "Color = hex | RGB tuple | PdfCmykTuple | PdfCmykString on every colour prop", "since": "1.3.0", "notes": "No RGB→CMYK conversion: plate values are authored. L_CMYK_INTENT_MISMATCH warns when CMYK content meets a non-CMYK OutputIntent. layout.colors is accepted but never read by the block-flow renderer — colour the block props instead; outline[].color stays a process colour. Since 1.4.0 the same Color union carries the spot forms (PdfSpotColor, PdfInkMix)." }
     },
     {
       "id": "spot-colours",
       "label": "Spot colours (Separation and DeviceN)",
       "library": { "supported": true, "call": "layout.print.spotColours: SpotColourDef[]; { spot, tint? } and { inks } on any color field and in ChartSeries.colors", "since": "1.9.0", "notes": "Emitted as /Separation and /DeviceN colour spaces with a type-4 tint transform over the declared CMYK alternates; valid under PDF/X-4 and the dual claim." },
-      "cli": { "supported": false, "notes": "pdfnative-cli 1.5.0 was released on the 1.8.0 engine; no flag or schema field for spot colours yet." },
-      "mcp": { "supported": false, "notes": "pdfnative-mcp 1.7.0 was released on the 1.8.0 engine; no tool input for spot colours yet." },
-      "react": { "supported": false, "notes": "pdfnative-react 1.3.0's Color union has no spot form yet." }
+      "cli": { "supported": true, "command": "render", "since": "1.6.0", "notes": "JSON-only: layout.print.spotColours (SpotColourDef[]) in the document JSON or a --layout file, then { spot, tint? } or { inks } on any colour field and in chart series colors; no flag and no CLI-side validator — the engine's 'Spot colour …' / 'Ink mix …' errors map to E_INPUT." },
+      "mcp": { "supported": true, "tool": "generate_basic_pdf", "since": "1.8.0", "notes": "print.spotColours (up to 32 inks, alternate as CMYK 0–100 or RGB 0–255) on the nine document tools; { spot, tint? } (tint 0–1) and { inks } (1–8 entries) accepted at 46 colour sites — not on annotate_pdf, whose colours stay hex / RGB / CMYK, nor on outline entries (the schema admits the forms, the engine refuses them: GENERATION_FAILED). Every ink must be declared in print.spotColours first." },
+      "react": { "supported": true, "call": "<Document print={{ spotColours }}>; Color = … | PdfSpotColor | PdfInkMix on every colour prop and in ChartSeries.colors", "since": "1.4.0", "notes": "PdfSpotColor, PdfInkMix and SpotColourDef are re-exported; L_SPOT_UNDECLARED and L_SPOT_INK_MIX lint before rendering. outline[].color stays a process colour (a spot value there is refused); no RGB→CMYK conversion of the alternates." }
     },
     {
       "id": "images-jpeg2000",
       "label": "JPEG 2000 images",
       "library": { "supported": true, "call": "image block / embedImage with a .jp2 or .j2k codestream; parseJPX, JpxInfo", "since": "1.9.0", "notes": "/JPXDecode pass-through with the colour and opacity the codestream declares; PDFA1_JPX_IMAGE warns under PDF/A-1 (throws under strict), PDFA_JPX_IMAGE names what PDF/A-2 and 3 forbid." },
-      "cli": { "supported": false, "notes": "pdfnative-cli 1.5.0 documents PNG and JPEG image inputs; JPEG 2000 is not documented for it." },
-      "mcp": { "supported": false, "notes": "pdfnative-mcp 1.7.0's embed_image documents PNG and JPEG." },
-      "react": { "supported": false, "notes": "pdfnative-react 1.3.0's <Image> documents PNG and JPEG." }
+      "cli": { "supported": true, "command": "render", "since": "1.6.0", "notes": "image blocks take a .jp2 file or a raw .j2k / .jpx codestream through src, dataBase64 or data (sniffed by magic bytes, like --watermark-image); passed through as /JPXDecode with the colour and opacity the header declares, header raised to PDF 1.5. PDFA1_JPX_IMAGE under --tagged pdfa1b, PDFA_JPX_IMAGE for an opacity channel or a channel count other than 1, 3 or 4 under pdfa2b / pdfa2u / pdfa3b — both fail the build under --strict." },
+      "mcp": { "supported": true, "tool": "embed_image", "since": "1.8.0", "notes": "mimeType: 'image/jp2' (a JP2 file or a raw JPEG 2000 codestream, magic bytes checked) on embed_image, on the image block of the document tools and on watermark.image; /JPXDecode pass-through. The PDFA1_JPX_IMAGE / PDFA_JPX_IMAGE diagnostics apply under a pdfA claim." },
+      "react": { "supported": true, "call": "<Image data={bytes}> with a .jp2 / .j2k codestream (format detected from the bytes)", "since": "1.4.0", "notes": "L_PDFA_JPX_IMAGE warns when a JPEG 2000 image meets a PDF/A claim (string tagged levels only). PNG with an alpha channel is still refused by the engine — flatten it first." }
     },
     {
       "id": "rtl-direction",
       "label": "Right-to-left paragraphs (UAX #9)",
       "library": { "supported": true, "call": "layout.direction: 'auto' | 'ltr' | 'rtl' (TextDirection), ParagraphBlock.direction; resolveBidiLevels, bidiLineLevels, bidiRunsForLine", "since": "1.9.0", "notes": "The whole of UAX #9 (embeddings, overrides, isolates, bracket pairs, neutral rules); 'auto' aligns right-to-left paragraphs to the right and justifies them in visual order; every reordered run carries its logical text as /ActualText unless layout.actualText is false." },
-      "cli": { "supported": false, "notes": "pdfnative-cli 1.5.0's layout schema has no direction field yet; right-to-left text is still shaped and reordered by the engine." },
-      "mcp": { "supported": false, "notes": "pdfnative-mcp 1.7.0 exposes no direction input yet." },
-      "react": { "supported": false, "notes": "pdfnative-react 1.3.0 exposes no direction prop yet." }
+      "cli": { "supported": true, "command": "render", "since": "1.6.0", "notes": "--direction auto|ltr|rtl sets layout.direction (no default: omitted, nothing is set and the earlier left-aligned behaviour stands); a paragraph's own direction field still wins. --actual-text false drops the /ActualText of reordered runs (only false changes the output). layout.direction in the document JSON or a --layout file works too; extract-text then returns right-to-left runs in logical order." },
+      "mcp": { "supported": true, "tool": "generate_basic_pdf", "since": "1.8.0", "notes": "direction: 'auto' | 'ltr' | 'rtl' and actualText (default true) on the nine document tools and on inspect_layout; paragraph blocks of generate_basic_pdf carry their own direction. Right-to-left text was already shaped and reordered before 1.8.0 — the knob adds base-direction alignment, justification and the /ActualText spans." },
+      "react": { "supported": true, "call": "<Document direction=\"auto\"> (sugar over layout.direction — an explicit layout wins) · <Paragraph direction>", "since": "1.4.0", "notes": "TextDirection is re-exported; direction is also the 19th DocSpec field. layout.actualText: false is a layout-only opt-out of the /ActualText spans. The doctor probe checks resolveBidiLevels to prove the engine floor." }
     },
     {
       "id": "output-intent-cmyk",
@@ -174,16 +174,16 @@
       "id": "pdfx4",
       "label": "PDF/X-4 conformance claim",
       "library": { "supported": true, "call": "layout: { pdfx: 'pdfx4', outputIntent, metadata.trapped }", "since": "1.8.0", "notes": "Mutually exclusive with encryption; since 1.9.0 it combines with tagged: 'pdfa2b' | 'pdfa2u' (PDF/A-1 and 3 are refused); requires a prtr OutputIntent and a known trapping state. The coherence errors it throws are listed in errors.json under buildErrors." },
-      "cli": { "supported": true, "command": "render", "since": "1.4.0", "notes": "Dedicated flags since 1.5.0: --pdfx pdfx4, --output-intent-icc, --output-intent-id, --trapped true|false|unknown; the PDF/X coherence errors map to E_INPUT and the PDFX_* diagnostics fail the build under --strict." },
-      "mcp": { "supported": true, "tool": "generate_basic_pdf", "since": "1.7.0", "notes": "pdfx: 'pdfx4' on generate_basic_pdf, add_table, add_chart, add_barcode, embed_image and add_international_text; requires an outputIntent with a prtr profile and embedFonts: true; exclusive with pdfA and encrypt. Under strict: true a PDFX_* diagnostic surfaces as PDF_X_COMPLIANCE_VIOLATION." },
-      "react": { "supported": true, "call": "<Document pdfx=\"pdfx4\" outputIntent={…} metadata={{ trapped }}>", "since": "1.3.0", "notes": "Also DocSpec fields. Eight L_PDFX_* lint rules (target, tagged conflict, encrypted, output intent, trapped unknown, boxes, no fonts, annotations) pre-empt the engine errors." }
+      "cli": { "supported": true, "command": "render", "since": "1.4.0", "notes": "Dedicated flags since 1.5.0: --pdfx pdfx4, --output-intent-icc (a prtr CMYK or Gray profile), --output-intent-id, --trapped true|false|unknown; the PDF/X coherence errors map to E_INPUT and the PDFX_* diagnostics fail the build under --strict. Since 1.6.0 --pdfx pdfx4 combines with --tagged pdfa2b|pdfa2u into one file claiming both (the CLI pre-check that refused the pair is gone; pdfa1b / pdfa3b with --pdfx are refused by the engine → E_INPUT); encryption stays exclusive (exit 2)." },
+      "mcp": { "supported": true, "tool": "generate_basic_pdf", "since": "1.7.0", "notes": "pdfx: 'pdfx4' on generate_basic_pdf, add_table, add_chart, add_barcode, embed_image and add_international_text; requires an outputIntent with a prtr profile (CMYK or Gray) and embedFonts: true. Since 1.8.0 it combines with pdfA: 'pdfa2b' | 'pdfa2u' (dual claim; pdfa1b / pdfa3b refused) and is exclusive with encrypt only. Under strict: true a PDFX_* diagnostic surfaces as PDF_X_COMPLIANCE_VIOLATION." },
+      "react": { "supported": true, "call": "<Document pdfx=\"pdfx4\" outputIntent={…} metadata={{ trapped }}>", "since": "1.3.0", "notes": "Also DocSpec fields. Eight L_PDFX_* lint rules (target, tagged conflict, encrypted, output intent, trapped unknown, boxes, no fonts, annotations) pre-empt the engine errors. Since 1.4.0 pdfx=\"pdfx4\" combines with tagged=\"pdfa2b\" | \"pdfa2u\" (dual claim): L_PDFX_TAGGED_CONFLICT now fires only for pdfa1b / pdfa3b." }
     },
     {
       "id": "validate-pdfx",
       "label": "Validate PDF/X-4",
       "library": { "supported": true, "call": "validatePdfX", "since": "1.8.0", "notes": "Structural check of the ISO 15930-7 prerequisites (header, XMP identification, OutputIntent profile, page boxes, embedded fonts in page resources, reached XObjects and annotation appearances, annotations, actions, embedded files, OPI / PostScript / reference XObjects, LZW, any /TR transfer function, device colour, Table 42 operators in type-4 tint transforms). It does not replace a certified preflight." },
       "cli": { "supported": true, "command": "inspect", "since": "1.5.0", "notes": "inspect --pdfx reports pdfxConformance; --check pdfx turns the structural PDF/X-4 check into a CI assertion (exit 1 / E_CHECK_FAILED). Not a certified preflight." },
-      "mcp": { "supported": true, "tool": "validate_pdf", "since": "1.7.0", "notes": "standard: 'pdf-x-4' (default 'pdf-ua-1'); the PDF/X result carries a caveats[] list stating it is not a certified preflight. inspect_pdf reports pdfX and accepts check: 'pdfx'." },
+      "mcp": { "supported": true, "tool": "validate_pdf", "since": "1.7.0", "notes": "standard: 'pdf-x-4' (default 'pdf-ua-1'). Since 1.8.0 the check also covers colour inside Form XObjects and images, Separation / DeviceN / Indexed alternates and type-4 tint transforms, and every PDF/X result carries two caveats[]: it is not a certified preflight (confirm a press job with callas pdfToolbox or Acrobat Preflight — veraPDF does not cover PDF/X), and transparency blend spaces, optional content and anything that needs rendering (overprint, ink coverage, resolution) are not checked. inspect_pdf reports pdfX and accepts check: 'pdfx' (ten check values)." },
       "react": { "supported": false, "notes": "Deliberately not re-exported: import validatePdfX from pdfnative (already a peer) and run it on the rendered bytes — the one-line recipe is in the package docs." }
     },
     {
@@ -192,7 +192,7 @@
       "library": { "supported": true, "call": "layout.print.marks (true, or { colourBars: true | { tints, size } })", "since": "1.8.0", "notes": "Marks use the all-separation registration colour under a CMYK intent, keep at least max(weight, 0.5) pt clear of the trim line and the sheet edge, and are tagged /Artifact /Page under tagged. Colour bars are off by default and byte-neutral when off; use a 5 mm bleed." },
       "cli": { "supported": true, "command": "render", "since": "1.4.0", "notes": "print.marks in the document JSON or a --layout file; the colourBars object form is documented and sampled since 1.5.0." },
       "mcp": { "supported": true, "tool": "generate_basic_pdf", "since": "1.6.0", "notes": "marks: true since 1.6.0; marks: { colourBars: true | { tints, size } } since 1.7.0." },
-      "react": { "supported": true, "call": "<Document print={{ marks: { colourBars: true } }}>", "since": "1.2.0", "notes": "Boolean marks since 1.2.0; the colourBars object (ColourBarOptions) since 1.3.0, with L_PRINT_COLOUR_BARS checking the geometry." }
+      "react": { "supported": true, "call": "<Document print={{ marks: { colourBars: true } }}>", "since": "1.3.0", "notes": "Boolean marks since 1.2.0; the colourBars object (ColourBarOptions) since 1.3.0, with L_PRINT_COLOUR_BARS checking the geometry." }
     },
     {
       "id": "deterministic-output",
@@ -201,6 +201,46 @@
       "cli": { "supported": true, "command": "render", "since": "1.4.0", "notes": "Since 1.5.0 a global --creation-date <iso8601> (SOURCE_DATE_EPOCH fallback) pins every PDF written in one invocation (render, and every task of a batch) and is echoed in the --json envelope; sign --signing-time and metadata --mod-date stay separate instants. Global flags may precede the command. layout.creationDate in the document JSON still works." },
       "mcp": { "supported": true, "tool": "generate_basic_pdf", "since": "1.6.0", "notes": "creationDate (ISO-8601) on all nine document tools since 1.6.0; since 1.7.0 the server-wide pin PDFNATIVE_MCP_CREATION_DATE, then SOURCE_DATE_EPOCH, then the clock — an exported SOURCE_DATE_EPOCH pins every document." },
       "react": { "supported": true, "call": "<Document creationDate={Date | string}> · setDefaultCreationDate / getDefaultCreationDate (re-exported)", "since": "1.3.0", "notes": "Also a DocSpec field. The library reads no environment variable." }
+    },
+    {
+      "id": "dual-claim-pdfa2-pdfx4",
+      "label": "Dual claim: PDF/A-2b | 2u and PDF/X-4 in one file",
+      "library": { "supported": true, "call": "layout: { tagged: 'pdfa2b' | 'pdfa2u', pdfx: 'pdfx4', outputIntent, metadata.trapped }", "since": "1.9.0", "notes": "One file carrying both XMP identification blocks; tagged 'pdfa1b' or 'pdfa3b' next to pdfx is refused at build time and encryption stays exclusive with the claim. The OutputIntent must be a prtr CMYK or Gray profile." },
+      "cli": { "supported": true, "command": "render", "since": "1.6.0", "notes": "render --tagged pdfa2b|pdfa2u --pdfx pdfx4 --output-intent-icc <file.icc> --trapped true|false (the earlier CLI pre-check that refused the pair is gone); pdfa1b / pdfa3b with --pdfx → E_INPUT, encryption → exit 2. Assert both with inspect --check pdfa,pdfx." },
+      "mcp": { "supported": true, "tool": "generate_basic_pdf", "since": "1.8.0", "notes": "pdfA: 'pdfa2b' | 'pdfa2u' together with pdfx: 'pdfx4' on the six PDF/X tools (generate_basic_pdf, add_table, add_chart, add_barcode, embed_image, add_international_text); pdfa1b / pdfa3b are refused; exclusive with encrypt. Verify with validate_pdf (standard 'pdf-x-4') and inspect_pdf check: ['pdfa', 'pdfx']." },
+      "react": { "supported": true, "call": "<Document tagged=\"pdfa2b\" pdfx=\"pdfx4\" outputIntent={…} metadata={{ trapped }}>", "since": "1.4.0", "notes": "Also DocSpec fields; L_PDFX_TAGGED_CONFLICT fires only for pdfa1b / pdfa3b." }
+    },
+    {
+      "id": "ltv-offline-material",
+      "label": "LTV from material you already hold (offline B-LT)",
+      "library": { "supported": true, "call": "composeLtvData + embedValidationInfo (ocspResponseMatchesCertificate attributes OCSP responses)", "since": "1.9.0", "notes": "Builds the /DSS + /VRI payload from DER certificates, OCSP responses and CRLs without any transport; match: 'all' (the Adobe-tolerant superset) or 'chain' (only what validates each signature)." },
+      "cli": { "supported": true, "command": "ltv", "since": "1.6.0", "notes": "ltv embed --cert <pem|der> --ocsp <der> --crl <der> (each repeatable, 16 MiB each) --match all|chain (default all); exclusive with --data (the replayable JSON of ltv collect); never touches the network; verify --revocation validates the result." },
+      "mcp": { "supported": true, "tool": "add_ltv", "since": "1.8.0", "notes": "mode: 'offline' with certificatesDerBase64 (≤ 64), ocspResponsesDerBase64 (≤ 64), crlsDerBase64 (≤ 16) and match: 'all' | 'chain' (default all); no operator provider needed; add_ltv results are never cached." },
+      "react": { "supported": false, "notes": "Deliberately not re-exported: import composeLtvData / embedValidationInfo from the pdfnative peer." }
+    },
+    {
+      "id": "chart-per-value-colours",
+      "label": "Per-value bar colours and optional series labels",
+      "library": { "supported": true, "call": "ChartSeries.colors (one PdfColor per value, spot values included); ChartSeries.label optional", "since": "1.9.0", "notes": "Painted on bar, barH, stackedBar and stackedBarH; exactly one entry per value; other kinds ignore it; the legend swatch keeps the series colour. A series without a label is listed as Series N." },
+      "cli": { "supported": true, "command": "render", "since": "1.6.0", "notes": "series[].colors and an optional series label in the chart blocks of the document JSON." },
+      "mcp": { "supported": true, "tool": "add_chart", "since": "1.8.0", "notes": "series[].colors (1–1000 entries; a length that differs from values is CHART_ERROR) and label optional; also in the chart blocks of generate_basic_pdf." },
+      "react": { "supported": true, "call": "<Chart series={[{ values, colors }]}>", "since": "1.4.0", "notes": "L_CHART_SERIES_COLORS fails a colors array whose length differs from values; label may be omitted." }
+    },
+    {
+      "id": "stream-error-policy",
+      "label": "Stream-error policy on text extraction",
+      "library": { "supported": true, "call": "extractText(bytes, { onStreamError: 'limit' | 'throw' | 'skip' }); PdfStreamLimitError, StreamErrorPolicy", "since": "1.9.0", "notes": "limit (default) rethrows a stream past the decompression cap so an unread page is never mistaken for an empty one and skips a corrupt stream; throw fails on any undecodable stream; skip is the pre-1.9.0 silent behaviour." },
+      "cli": { "supported": true, "command": "extract-text / compare", "since": "1.6.0", "notes": "--on-stream-error limit|throw|skip on both commands (default limit → E_INPUT naming the two remedies); only throw rules out an equal compare verdict over an unread stream (limit still skips a corrupt one)." },
+      "mcp": { "supported": true, "tool": "extract_text", "since": "1.8.0", "notes": "onStreamError: 'limit' | 'skip' | 'throw' (default limit → PDF_PARSE_FAILED with the remedy; skip restores the earlier behaviour)." },
+      "react": { "supported": false, "notes": "Deliberately not re-exported (the renderer reads no PDF): import extractText and PdfStreamLimitError from the pdfnative peer." }
+    },
+    {
+      "id": "governance-contract",
+      "label": "AI-governance contract (policy, protocol, draft check)",
+      "library": { "supported": false, "notes": "The contract lives in the repository (.github/ai-governance.json, .github/AGENT_RULES.md, npm run verify:issue), not in the npm package; the three downstream packages ship it as a runtime capability." },
+      "cli": { "supported": true, "command": "govern", "since": "1.2.0", "notes": "govern rules | policy | verify-issue <draft>; a draft that breaks the contract is E_POLICY. Nothing is submitted — a human reviews and files it." },
+      "mcp": { "supported": true, "tool": "draft_governance_issue", "since": "1.4.0", "notes": "draft_governance_issue assembles a compliant draft plus a compliance report locally (GOVERNANCE_VIOLATION otherwise) and never submits; the governance_contract and draft_issue_workflow prompts. Since 1.8.0 the resources pdfnative://governance/policy (JSON) and pdfnative://governance/rules (Markdown) serve the contract byte-identical to the repository files, always listed, sandbox or not." },
+      "react": { "supported": true, "call": "aiGovernancePolicy / agentRulesText / validateIssueDraft", "since": "1.1.0", "notes": "The policy, the protocol text and a pure-string draft validator travel with the package; nothing writes to GitHub or opens a socket." }
     }
   ]
 }

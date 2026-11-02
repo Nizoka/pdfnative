@@ -66,9 +66,9 @@
 <!-- guide:render:start -->
 <h1 id="pdfnative-cli--command-line-interface-guide">pdfnative-cli — Command-Line Interface Guide</h1>
 <blockquote>
-<p><strong>Tracks the latest published <code>pdfnative-cli</code></strong> (v1.5.0, requires pdfnative ≥ 1.8.0 — pins <code>^1.8.0</code>). The CLI versions independently from the library. Live package versions — and the <code>pdfnative</code> version each one is built on — are shown at the top of the <a href="../index.html">documentation home</a>. Full history: <a href="https://github.com/Nizoka/pdfnative-cli/releases" target="_blank" rel="noopener">pdfnative-cli releases</a>.</p>
+<p><strong>Tracks the latest published <code>pdfnative-cli</code></strong> (v1.6.0, requires pdfnative ≥ 1.9.0 — pins <code>^1.9.0</code>). The CLI versions independently from the library. Live package versions — and the <code>pdfnative</code> version each one is built on — are shown at the top of the <a href="../index.html">documentation home</a>. Full history: <a href="https://github.com/Nizoka/pdfnative-cli/releases" target="_blank" rel="noopener">pdfnative-cli releases</a>.</p>
 </blockquote>
-<p><a href="https://github.com/Nizoka/pdfnative-cli" target="_blank" rel="noopener"><code>pdfnative-cli</code></a> is the <strong>official command-line interface</strong> for the <a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener"><code>pdfnative</code></a> library. It exposes 21 commands in five groups — create &amp; edit (<code>render</code>, <code>fill</code>, <code>annotate</code>, <code>metadata</code>), page tree (<code>merge</code>, <code>split</code>, <code>extract</code>), security (<code>sign</code>, <code>verify</code>, <code>ltv</code>, <code>doc-timestamp</code>, <code>encrypt</code>, <code>decrypt</code>), read &amp; extract (<code>inspect</code>, <code>extract-text</code>, <code>compare</code>), and automation &amp; meta (<code>batch</code>, <code>doctor</code>, <code>schema</code>, <code>completion</code>, <code>govern</code>) — that together cover the full document lifecycle from JSON to a signed, timestamped, archive-grade PDF with the complete PAdES ladder (B-B → B-T → B-LT → B-LTA), plus page-tree editing, markup annotations, document comparison, and an AI-governance gate, with an agent-native automation contract for autonomous AI and CI pipelines. Since v1.5.0 it also exposes the typography engine, PDF/X-4 output with CMYK colours, custom fonts from disk and byte-reproducible builds.</p>
+<p><a href="https://github.com/Nizoka/pdfnative-cli" target="_blank" rel="noopener"><code>pdfnative-cli</code></a> is the <strong>official command-line interface</strong> for the <a href="https://github.com/Nizoka/pdfnative" target="_blank" rel="noopener"><code>pdfnative</code></a> library. It exposes 21 commands in five groups — create &amp; edit (<code>render</code>, <code>fill</code>, <code>annotate</code>, <code>metadata</code>), page tree (<code>merge</code>, <code>split</code>, <code>extract</code>), security (<code>sign</code>, <code>verify</code>, <code>ltv</code>, <code>doc-timestamp</code>, <code>encrypt</code>, <code>decrypt</code>), read &amp; extract (<code>inspect</code>, <code>extract-text</code>, <code>compare</code>), and automation &amp; meta (<code>batch</code>, <code>doctor</code>, <code>schema</code>, <code>completion</code>, <code>govern</code>) — that together cover the full document lifecycle from JSON to a signed, timestamped, archive-grade PDF with the complete PAdES ladder (B-B → B-T → B-LT → B-LTA), plus page-tree editing, markup annotations, document comparison, and an AI-governance gate, with an agent-native automation contract for autonomous AI and CI pipelines. Since v1.5.0 it also exposes the typography engine, PDF/X-4 output with CMYK colours, custom fonts from disk and byte-reproducible builds; v1.6.0 adds right-to-left layout under the full Unicode Bidirectional Algorithm, 32 Unicode scripts, spot colours, the PDF/A-2 + PDF/X-4 dual claim, JPEG 2000 images, a stream-limit policy for text extraction and PAdES B-LT from material you already hold.</p>
 <blockquote>
 <p><strong>Why a CLI?</strong> Many real-world workflows live outside Node.js: shell scripts, CI pipelines, Docker containers, Makefiles, batch jobs, build tools written in other languages. The CLI lets all of them call <code>pdfnative</code> without writing JavaScript, and is fully composable through stdin/stdout pipelines.</p>
 </blockquote>
@@ -94,7 +94,7 @@
 </tr>
 <tr>
 <td><code>extract-text</code></td>
-<td><code>extractText()</code></td>
+<td><code>extractText()</code> — since v1.6.0 with <code>onStreamError</code> (<code>--on-stream-error limit|throw|skip</code>)</td>
 </tr>
 <tr>
 <td><code>doctor</code></td>
@@ -106,7 +106,7 @@
 </tr>
 <tr>
 <td><code>inspect</code></td>
-<td><code>openPdf()</code> / <code>getInfo()</code> / <code>pageCount</code> / <code>getPageLabels()</code> / <code>getAnnotations()</code> / <code>validatePdfUA()</code> / <code>validatePdfX()</code> <em>(v1.5.0)</em></td>
+<td><code>openPdf()</code> / <code>getInfo()</code> / <code>pageCount</code> / <code>getPageLabels()</code> / <code>getAnnotations()</code> / <code>validatePdfUA()</code> / <code>validatePdfX()</code> <em>(v1.5.0)</em> / <code>decodePdfTextString()</code> <em>(v1.6.0 — <code>/Info</code> strings in PDFDocEncoding and UTF-16)</em></td>
 </tr>
 <tr>
 <td><code>verify</code></td>
@@ -126,7 +126,7 @@
 </tr>
 <tr>
 <td><code>annotate</code></td>
-<td><code>PdfModifier.addAnnotation()</code> / <code>buildAnnotationBody()</code></td>
+<td><code>PdfModifier.addAnnotation()</code> / <code>buildAnnotationBody()</code> — since v1.6.0 the <code>link</code> type too (the engine builds the <code>/Link</code> + <code>/URI</code> body; the CLI&#39;s own builder is gone)</td>
 </tr>
 <tr>
 <td><code>metadata</code></td>
@@ -134,7 +134,7 @@
 </tr>
 <tr>
 <td><code>ltv</code></td>
-<td><code>collectValidationInfo()</code> / <code>embedValidationInfo()</code> / <code>addValidationInfo()</code> (PAdES B-LT <code>/DSS</code>)</td>
+<td><code>collectValidationInfo()</code> / <code>embedValidationInfo()</code> / <code>addValidationInfo()</code> (PAdES B-LT <code>/DSS</code>) / <code>composeLtvData()</code> <em>(v1.6.0 — <code>embed --cert</code> / <code>--ocsp</code> / <code>--crl</code> material)</em></td>
 </tr>
 <tr>
 <td><code>doc-timestamp</code></td>
@@ -142,7 +142,7 @@
 </tr>
 <tr>
 <td><code>compare</code></td>
-<td><code>openPdf()</code> / <code>extractText()</code> / <code>readFormFields()</code> / <code>getAnnotations()</code> / <code>listSignatures()</code> — text + structure diff, implemented in the CLI</td>
+<td><code>openPdf()</code> / <code>extractText()</code> / <code>readFormFields()</code> / <code>getAnnotations()</code> / <code>listSignatures()</code> / <code>decodePdfTextString()</code> <em>(v1.6.0)</em> — text + structure diff, implemented in the CLI</td>
 </tr>
 <tr>
 <td><code>govern</code></td>
@@ -373,7 +373,7 @@ pdfnative render --input doc.json --output report.pdf \
 <tr>
 <td><code>--strict</code> <em>(v1.4.0)</em></td>
 <td>off</td>
-<td>Escalate conformance diagnostics into a hard failure <strong>before the first output byte</strong> — exit 1, <code>E_CHECK_FAILED</code>. Since v1.5.0 the set is 9 codes: PDF/A (<code>PDFA_NO_FONT_ENTRIES</code>, <code>PDFA_UNEMBEDDED_FORM_FONT</code>, <code>PDFA_DEVICE_CMYK_IMAGE</code>, <code>PDFA_DEVICE_CMYK_CONTENT</code>, <code>PDFA_ICC_PROFILE_VERSION</code>), PDF/X (<code>PDFX_NO_FONT_ENTRIES</code>, <code>PDFX_DEVICE_CMYK</code>, <code>PDFX_ANNOTATIONS</code>) and <code>TYPOGRAPHY_FEATURE_INEFFECTIVE</code>. Without it they are <code>warning:</code> lines on stderr (hidden by <code>--quiet</code>) plus an additive <code>diagnostics[]</code> array in the <code>--json</code> envelope</td>
+<td>Escalate conformance diagnostics into a hard failure <strong>before the first output byte</strong> — exit 1, <code>E_CHECK_FAILED</code>. Since v1.6.0 the set is 13 diagnostic codes: PDF/A (<code>PDFA_NO_FONT_ENTRIES</code>, <code>PDFA_UNEMBEDDED_FORM_FONT</code>, <code>PDFA_DEVICE_CMYK_IMAGE</code>, <code>PDFA_DEVICE_CMYK_CONTENT</code>, <code>PDFA_ICC_PROFILE_VERSION</code>, and <em>(v1.6.0)</em> <code>PDFA_GLYPH_WITHOUT_UNICODE</code>, <code>PDFA1_JPX_IMAGE</code> — a JPEG 2000 image under PDF/A-1, which is PDF 1.4 — and <code>PDFA_JPX_IMAGE</code> — a JPEG 2000 image with an opacity channel or a channel count other than 1, 3 or 4 under PDF/A-2/3), PDF/X (<code>PDFX_NO_FONT_ENTRIES</code>, <code>PDFX_DEVICE_CMYK</code>, <code>PDFX_ANNOTATIONS</code>), <code>TYPOGRAPHY_FEATURE_INEFFECTIVE</code> and <em>(v1.6.0)</em> <code>TEXT_GLYPH_NOT_COVERED</code> (a code point no registered font covers). Without it they are <code>warning:</code> lines on stderr (hidden by <code>--quiet</code>) plus an additive <code>diagnostics[]</code> array in the <code>--json</code> envelope</td>
 </tr>
 <tr>
 <td><code>--dry-run</code> (global)</td>
@@ -448,7 +448,7 @@ pdfnative render --input doc.json --output report.pdf \
 <tbody><tr>
 <td><code>--tagged &lt;level&gt;</code></td>
 <td><code>none</code></td>
-<td>Unified PDF/A flag: <code>none</code>, <code>pdfa1b</code>, <code>pdfa2b</code>, <code>pdfa2u</code>, <code>pdfa3b</code></td>
+<td>Unified PDF/A flag: <code>none</code>, <code>pdfa1b</code>, <code>pdfa2b</code>, <code>pdfa2u</code>, <code>pdfa3b</code>. Since v1.6.0 <code>pdfa2b</code> / <code>pdfa2u</code> combine with <code>--pdfx pdfx4</code> (the dual claim, below); the <code>--json</code> envelope carries <code>tagged</code> when a level is claimed</td>
 </tr>
 <tr>
 <td><code>--conformance &lt;level&gt;</code></td>
@@ -457,7 +457,7 @@ pdfnative render --input doc.json --output report.pdf \
 </tr>
 </tbody></table>
 <h4 id="pdfx-4-output-v150">PDF/X-4 output <em>(v1.5.0)</em><a class="heading-anchor" href="#pdfx-4-output-v150" aria-label="Link to this section">#</a></h4>
-<p>One conformance claim per file — <code>--pdfx</code> is mutually exclusive with <code>--tagged</code> / <code>--conformance</code> and with every encryption flag (rejected with exit 2 before the build). Needs pdfnative ≥ 1.8.0.</p>
+<p><code>--pdfx</code> is mutually exclusive with every encryption flag (rejected with exit 2 before the build). Since v1.6.0 it is <strong>no longer exclusive with <code>--tagged</code></strong>: <code>--tagged pdfa2b</code> or <code>pdfa2u</code> next to <code>--pdfx pdfx4</code> is the PDF/A-2 + PDF/X-4 <strong>dual claim</strong> — two OutputIntents and both identifications in the XMP; the CLI pre-check that refused the pair is gone. <code>pdfa1b</code> and <code>pdfa3b</code> with <code>--pdfx</code> are refused by the engine with a level-specific message, transmitted as <code>E_INPUT</code> (exit 1, not the former usage error). Needs pdfnative ≥ 1.9.0.</p>
 <table>
 <thead>
 <tr>
@@ -469,12 +469,12 @@ pdfnative render --input doc.json --output report.pdf \
 <tbody><tr>
 <td><code>--pdfx pdfx4</code></td>
 <td>—</td>
-<td>Claim PDF/X-4 (ISO 15930-7). Requires a printer (<code>prtr</code>) output intent and every font embedded (<code>--font latin --lang latin</code> or <code>--font-file</code>). <code>--trapped unknown</code> is refused; omitted, the file declares <code>/Trapped /False</code>. Each page gets a TrimBox — from <code>layout.print</code> (bleed or <code>trimBox</code>), else the BleedBox or MediaBox — unless it sets an ArtBox; both is an error. Engine coherence errors (missing output profile, <code>--trapped unknown</code>, <code>layout.pdfx</code> combined with <code>layout.tagged</code>, TrimBox and ArtBox together, …) map to <code>E_INPUT</code>; the <code>--json</code> envelope carries <code>pdfx: &quot;pdfx4&quot;</code></td>
+<td>Claim PDF/X-4 (ISO 15930-7). Requires a printer (<code>prtr</code>) output intent and every font embedded (<code>--font latin --lang latin</code> or <code>--font-file</code>). <code>--trapped unknown</code> is refused; omitted, the file declares <code>/Trapped /False</code>. Each page gets a TrimBox — from <code>layout.print</code> (bleed or <code>trimBox</code>), else the BleedBox or MediaBox — unless it sets an ArtBox; both is an error. Engine coherence errors (missing output profile, <code>--trapped unknown</code>, <code>layout.pdfx</code> with <code>pdfa1b</code> / <code>pdfa3b</code>, TrimBox and ArtBox together, …) map to <code>E_INPUT</code>; the <code>--json</code> envelope carries <code>pdfx: &quot;pdfx4&quot;</code> (and <code>tagged</code> under the dual claim)</td>
 </tr>
 <tr>
 <td><code>--output-intent-icc &lt;file.icc&gt;</code></td>
 <td>—</td>
-<td>ICC profile for <code>layout.outputIntent</code> (RGB, CMYK or Gray; <code>prtr</code> class for PDF/X-4). 16 MiB cap, <code>acsp</code> signature checked, then validated by the engine</td>
+<td>ICC profile for <code>layout.outputIntent</code> (RGB, CMYK or Gray). PDF/X-4 needs a printer-class (<code>prtr</code>) profile — <strong>CMYK or Gray</strong> both qualify. 16 MiB cap, <code>acsp</code> signature checked, then validated by the engine</td>
 </tr>
 <tr>
 <td><code>--output-intent-id &lt;s&gt;</code></td>
@@ -487,7 +487,7 @@ pdfnative render --input doc.json --output report.pdf \
 <td><code>/Info /Trapped</code> (also XMP); wins over <code>metadata.trapped</code> in the JSON. Under <code>--pdfx</code>, <code>unknown</code> is refused and omitted means <code>false</code></td>
 </tr>
 </tbody></table>
-<p>Colours everywhere — document JSON, <code>--layout</code> and colour flags — accept CMYK beside hex / RGB: <code>&quot;c m y k&quot;</code> operands in 0–1 or <code>[c,m,y,k]</code> in percent (<code>DeviceCMYK</code>). <code>layout.print.marks.colourBars: true | { tints, size }</code> adds printer&#39;s colour bars to the marks. Re-check the result with <code>pdfnative inspect --check pdfx</code> (structural validation evidence, not a certified preflight).</p>
+<p>Colours everywhere — document JSON, <code>--layout</code> and colour flags — accept CMYK beside hex / RGB: <code>&quot;c m y k&quot;</code> operands in 0–1 or <code>[c,m,y,k]</code> in percent (<code>DeviceCMYK</code>). <code>layout.print.marks.colourBars: true | { tints, size }</code> adds printer&#39;s colour bars to the marks. Since v1.6.0 spot inks declared in <code>layout.print.spotColours</code> can be painted next to them (see <em>Right-to-left, spot colours, the dual claim &amp; JPEG 2000</em> below). Re-check the result with <code>pdfnative inspect --check pdfx</code> — or <code>--check pdfa,pdfx</code> for the dual claim (structural validation evidence, not a certified preflight).</p>
 <h4 id="watermarks">Watermarks<a class="heading-anchor" href="#watermarks" aria-label="Link to this section">#</a></h4>
 <table>
 <thead>
@@ -502,7 +502,7 @@ pdfnative render --input doc.json --output report.pdf \
 </tr>
 <tr>
 <td><code>--watermark-image &lt;path&gt;</code></td>
-<td>Image watermark (PNG/JPEG, centered, aspect-preserved)</td>
+<td>Image watermark (PNG/JPEG and, since v1.6.0, JPEG 2000 <code>.jp2</code> / <code>.j2k</code> — the format is sniffed from the bytes, never from the extension; centered, aspect-preserved)</td>
 </tr>
 <tr>
 <td><code>--watermark-opacity &lt;0..1&gt;</code></td>
@@ -607,14 +607,14 @@ pdfnative render --input doc.json --output report.pdf \
 </tr>
 <tr>
 <td><code>--font &lt;name&gt;</code> <em>(v1.1.0)</em></td>
-<td>Register a bundled pdfnative font shortcut. Repeatable. Allow-list covers every bundled font: <code>latin</code>, <code>emoji</code>, <code>color-emoji</code>, <code>math</code> <em>(v1.2.0)</em>, and the 27 script codes — <code>ar hy bn ru hi am ka el he ja km ko my pl zh si ta te th bo tr vi</code> plus <em>(v1.5.0)</em> <code>lo nod khb tdd cjm</code> (Lao, Tai Tham, New Tai Lue, Tai Le, Cham); <code>ha yo ig sw</code> alias <code>latin</code>. Each shortcut name doubles as its <code>--lang</code> code. Since v1.5.0 <code>--variant table</code> embeds these fonts too</td>
+<td>Register a bundled pdfnative font shortcut. Repeatable. Allow-list covers every bundled font — 36 bundled font modules: <code>latin</code>, <code>emoji</code>, <code>color-emoji</code>, <code>math</code> <em>(v1.2.0)</em>, and the 32 script codes — <code>ar hy bn ru hi am ka el he ja km ko my pl zh si ta te th bo tr vi</code> plus <em>(v1.5.0)</em> <code>lo nod khb tdd cjm</code> (Lao, Tai Tham, New Tai Lue, Tai Le, Cham) plus <em>(v1.6.0)</em> <code>gu pa kn ml or</code> (Gujarati, Gurmukhi / Punjabi, Kannada, Malayalam, Odia); <code>ha yo ig sw</code> alias <code>latin</code>. Each shortcut name doubles as its <code>--lang</code> code. Since v1.5.0 <code>--variant table</code> embeds these fonts too</td>
 </tr>
 <tr>
 <td><code>--font-file &lt;path.ttf&gt;[:name]</code> <em>(v1.5.0)</em></td>
 <td>Register a TrueType/OpenType font from disk. Repeatable. Path-traversal check, 32 MiB cap, magic bytes (<code>00 01 00 00</code>, <code>true</code>, <code>OTTO</code> — collections and WOFF are refused), then parsed and validated by pdfnative (errors → <code>E_INPUT</code>, warnings → stderr). The name defaults to the file stem (<code>[a-z0-9-]</code>) and is added to <code>--lang</code>; a name that collides with the bundled allow-list is a usage error. Never loadable from a JSON payload</td>
 </tr>
 </tbody></table>
-<p><code>--lang</code> activates a <em>programmatically registered</em> font loader via <code>loadFontData(code)</code>. Latin scripts are built-in. With v1.1.0, every bundled font is registrable directly through <code>--font</code> — no wrapper script needed for the 27 bundled scripts, colour emoji, or Latin. pdfnative routes each code point to the font whose cmap covers it. Since v1.5.0, a font you ship yourself is registered with <code>--font-file</code>; see <em>Recipes → Multilang fonts</em> for the library path when you need a custom loader.</p>
+<p><code>--lang</code> activates a <em>programmatically registered</em> font loader via <code>loadFontData(code)</code>. Latin scripts are built-in. With v1.1.0, every bundled font is registrable directly through <code>--font</code> — no wrapper script needed for the 32 bundled scripts, colour emoji, or Latin. pdfnative routes each code point to the font whose cmap covers it. Since v1.5.0, a font you ship yourself is registered with <code>--font-file</code>; see <em>Recipes → Multilang fonts</em> for the library path when you need a custom loader.</p>
 <h4 id="bookmarks-math--layout-tooling-v120">Bookmarks, math &amp; layout tooling <em>(v1.2.0)</em><a class="heading-anchor" href="#bookmarks-math--layout-tooling-v120" aria-label="Link to this section">#</a></h4>
 <table>
 <thead>
@@ -647,11 +647,11 @@ pdfnative render --input paper.json --output paper.pdf --outline auto --font mat
 pdfnative render --input report.json --inspect-layout &gt; layout.json
 </code></pre>
 <h4 id="print-production-images-from-json--charts-v2-v140">Print production, images from JSON &amp; charts v2 <em>(v1.4.0)</em><a class="heading-anchor" href="#print-production-images-from-json--charts-v2-v140" aria-label="Link to this section">#</a></h4>
-<p>Everything here needs pdfnative ≥ 1.7.0 and is reachable through the existing <code>--layout</code> file and the document JSON. v1.4.0 added no flags for it; since v1.5.0, typography and PDF/X have dedicated flags (see <em>PDF/X-4 output</em> above and <em>Typography</em> below), and <code>layout.outputIntent</code> can be supplied with <code>--output-intent-icc</code>:</p>
+<p>Everything here is reachable through the existing <code>--layout</code> file and the document JSON (pdfnative ≥ 1.9.0 on the current release). v1.4.0 added no flags for it; since v1.5.0, typography and PDF/X have dedicated flags (see <em>PDF/X-4 output</em> above and <em>Typography</em> below), and <code>layout.outputIntent</code> can be supplied with <code>--output-intent-icc</code>:</p>
 <ul>
-<li><strong>Image blocks in the document JSON</strong> — <code>{ &quot;type&quot;: &quot;image&quot;, &quot;src&quot;: &quot;logo.png&quot; }</code> (path resolved relative to the <code>--input</code> JSON, same validation as <code>--attachment</code>) or <code>{ &quot;type&quot;: &quot;image&quot;, &quot;dataBase64&quot;: &quot;…&quot; }</code> for inline JPEG/PNG.</li>
+<li><strong>Image blocks in the document JSON</strong> — <code>{ &quot;type&quot;: &quot;image&quot;, &quot;src&quot;: &quot;logo.png&quot; }</code> (path resolved relative to the <code>--input</code> JSON, same validation as <code>--attachment</code>) or <code>{ &quot;type&quot;: &quot;image&quot;, &quot;dataBase64&quot;: &quot;…&quot; }</code> for inline JPEG/PNG — and, since v1.6.0, JPEG 2000 (<code>.jp2</code> container or raw <code>.j2k</code> codestream), passed through as <code>/JPXDecode</code>.</li>
 <li><strong><code>layout.print</code></strong> — <code>bleed</code>, <code>trimBox</code> / <code>bleedBox</code> / <code>artBox</code> / <code>cropBox</code>, vector printer&#39;s marks (<code>print.marks</code>), and <code>/UserUnit</code> (1–75 000). <code>merge</code> / <code>split</code> / <code>extract</code> now preserve these boxes too.</li>
-<li><strong><code>layout.outputIntent</code></strong> — a custom RGB ICC output intent; <strong><code>layout.viewerPreferences</code></strong> — <code>duplex</code>, <code>pickTrayByPDFSize</code>, <code>printPageRange</code>, <code>numCopies</code>.</li>
+<li><strong><code>layout.outputIntent</code></strong> — a custom ICC output intent (RGB, CMYK or Gray since v1.5.0); <strong><code>layout.viewerPreferences</code></strong> — <code>duplex</code>, <code>pickTrayByPDFSize</code>, <code>printPageRange</code>, <code>numCopies</code>.</li>
 <li><strong><code>params.metadata</code></strong> — <code>author</code>, <code>subject</code>, <code>keywords</code>, and <code>trapped: True|False|Unknown</code>, written to <code>/Info</code> and XMP.</li>
 <li><strong>Charts v2</strong> — the <code>chart</code> block now covers 9 types (adds <code>stackedBar</code>, <code>stackedBarH</code>, <code>area</code>, <code>scatter</code>), a secondary Y axis (<code>series.yAxis: &quot;right&quot;</code> + <code>axis2</code>), <code>category</code> / <code>linear</code> / <code>time</code> X axes, log scale, <code>dataLabels</code>, <code>labelStride</code>, and <code>labelRotation</code>.</li>
 </ul>
@@ -686,6 +686,34 @@ pdfnative render --input report.json --inspect-layout &gt; layout.json
 <pre><code class="language-bash">pdfnative render --input report.json --output report.pdf --font latin --lang latin \
   --split-paragraphs --keep-headings-with-next --kerning --font-features onum,smcp
 </code></pre>
+<h4 id="right-to-left-spot-colours-the-dual-claim--jpeg-2000-v160">Right-to-left, spot colours, the dual claim &amp; JPEG 2000 <em>(v1.6.0)</em><a class="heading-anchor" href="#right-to-left-spot-colours-the-dual-claim--jpeg-2000-v160" aria-label="Link to this section">#</a></h4>
+<p>Two new <code>render</code> flags (57 → 59) carry the pdfnative 1.9.0 bidirectional engine; everything else in this block is reachable from the document JSON or a <code>--layout</code> file, with no flag of its own.</p>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>--direction auto|ltr|rtl</code></td>
+<td>— <em>(unset)</em></td>
+<td><code>layout.direction</code> — the base text direction under the full Unicode Bidirectional Algorithm (UAX #9). <code>auto</code> resolves each paragraph from its first strong character; <code>rtl</code> right-aligns and justifies in visual order, with punctuation and numbers on the right side. A paragraph block&#39;s own <code>direction</code> wins. <strong>There is no CLI default</strong>: omitted, nothing is set and the output is the left-to-right behaviour of the previous engine. The envelope carries <code>direction</code> when set</td>
+</tr>
+<tr>
+<td><code>--actual-text [true|false]</code></td>
+<td>— <em>(engine default <code>true</code>)</em></td>
+<td><code>layout.actualText</code> — untagged shaped and right-to-left runs carry their logical text as <code>/Span /ActualText</code>, so <code>extract-text</code> returns Arabic, Hebrew, Khmer, Myanmar or Indic text as typed. Only <code>false</code> changes the output (the bare glyph runs, extraction in visual order — not the 1.8.0 bytes: the 1.9.0 subsets and line structure still apply); it removes the logical-order guarantee on that file, and the envelope carries <code>actualText: false</code> only in that case</td>
+</tr>
+</tbody></table>
+<pre><code class="language-bash">pdfnative render --input letter.json --output letter.pdf --direction auto \
+  --font ar --font he --font latin --lang ar,he,latin
+pdfnative extract-text --input letter.pdf --format ndjson
+</code></pre>
+<p><strong>Spot colours</strong> — JSON only (document JSON or <code>--layout</code>), no CLI validator: declare the inks in <code>layout.print.spotColours: [{ &quot;name&quot;: &quot;PANTONE 300 C&quot;, &quot;alternate&quot;: [100, 44, 0, 0] }]</code> (the alternate is a CMYK tuple in percent or an RGB tuple), then paint with <code>{ &quot;spot&quot;: &quot;PANTONE 300 C&quot; }</code>, <code>{ &quot;spot&quot;: &quot;…&quot;, &quot;tint&quot;: 0.5 }</code> (0–1) — a <code>/Separation</code> colour space named after the ink — or <code>{ &quot;inks&quot;: { &quot;PANTONE 300 C&quot;: 1, &quot;PANTONE 1235 C&quot;: 0.4 } }</code>, a <code>/DeviceN</code> mix. Accepted wherever a colour is: text, tables and charts, where <code>series[].colors</code> paints one colour per value on the four bar kinds and a series <code>label</code> is optional (<code>Series N</code> when missing). The engine&#39;s refusals (an undeclared ink, a mix across alternate spaces — messages starting with <code>Spot colour </code> / <code>Ink mix </code>) are <code>E_INPUT</code>, before any byte is written under <code>--dry-run</code>. A RIP that knows the ink puts it on its own plate; a composite proof paints the alternate.</p>
+<p><strong>JPEG 2000</strong> — an <code>image</code> block or <code>--watermark-image</code> whose bytes are a <code>.jp2</code> container or a raw <code>.j2k</code> codestream is embedded untouched as <code>/JPXDecode</code> (PDF 1.5), with the colour space and opacity its header declares (an RGBA image becomes <code>/SMaskInData 1</code>). The engine sniffs the magic bytes — the file extension is never consulted. Under PDF/A the image raises <code>PDFA1_JPX_IMAGE</code> (PDF/A-1 has no JPX filter) or <code>PDFA_JPX_IMAGE</code> (an opacity channel, or a channel count other than 1, 3 or 4, under PDF/A-2/3) — both escalate under <code>--strict</code>.</p>
+<p><strong>The dual claim</strong> — <code>--tagged pdfa2b --pdfx pdfx4 --output-intent-icc &lt;cmyk-or-gray.icc&gt;</code> writes one file that claims PDF/A-2b (or 2u) <em>and</em> PDF/X-4; <code>inspect --check pdfa,pdfx</code> asserts both with one exit code. <code>pdfa1b</code> and <code>pdfa3b</code> stay exclusive with <code>--pdfx</code> (engine refusal, <code>E_INPUT</code>). See <em>PDF/X-4 output</em> above for the output-intent rules.</p>
 <h4 id="iteration-helpers-v030">Iteration helpers <em>(v0.3.0)</em><a class="heading-anchor" href="#iteration-helpers-v030" aria-label="Link to this section">#</a></h4>
 <table>
 <thead>
@@ -921,7 +949,7 @@ pdfnative ltv add --online                         # LTV for the doc-timestamp i
 <tr>
 <td><code>--check &lt;assertion&gt;</code></td>
 <td>—</td>
-<td>Repeatable; ANDed. Values: <code>pdfa</code>, <code>signed</code>, <code>encrypted</code>, <code>pdfua</code> <em>(v1.1.0)</em>, <code>signatures&gt;=N</code> <em>(v1.4.0)</em>, <code>pdfx</code> <em>(v1.5.0 — passes when the structural PDF/X-4 validation holds)</em>. Sets exit 0 = pass, 1 = fail</td>
+<td>Repeatable; ANDed. Values: <code>pdfa</code>, <code>signed</code>, <code>encrypted</code>, <code>pdfua</code> <em>(v1.1.0)</em>, <code>signatures&gt;=N</code> <em>(v1.4.0)</em>, <code>pdfx</code> <em>(v1.5.0 — passes when the structural PDF/X-4 validation holds)</em>. Since v1.6.0 a comma list is accepted next to the repeated form — <code>--check pdfa,pdfx</code> asserts the dual claim in one flag (an empty piece, e.g. a trailing comma, is a usage error). Sets exit 0 = pass, 1 = fail</td>
 </tr>
 <tr>
 <td><code>--summary</code> <em>(v1.1.0)</em></td>
@@ -944,7 +972,11 @@ pdfnative ltv add --online                         # LTV for the doc-timestamp i
   --check pdfa --check signed \
   --format json &gt; dist/q1.report.json
 echo &quot;exit code: $?&quot;   # 0 if both assertions hold
+
+# v1.6.0: the dual claim, one flag, one exit code
+pdfnative inspect --input brochure.pdf --check pdfa,pdfx --json --summary
 </code></pre>
+<p>Since v1.6.0 the <code>/Info</code> strings (<code>title</code>, <code>author</code>, <code>subject</code>, <code>keywords</code>, …) are decoded through the engine&#39;s <code>decodePdfTextString</code> — PDFDocEncoding (U+2022 for <code>0x80</code>, U+2026 for <code>0x83</code>, …) as well as UTF-16BE with its BOM — so a title with an em dash or a bullet reads back as written. <code>compare</code> decodes the same way.</p>
 <blockquote>
 <p><strong>Behaviour change in v1.4.0:</strong> <code>--check signed</code> now counts only <em>actual</em> signatures — unsigned placeholders and <code>/DocTimeStamp</code> revisions no longer satisfy it. A placeholder-only PDF that passed under v1.3.0 fails under v1.4.0; this is a deliberate correctness fix. v1.4.0 also fixes the <code>signatures</code> and <code>formFields</code> counters in the JSON body, which previously always reported 0. Use <code>--check &quot;signatures&gt;=1&quot;</code> together with <code>--signatures</code> when you need the structural inventory.</p>
 </blockquote>
@@ -1019,7 +1051,7 @@ echo &quot;exit code: $?&quot;   # 0 if both assertions hold
 <p>Since v1.4.0 the CLI also <strong>creates</strong> LTV material — <code>sign --timestamp</code> (B-T), <a href="#pdfnative-ltv-v140"><code>ltv</code></a> (B-LT <code>/DSS</code>), and <a href="#pdfnative-doc-timestamp-v140"><code>doc-timestamp</code></a> (B-LTA) — so <code>verify</code> and the write side now cover the same PAdES ladder.</p>
 </blockquote>
 <h3 id="pdfnative-ltv-v140"><code>pdfnative ltv</code> <em>(v1.4.0)</em><a class="heading-anchor" href="#pdfnative-ltv-v140" aria-label="Link to this section">#</a></h3>
-<p>Embeds long-term-validation material — certificates, OCSP responses, CRLs — into a signed PDF&#39;s <code>/DSS</code> dictionary (PAdES <strong>B-LT</strong>), via the engine&#39;s <code>collectValidationInfo</code> / <code>embedValidationInfo</code> / <code>addValidationInfo</code>.</p>
+<p>Embeds long-term-validation material — certificates, OCSP responses, CRLs — into a signed PDF&#39;s <code>/DSS</code> dictionary (PAdES <strong>B-LT</strong>), via the engine&#39;s <code>collectValidationInfo</code> / <code>embedValidationInfo</code> / <code>addValidationInfo</code> and, since v1.6.0, <code>composeLtvData</code> for material you already hold.</p>
 <pre><code class="language-bash"># Connected machine: gather the revocation evidence as replayable JSON
 pdfnative ltv collect --input signed.pdf --online --output ltv-data.json
 
@@ -1028,7 +1060,12 @@ pdfnative ltv embed --input signed.pdf --data ltv-data.json --output signed.lt.p
 
 # Or both in one pass on a connected machine
 pdfnative ltv add --input signed.pdf --online --output signed.lt.pdf
+
+# v1.6.0 — material you already hold, no collect step, no network
+pdfnative ltv embed --input signed.pdf --output signed.lt.pdf \
+  --cert chain.pem --ocsp signer.ocsp.der --crl ca.crl --match chain
 </code></pre>
+<p>11 command flags since v1.6.0 (7 → 11; <code>--dry-run</code> is global):</p>
 <table>
 <thead>
 <tr>
@@ -1060,7 +1097,27 @@ pdfnative ltv add --input signed.pdf --online --output signed.lt.pdf
 <tr>
 <td><code>--data &lt;file&gt;</code></td>
 <td>—</td>
-<td>Evidence JSON produced by <code>collect</code> (for <code>embed</code>)</td>
+<td>Evidence JSON produced by <code>collect</code> (for <code>embed</code>). Mutually exclusive with the material flags below (exit 2)</td>
+</tr>
+<tr>
+<td><code>--cert &lt;file&gt;</code> <em>(v1.6.0)</em></td>
+<td>—</td>
+<td><code>embed</code> only: certificates for the <code>/DSS</code> — a PEM bundle (split into its blocks) or a single DER file. Repeatable, 16 MiB cap per file, parsed by the engine</td>
+</tr>
+<tr>
+<td><code>--ocsp &lt;file&gt;</code> <em>(v1.6.0)</em></td>
+<td>—</td>
+<td><code>embed</code> only: a DER OCSP response. Repeatable, 16 MiB cap</td>
+</tr>
+<tr>
+<td><code>--crl &lt;file&gt;</code> <em>(v1.6.0)</em></td>
+<td>—</td>
+<td><code>embed</code> only: a DER CRL. Repeatable, 16 MiB cap</td>
+</tr>
+<tr>
+<td><code>--match all|chain</code> <em>(v1.6.0)</em></td>
+<td><code>all</code></td>
+<td>How the material is referenced from the per-signature <code>/VRI</code> dictionaries: <code>all</code> references every item from every VRI (the Adobe-tolerant superset), <code>chain</code> only what validates each signature (the minimal, standards-exact form); unmatched material still ships in <code>/DSS</code>. Applies to the material flags only — with <code>--data</code> it is a usage error</td>
 </tr>
 <tr>
 <td><code>--prefer &lt;src&gt;</code></td>
@@ -1080,10 +1137,11 @@ pdfnative ltv add --input signed.pdf --online --output signed.lt.pdf
 <tr>
 <td><code>--dry-run</code></td>
 <td>off</td>
-<td>Validate without writing</td>
+<td>Validate without writing — with material flags, composes the <code>/DSS</code> + <code>/VRI</code> and reports the counts</td>
 </tr>
 </tbody></table>
 <p>The evidence JSON (<code>schema ltv-data</code>, versioned, DER as base64) is the air-gap bridge: <code>collect</code> on a connected machine, transfer the JSON, <code>embed</code> inside the enclave. Network fetches go through the same SSRF guard as <code>verify --revocation online</code>; failures surface as <code>E_NETWORK</code>.</p>
+<p>Since v1.6.0 the ladder also has an <strong>offline B-LT rung</strong>: <code>ltv embed --cert … --ocsp … --crl …</code> composes the <code>/DSS</code> + <code>/VRI</code> from certificates, OCSP responses and CRLs obtained by any means (your PKI&#39;s export, an HSM appliance, a previous <code>verify --revocation online</code> run elsewhere), through the engine&#39;s <code>composeLtvData</code>. <code>--data</code> and the material flags are exclusive (exit 2); <code>embed</code> without either is a usage error; <code>composeLtvData</code> refuses only an empty material set or a document with no signed signature (<code>E_INPUT</code>); material that matches no signature still ships in <code>/DSS</code> — every <code>/VRI</code> references it under <code>all</code>, none does under <code>chain</code>. The <code>--json</code> envelope carries <code>match</code> on this path (also under <code>--dry-run</code>).</p>
 <h3 id="pdfnative-doc-timestamp-v140"><code>pdfnative doc-timestamp</code> <em>(v1.4.0)</em><a class="heading-anchor" href="#pdfnative-doc-timestamp-v140" aria-label="Link to this section">#</a></h3>
 <p>Appends an RFC 3161 <strong>document timestamp</strong> revision (<code>/DocTimeStamp</code>, <code>/SubFilter /ETSI.RFC3161</code> — ISO 32000-2 §12.8.5) covering every byte of the document (PAdES <strong>B-LTA</strong>). Earlier revisions stay byte-identical; run it again years later to renew the protection before the TSA&#39;s certificate expires.</p>
 <pre><code class="language-bash">pdfnative doc-timestamp --input signed.lt.pdf \
@@ -1335,7 +1393,7 @@ pdfnative split --input report.pdf --output-dir out/ --pages &quot;1-2,3-4&quot;
   { &quot;page&quot;: 2, &quot;type&quot;: &quot;text&quot;, &quot;rect&quot;: [80, 640, 100, 660], &quot;contents&quot;: &quot;Sticky note&quot; }
 ]
 </code></pre>
-<p>Supported types: <code>text</code>, <code>highlight</code>, <code>underline</code>, <code>strikeout</code>, <code>squiggly</code>, <code>square</code>, <code>circle</code>, <code>line</code>, <code>freetext</code>, and <em>(v1.5.0)</em> <code>link</code> — <code>{ &quot;page&quot;: 1, &quot;type&quot;: &quot;link&quot;, &quot;rect&quot;: [72, 700, 300, 715], &quot;url&quot;: &quot;https://example.org&quot; }</code>, emitted as a <code>/Link</code> annotation with a <code>/URI</code> action; only <code>http:</code>, <code>https:</code> and <code>mailto:</code> URLs without control characters are accepted (<code>E_INPUT</code> otherwise). Colours accept CMYK since v1.5.0. Only known fields are forwarded (no dictionary injection). Read them back with <code>inspect --annotations</code>. Since v1.4.0, <code>--password &lt;pass&gt;</code> (env <code>PDFNATIVE_PASSWORD</code>) lets you annotate an encrypted PDF — the added objects are encrypted under the document&#39;s existing scheme.</p>
+<p>Supported types: <code>text</code>, <code>highlight</code>, <code>underline</code>, <code>strikeout</code>, <code>squiggly</code>, <code>square</code>, <code>circle</code>, <code>line</code>, <code>freetext</code>, and <em>(v1.5.0)</em> <code>link</code> — <code>{ &quot;page&quot;: 1, &quot;type&quot;: &quot;link&quot;, &quot;rect&quot;: [72, 700, 300, 715], &quot;url&quot;: &quot;https://example.org&quot; }</code>, emitted as a <code>/Link</code> annotation with a <code>/URI</code> action; only <code>http:</code>, <code>https:</code> and <code>mailto:</code> URLs without control characters are accepted (<code>E_INPUT</code> otherwise). Since v1.6.0 the <code>/Link</code> + <code>/URI</code> body is built by the engine&#39;s <code>buildAnnotationBody({ type: &#39;link&#39;, rect, url })</code> — the CLI&#39;s own builder is gone, so <code>annotate/linked.pdf</code> bytes differ from v1.5.0 output while staying spec-valid. Colours accept CMYK since v1.5.0 (hex, RGB and CMYK only — spot colours are a <code>render</code> feature, not an annotation one). Only known fields are forwarded (no dictionary injection). Read them back with <code>inspect --annotations</code>. Since v1.4.0, <code>--password &lt;pass&gt;</code> (env <code>PDFNATIVE_PASSWORD</code>) lets you annotate an encrypted PDF — the added objects are encrypted under the document&#39;s existing scheme.</p>
 <blockquote>
 <p><strong>Overlay, not redaction.</strong> Annotations are a <em>visual review layer</em>; the underlying bytes remain. They do <strong>not</strong> remove or obscure content for security purposes.</p>
 </blockquote>
@@ -1615,6 +1673,11 @@ pdfnative extract-text --input paper.pdf --pages 1,3,5-7 --format text
 <td>Hard cap on total characters; <code>0</code> disables</td>
 </tr>
 <tr>
+<td><code>--on-stream-error &lt;policy&gt;</code> <em>(v1.6.0)</em></td>
+<td><code>limit</code></td>
+<td>What to do with a content or font stream the engine cannot decode: <code>limit</code> — a stream past the global <code>--max-inflate-size</code> is <code>E_INPUT</code>, the message naming both remedies; <code>throw</code> — any undecodable stream is an error; <code>skip</code> — the page is read without that stream&#39;s text (the lenience of earlier releases). 10 flags with it (9 → 10)</td>
+</tr>
+<tr>
 <td><code>--summary</code></td>
 <td>off</td>
 <td>(json) Emit only <code>{ pages, characters }</code></td>
@@ -1624,10 +1687,16 @@ pdfnative extract-text --input paper.pdf --pages 1,3,5-7 --format text
 <td>—</td>
 <td>(json) Comma-separated dot-paths to keep</td>
 </tr>
+<tr>
+<td><code>--pretty</code></td>
+<td>off</td>
+<td>Indented JSON even under the global <code>--json</code></td>
+</tr>
 </tbody></table>
 <p>Text comes from the <code>/ToUnicode</code> mapping, so it is real Unicode rather than
 glyph indices. A page whose content decodes entirely to U+FFFD is reported as
 not extractable rather than returning noise.</p>
+<p>Since v1.6.0 (pdfnative ≥ 1.9.0) untagged shaped and right-to-left runs carry <code>/Span /ActualText</code>, so Arabic, Hebrew, Khmer, Myanmar or Indic text comes back in <strong>logical order, as typed</strong> — from untagged output too, unless the file was rendered with <code>--actual-text false</code>; <code>subs</code> / <code>sups</code> glyphs extract as their source characters. The stream-limit policy is a refusal, not a silently empty page: the error is classified by the engine&#39;s <code>PdfStreamLimitError</code> instance (code <code>PDF_STREAM_LIMIT</code>), never by its message. Prefer <code>limit</code> for untrusted input and raise <code>--max-inflate-size</code> for a trusted large file instead of passing <code>skip</code>.</p>
 <h3 id="pdfnative-compare-v140"><code>pdfnative compare</code> <em>(v1.4.0)</em><a class="heading-anchor" href="#pdfnative-compare-v140" aria-label="Link to this section">#</a></h3>
 <p>Compares two PDFs by extracted text and by structure — page count, page/print boxes, metadata, form fields, annotations, encryption, signatures. Built for CI: identical documents exit 0; differences print the report on stdout <strong>first</strong>, then exit 1 with <code>E_CHECK_FAILED</code>.</p>
 <pre><code class="language-bash">pdfnative compare golden.pdf candidate.pdf --mode both --format json --pretty
@@ -1676,11 +1745,17 @@ not extractable rather than returning noise.</p>
 <td>Passwords for encrypted inputs</td>
 </tr>
 <tr>
+<td><code>--on-stream-error &lt;policy&gt;</code> <em>(v1.6.0)</em></td>
+<td><code>limit</code></td>
+<td>Same policy as <code>extract-text</code> (<code>limit</code> | <code>throw</code> | <code>skip</code>), applied to <strong>both</strong> PDFs. 9 flags with it (8 → 9)</td>
+</tr>
+<tr>
 <td><code>--pretty</code></td>
 <td>off</td>
 <td>Indented JSON</td>
 </tr>
 </tbody></table>
+<p>Since v1.6.0 a stream past the inflate cap fails the comparison (<code>E_INPUT</code> under <code>limit</code>, the default) and <code>throw</code> fails on any undecodable stream; under <code>limit</code> a corrupt stream is still skipped as before, so <code>throw</code> is the only policy under which <code>compare</code> cannot call two files equal over an unread stream. <code>/Info</code> strings are decoded through the engine&#39;s <code>decodePdfTextString</code> (PDFDocEncoding and UTF-16), as in <code>inspect</code>.</p>
 <blockquote>
 <p><strong>Not a visual diff.</strong> pdfnative has no rasteriser, so pixel comparison is out of scope by design — <code>compare</code> diffs what the format itself declares (text and structure). Pair it with an external rasteriser if you need pixel-level checks.</p>
 </blockquote>
@@ -1709,7 +1784,7 @@ pdfnative doctor --format json --pretty
 <td>Indented JSON even under the global <code>--json</code></td>
 </tr>
 </tbody></table>
-<p>Since v1.5.0 the report also carries <code>fonts</code> (the bundled modules and scripts probed on disk), <code>unicode</code> (the Universal Shaping Engine&#39;s Unicode version) and <code>conformance</code> (<code>pdfa1b,pdfa2b,pdfa2u,pdfa3b,pdfx4</code> — the <code>--tagged</code> / <code>--pdfx</code> targets). Fully offline.</p>
+<p>Since v1.5.0 the report also carries <code>fonts</code> (the bundled modules and scripts probed on disk — <code>36 modules / 32 scripts</code> since v1.6.0, every <code>--font</code> shortcut listed in the detail), <code>unicode</code> (the Universal Shaping Engine&#39;s Unicode version) and <code>conformance</code> (<code>pdfa1b,pdfa2b,pdfa2u,pdfa3b,pdfx4</code> — the <code>--tagged</code> / <code>--pdfx</code> targets). Fully offline.</p>
 <h3 id="pdfnative-batch"><code>pdfnative batch</code><a class="heading-anchor" href="#pdfnative-batch" aria-label="Link to this section">#</a></h3>
 <p>Renders every JSON file in a directory to PDF <strong>in parallel</strong>, reusing the full <code>render</code> pipeline.</p>
 <table>
@@ -1790,7 +1865,7 @@ pdfnative doctor --format json --pretty
 </code></pre>
 <p>Only a fixed <strong>14-command whitelist</strong> is allowed inside a manifest — <code>render</code>, <code>sign</code>, <code>verify</code>, <code>inspect</code>, <code>merge</code>, <code>split</code>, <code>extract</code>, <code>extract-text</code>, <code>fill</code>, <code>encrypt</code>, <code>decrypt</code>, <code>annotate</code>, <code>metadata</code>, <code>doc-timestamp</code>. <code>ltv</code> and <code>compare</code> are excluded (they take positionals, which manifest tasks — a flat flag map — cannot express), and the meta commands (<code>batch</code>, <code>govern</code>, <code>schema</code>, <code>completion</code>, <code>doctor</code>) can never nest. Manifests are capped at 1 000 tasks with the same path-traversal checks as direct flags. Error classes: a structural violation, an invalid flag name or value type, or a network-reaching flag without <code>--allow-network</code> exits 2/<code>E_USAGE</code>; an invalid or duplicate task id, a non-whitelisted command, or a broken <code>@ref</code> exits 1/<code>E_INPUT</code>; malformed JSON is 1/<code>E_PARSE</code>.</p>
 <h3 id="pdfnative-schema"><code>pdfnative schema</code><a class="heading-anchor" href="#pdfnative-schema" aria-label="Link to this section">#</a></h3>
-<p>Prints a versioned <strong>JSON Schema (Draft 2020-12)</strong> for a CLI input/output shape, so agents can self-validate before invoking a command. The <code>$id</code> embeds the CLI version.</p>
+<p>Prints a versioned <strong>JSON Schema (Draft 2020-12)</strong> for a CLI input/output shape, so agents can self-validate before invoking a command. The <code>$id</code> embeds the CLI version — <code>https://pdfnative.dev/schema/cli/&lt;version&gt;/&lt;subject&gt;.schema.json</code> (e.g. <code>…/cli/1.6.0/status.schema.json</code>). Since v1.6.0 <code>schema status</code> pins 35 envelope properties (adds <code>tagged</code>, <code>direction</code>, <code>actualText</code>, <code>match</code>) and lists the 13 diagnostic codes; <code>schema render</code> describes <code>direction</code>, <code>actualText</code>, <code>print.spotColours</code>, the spot and ink colour values, JPEG 2000, the dual claim, the 32 scripts and the <code>--variant table</code> shape.</p>
 <pre><code class="language-bash">pdfnative schema render            # input schema for `render`
 pdfnative schema inspect-summary   # compact inspect verdict shape
 pdfnative schema list              # enumerate every subject
@@ -1802,13 +1877,13 @@ pdfnative schema list              # enumerate every subject
 <h2 id="agent-native-automation-contract">Agent-native automation contract<a class="heading-anchor" href="#agent-native-automation-contract" aria-label="Link to this section">#</a></h2>
 <p>v1.1.0 makes the CLI deterministic to drive from autonomous AI agents and CI pipelines. Since v1.5.0 the full consumer contract lives in <a href="https://github.com/Nizoka/pdfnative-cli/blob/main/docs/AGENT_CONTRACT.md" target="_blank" rel="noopener">pdfnative-cli docs/AGENT_CONTRACT.md</a> (the repository&#39;s AGENTS.md now holds the rules for agents working <em>on</em> the CLI). Architecture-level compositions — reproducible builds, PDF/X-4 press handoff, house fonts, the process contract from any language — are on the <a href="use-cases-cli.html">CLI use cases</a> page.</p>
 <ul>
-<li><strong>Global <code>--json</code> envelope.</strong> Any command run with <code>--json</code> emits a single machine-readable object on <strong>stderr</strong>: <code>{ ok: false, command, error: { code, message } }</code> on failure, and a <code>{ ok: true, … }</code> status line for <code>render</code> / <code>sign</code> / <code>batch</code> on success (since v1.3.0, every write command emits the success line). stdout stays reserved for the primary artifact (PDF, report, schema, script).</li>
+<li><strong>Global <code>--json</code> envelope.</strong> Any command run with <code>--json</code> emits a single machine-readable object on <strong>stderr</strong>: <code>{ ok: false, command, error: { code, message } }</code> on failure, and a <code>{ ok: true, … }</code> status line for <code>render</code> / <code>sign</code> / <code>batch</code> on success (since v1.3.0, every write command emits the success line). stdout stays reserved for the primary artifact (PDF, report, schema, script). stderr may carry <code>warning:</code> lines before the envelope — the envelope is always the <strong>last</strong> line (<code>--quiet</code> drops the rest).</li>
 <li><strong>Stable <code>E_*</code> error codes</strong> on every failure: <code>E_USAGE</code>, <code>E_INPUT</code>, <code>E_PARSE</code>, <code>E_IO</code>, <code>E_SIGN</code>, <code>E_VERIFY_FAILED</code>, <code>E_CHECK_FAILED</code>, <code>E_POLICY</code> <em>(v1.2.0 — governance-gate failure)</em>, <code>E_UNSUPPORTED</code>, <code>E_PASSWORD</code> <em>(v1.3.0 — encrypted PDF: password missing or incorrect)</em>, <code>E_NETWORK</code> <em>(v1.4.0 — an opt-in network operation failed: TSA / OCSP / CRL fetch)</em>, <code>E_RUNTIME</code>. Numeric exit codes (0/1/2) are unchanged.</li>
 <li><strong><code>--dry-run</code></strong> for <code>render</code>, <code>sign</code>, <code>batch</code>, and — since v1.2.0 — <code>merge</code>, <code>split</code>, <code>extract</code>, and <code>annotate</code> (v1.3.0 extends it to <code>fill</code>, <code>encrypt</code> and <code>decrypt</code>; v1.4.0 to <code>metadata</code>, <code>ltv</code> and <code>doc-timestamp</code>) — fully validate inputs (and, for <code>sign</code>, parse credentials and prepare the PDF) without producing output. A dry run never touches the network.</li>
-<li><strong>Global <code>--max-inflate-size &lt;bytes&gt;</code></strong> <em>(v1.4.0)</em> caps the decompressed size of each PDF stream when parsing untrusted inputs (anti zip-bomb; default 100 MiB).</li>
+<li><strong>Global <code>--max-inflate-size &lt;bytes&gt;</code></strong> <em>(v1.4.0)</em> caps the decompressed size of each PDF stream when parsing untrusted inputs (anti zip-bomb; default 100 MiB). Since v1.6.0 a stream past the cap is <strong><code>E_INPUT</code></strong> with a message naming the flag, on every command that opens a PDF (it was the engine&#39;s bare inflate error, <code>E_PARSE</code>); <code>verify</code> keeps its own <code>E_PARSE</code>, and <code>extract-text</code> / <code>compare</code> add <code>--on-stream-error limit|throw|skip</code>.</li>
 <li><strong>Global <code>--creation-date &lt;iso8601&gt;</code></strong> <em>(v1.5.0 — the 10th global flag)</em> pins the creation instant of every PDF written in the run (<code>render</code>, and every task of a <code>batch</code>): <code>/CreationDate</code>, <code>xmp:CreateDate</code>, the <code>{date}</code> placeholder and the trailer <code>/ID</code> derive from it, in UTC, so the same input renders to identical bytes on every host and timezone. Falls back to <code>SOURCE_DATE_EPOCH</code> (integer seconds); an invalid value is a usage error. The envelope carries <code>creationDate</code>. Encrypted output is never byte-reproducible; <code>sign --signing-time</code> and <code>metadata --mod-date</code> stay separate instants.</li>
 <li><strong>Global flags may precede the command</strong> <em>(v1.5.0)</em> — <code>pdfnative --json --dry-run render …</code> is equivalent to <code>pdfnative render … --json --dry-run</code>. Arguments without any command now exit 2 (<code>E_USAGE</code>) instead of printing the usage with exit 0; a bare <code>pdfnative</code> still prints the usage.</li>
-<li><strong><code>schema status</code> pins every envelope field</strong> <em>(v1.5.0)</em> — 31 properties, the command-specific ones included; new in v1.5.0: <code>pdfx</code>, <code>creationDate</code>, <code>timestamp.timeoutMs</code>, and <code>dryRun</code> on every dry-run envelope. A parity test in the CLI repository holds the schema to every emitted field.</li>
+<li><strong><code>schema status</code> pins every envelope field</strong> <em>(v1.5.0)</em> — 35 properties since v1.6.0, the command-specific ones included. v1.5.0 added <code>pdfx</code>, <code>creationDate</code>, <code>timestamp.timeoutMs</code> and <code>dryRun</code> on every dry-run envelope; v1.6.0 adds <code>tagged</code> (the PDF/A level claimed by <code>render</code>), <code>direction</code>, <code>actualText</code> (only ever <code>false</code>) and <code>match</code> (<code>ltv embed</code> from material). A parity test in the CLI repository holds the schema to every emitted field, and the previous release&#39;s <code>schema</code> captures are replayed on every pull request (<code>compat-previous</code>) — a minor only adds.</li>
 <li><strong>Token-economy output projection</strong> (<code>inspect</code> / <code>verify</code> / <code>batch</code> / <code>extract-text</code>): stdout JSON is <strong>compact by default</strong> under <code>--json</code> (<code>--pretty</code> opts back into the human 2-space form), <strong><code>--summary</code></strong> emits a canonical minimal verdict, and <strong><code>--fields a,b.c</code></strong> projects the result to named dot-paths. Typically ~90 % fewer output tokens with no loss of the fields agents branch on. Non-<code>--json</code> human output is unchanged.</li>
 </ul>
 <pre><code class="language-bash"># Agent-friendly: compact verdict on stdout, structured status on stderr
@@ -1843,7 +1918,7 @@ pdfnative inspect --input signed.pdf --check pdfa --check signed
 # PDFNATIVE_ENCRYPT_OWNER_PASS read from the env — never on the command line
 </code></pre>
 <h3 id="multilang-fonts">Multilang fonts<a class="heading-anchor" href="#multilang-fonts" aria-label="Link to this section">#</a></h3>
-<p>For the 27 bundled scripts (plus <code>latin</code>, <code>emoji</code>, <code>color-emoji</code>, <code>math</code>), no wrapper is needed — <code>--font</code> registers each bundled font inside the CLI process:</p>
+<p>For the 32 bundled scripts (plus <code>latin</code>, <code>emoji</code>, <code>color-emoji</code>, <code>math</code> — 36 bundled font modules), no wrapper is needed — <code>--font</code> registers each bundled font inside the CLI process:</p>
 <pre><code class="language-bash">echo &#39;{&quot;blocks&quot;:[{&quot;type&quot;:&quot;paragraph&quot;,&quot;text&quot;:&quot;สวัสดี こんにちは&quot;}]}&#39; \
   | pdfnative render --font th --font ja --lang th,ja -o out.pdf
 </code></pre>
@@ -1898,6 +1973,30 @@ pdfnative inspect --input brochure.pdf --json --pdfx --fields pdfx.valid,pdfx.er
   --split-paragraphs --keep-headings-with-next --kerning --font-features onum,smcp
 </code></pre>
 <p>The <code>:house</code> suffix names the font (default: the file stem) and doubles as its <code>--lang</code> code. Repeat <code>--font-file</code> for additional faces; a name that collides with a bundled shortcut is a usage error.</p>
+<h3 id="right-to-left-letter--logical-order-text-v160">Right-to-left letter → logical-order text <em>(v1.6.0)</em><a class="heading-anchor" href="#right-to-left-letter--logical-order-text-v160" aria-label="Link to this section">#</a></h3>
+<!-- demo-language: ar, he (right-to-left demonstration content; the JSON carries Arabic and Hebrew paragraphs) -->
+<pre><code class="language-bash">pdfnative render --input letter.json --output letter.pdf --direction auto \
+  --font ar --font he --font latin --lang ar,he,latin \
+  --creation-date 2026-01-01T00:00:00Z
+pdfnative extract-text --input letter.pdf --format ndjson &gt; letter.ndjson
+</code></pre>
+<p><code>--direction auto</code> resolves each paragraph&#39;s base direction from its first strong character (a paragraph block&#39;s own <code>direction</code> wins); the Arabic and Hebrew paragraphs come out right-aligned and justified in visual order. The untagged runs carry <code>/Span /ActualText</code>, so every page object in <code>letter.ndjson</code> holds the text in <strong>logical order, as typed</strong> — ready for a RAG pipeline. Add <code>--actual-text false</code> only to drop the spans (bare runs in visual order — it does not restore 1.8.0 bytes, the 1.9.0 subsets and line structure still apply); it drops that guarantee on the file.</p>
+<h3 id="the-dual-claim--pdfa-2b--pdfx-4-in-one-file-v160">The dual claim — PDF/A-2b + PDF/X-4 in one file <em>(v1.6.0)</em><a class="heading-anchor" href="#the-dual-claim--pdfa-2b--pdfx-4-in-one-file-v160" aria-label="Link to this section">#</a></h3>
+<pre><code class="language-bash">pdfnative render --input brochure.json --output brochure.pdf \
+  --tagged pdfa2b --pdfx pdfx4 --output-intent-icc press.icc \
+  --trapped false --font latin --lang latin --strict
+pdfnative inspect --input brochure.pdf --check pdfa,pdfx --json --summary
+</code></pre>
+<p>One file, two claims: two OutputIntents, both identifications in the XMP, verified with one flag and one exit code (0 when both structural checks hold). <code>press.icc</code> is a printer-class (<code>prtr</code>) CMYK <strong>or Gray</strong> profile. <code>--tagged pdfa1b</code> or <code>pdfa3b</code> next to <code>--pdfx</code> is refused by the engine (<code>E_INPUT</code>) — <code>--dry-run</code> shows it before any byte is written. <code>metadata</code> rewrites the XMP without the PDF/X identification: re-check after editing.</p>
+<h3 id="offline-pades-b-lt-from-material-you-hold--verify---strict-v160">Offline PAdES B-LT from material you hold → <code>verify --strict</code> <em>(v1.6.0)</em><a class="heading-anchor" href="#offline-pades-b-lt-from-material-you-hold--verify---strict-v160" aria-label="Link to this section">#</a></h3>
+<pre><code class="language-bash">pdfnative ltv embed --input signed.pdf --output never.pdf \
+  --cert chain.pem --ocsp signer.ocsp.der --crl ca.crl --match chain --dry-run --json
+pdfnative ltv embed --input signed.pdf --output signed.lt.pdf \
+  --cert chain.pem --ocsp signer.ocsp.der --crl ca.crl --match chain --json
+pdfnative verify --input signed.lt.pdf --strict
+pdfnative inspect --input signed.lt.pdf --signatures --json --fields signatures
+</code></pre>
+<p>No <code>collect</code> step and no network: the certificates (PEM bundle or DER), DER OCSP responses and DER CRLs come from wherever your PKI keeps them. The <code>--dry-run</code> composes the <code>/DSS</code> + <code>/VRI</code> and reports the counts without writing; <code>--match chain</code> references only what validates each signature (<code>all</code>, the default, references everything from every VRI). Material that matches no signature still ships in <code>/DSS</code> (no <code>/VRI</code> references it under <code>chain</code>); only an empty material set or a document without a signed signature is <code>E_INPUT</code>. <code>verify --strict</code> then runs fully offline against the embedded <code>/DSS</code> (<code>--revocation offline</code> is the default).</p>
 <p>Architecture-level compositions: <a href="use-cases-cli.html">CLI use cases</a>.</p>
 <hr>
 <h2 id="security-model">Security model<a class="heading-anchor" href="#security-model" aria-label="Link to this section">#</a></h2>
@@ -1909,7 +2008,8 @@ pdfnative inspect --input brochure.pdf --json --pdfx --fields pdfx.valid,pdfx.er
 <li><strong>Layout-file injection blocked</strong> — <code>attachments[].data</code> fields embedded in <code>--layout</code> JSON are <strong>stripped on load</strong>. Binary attachment payloads must come from <code>--attachment &lt;path&gt;</code> so the CLI can apply path validation.</li>
 <li><strong>Env-var precedence for secrets</strong> — <code>PDFNATIVE_SIGN_KEY</code> / <code>PDFNATIVE_SIGN_CERT</code> / <code>PDFNATIVE_SIGN_CHAIN</code> / <code>PDFNATIVE_ENCRYPT_OWNER_PASS</code> / <code>PDFNATIVE_ENCRYPT_USER_PASS</code> are preferred over file-path flags so secrets never enter shell history.</li>
 <li><strong>Stdin/stdout safe</strong> — binary streams are passed through without interpretation; no shell-quoting issues.</li>
-<li><strong>Zip-bomb cap</strong> <em>(v1.4.0)</em> — the global <code>--max-inflate-size</code> bounds the decompressed size of every PDF stream (default 100 MiB).</li>
+<li><strong>Zip-bomb cap</strong> <em>(v1.4.0)</em> — the global <code>--max-inflate-size</code> bounds the decompressed size of every PDF stream (default 100 MiB). Since v1.6.0 an over-cap content or font stream is a refusal (<code>E_INPUT</code>), never a silently empty page: <code>extract-text</code> / <code>compare --on-stream-error limit</code> is the default, and <code>skip</code> is an explicit opt-in.</li>
+<li><strong>Bounded offline material</strong> <em>(v1.6.0)</em> — <code>ltv embed --cert</code> / <code>--ocsp</code> / <code>--crl</code> files are path-validated, capped at 16 MiB each and parsed by the engine; nothing is fetched. <code>--font-file</code> fonts (32 MiB cap, magic bytes checked) and <code>--output-intent-icc</code> profiles (16 MiB, <code>acsp</code> checked) follow the same rule: never loadable from a JSON payload.</li>
 <li><strong>NPM provenance</strong> — every published version is signed via GitHub Actions OIDC. Verify with <code>npm audit signatures</code>.</li>
 </ul>
 <p>The CLI opens <strong>no network connection unless you explicitly opt in</strong> — the only network paths are <code>verify --revocation online</code>, <code>sign --timestamp &lt;url&gt;</code>, <code>ltv --online</code>, <code>doc-timestamp --url &lt;url&gt;</code>, and <code>batch --allow-network</code>, and all of them go through the same SSRF guard: http/https only, private / loopback / metadata addresses blocked, DNS pinning, 10 s timeout, 5 MiB response cap, no redirects. Response bodies are never echoed into CLI output. It never writes to system directories outside the working directory or loads arbitrary code.</p>
@@ -1920,7 +2020,7 @@ pdfnative inspect --input brochure.pdf --json --pdfx --fields pdfx.valid,pdfx.er
 <thead>
 <tr>
 <th>Feature</th>
-<th>CLI v1.5.0</th>
+<th>CLI v1.6.0</th>
 <th>Library</th>
 </tr>
 </thead>
@@ -1928,6 +2028,36 @@ pdfnative inspect --input brochure.pdf --json --pdfx --fields pdfx.valid,pdfx.er
 <td>Document rendering (13 block types)</td>
 <td>✅</td>
 <td>✅</td>
+</tr>
+<tr>
+<td><strong>Right-to-left layout (UAX #9) + logical-order extraction</strong></td>
+<td>✅ <code>render --direction auto|ltr|rtl</code> / <code>--actual-text</code>, <code>extract-text</code> <em>(v1.6.0)</em></td>
+<td>✅ <code>layout.direction</code> / <code>layout.actualText</code>, <code>extractText()</code>, <code>resolveBidiLevels()</code></td>
+</tr>
+<tr>
+<td><strong>Spot colours (<code>/Separation</code>, <code>/DeviceN</code>)</strong></td>
+<td>✅ <code>layout.print.spotColours</code> + <code>{ spot, tint }</code> / <code>{ inks }</code> from JSON <em>(v1.6.0 — no CLI validator, engine refusals → <code>E_INPUT</code>)</em></td>
+<td>✅ <code>layout.print.spotColours</code>, <code>PdfSpotColor</code> / <code>PdfInkMix</code></td>
+</tr>
+<tr>
+<td><strong>PDF/A-2 + PDF/X-4 dual claim</strong></td>
+<td>✅ <code>--tagged pdfa2b|pdfa2u --pdfx pdfx4</code> / <code>inspect --check pdfa,pdfx</code> <em>(v1.6.0)</em></td>
+<td>✅ <code>tagged</code> + <code>layout.pdfx</code> together</td>
+</tr>
+<tr>
+<td><strong>JPEG 2000 images (<code>/JPXDecode</code>)</strong></td>
+<td>✅ <code>image</code> blocks and <code>--watermark-image</code> (<code>.jp2</code> / <code>.j2k</code>, sniffed) <em>(v1.6.0)</em></td>
+<td>✅ <code>parseJPX()</code> / image blocks</td>
+</tr>
+<tr>
+<td><strong>Stream-limit policy on extraction</strong></td>
+<td>✅ <code>extract-text</code> / <code>compare --on-stream-error limit|throw|skip</code> <em>(v1.6.0)</em></td>
+<td>✅ <code>extractText({ onStreamError })</code> / <code>PdfStreamLimitError</code></td>
+</tr>
+<tr>
+<td><strong>Offline PAdES B-LT from held material</strong></td>
+<td>✅ <code>ltv embed --cert / --ocsp / --crl --match all|chain</code> <em>(v1.6.0)</em></td>
+<td>✅ <code>composeLtvData()</code></td>
 </tr>
 <tr>
 <td><strong>Typography engine</strong></td>
@@ -2050,8 +2180,8 @@ pdfnative inspect --input brochure.pdf --json --pdfx --fields pdfx.valid,pdfx.er
 <td>✅ <code>attachments: [...]</code></td>
 </tr>
 <tr>
-<td><strong>Every bundled script + COLRv1 emoji + math</strong></td>
-<td>✅ <code>--font</code> / <code>--lang</code></td>
+<td><strong>Every bundled script (32 scripts, 36 modules) + COLRv1 emoji + math</strong></td>
+<td>✅ <code>--font</code> / <code>--lang</code> (<code>gu pa kn ml or</code> since v1.6.0)</td>
 <td>✅ <code>registerFont()</code> / <code>loadFontData()</code></td>
 </tr>
 <tr>
@@ -2112,7 +2242,7 @@ pdfnative inspect --input brochure.pdf --json --pdfx --fields pdfx.valid,pdfx.er
 </tbody></table>
 <hr>
 <h2 id="examples--ready-to-run">Examples — ready-to-run<a class="heading-anchor" href="#examples--ready-to-run" aria-label="Link to this section">#</a></h2>
-<p>The <a href="https://github.com/Nizoka/pdfnative-cli/tree/main/samples" target="_blank" rel="noopener"><code>samples/</code></a> directory in the CLI repository ships <strong>40+ ready-to-run examples</strong> organized by feature:</p>
+<p>The <a href="https://github.com/Nizoka/pdfnative-cli/tree/main/samples" target="_blank" rel="noopener"><code>samples/</code></a> directory in the CLI repository ships <strong>ready-to-run examples</strong> organized by feature — the generator renders 99 of them as the byte-stable sample corpus (82 under <code>render/</code>), nine of which are new in v1.6.0:</p>
 <table>
 <thead>
 <tr>
@@ -2142,7 +2272,7 @@ pdfnative inspect --input brochure.pdf --json --pdfx --fields pdfx.valid,pdfx.er
 </tr>
 <tr>
 <td><code>render/toc/</code></td>
-<td>Auto-generated table of contents with <code>/GoTo</code> links</td>
+<td>Auto-generated table of contents with <code>/GoTo</code> links; <code>02-long-toc</code> — a 160-entry TOC that paginates, <code>--inspect-layout</code> agreeing <em>(v1.6.0)</em></td>
 </tr>
 <tr>
 <td><code>render/link/</code></td>
@@ -2174,11 +2304,15 @@ pdfnative inspect --input brochure.pdf --json --pdfx --fields pdfx.valid,pdfx.er
 </tr>
 <tr>
 <td><code>render/multilang/</code></td>
-<td>Multilang rendering via the bundled <code>--font</code> shortcuts</td>
+<td>Multilang rendering via the bundled <code>--font</code> shortcuts — every one of the 32 script codes is rendered by the corpus; <code>12-five-indic-scripts</code> (Gujarati, Gurmukhi, Kannada, Malayalam, Odia) and <code>13-rtl-direction</code> (Arabic and Hebrew under <code>--direction auto</code>) <em>(v1.6.0)</em></td>
 </tr>
 <tr>
 <td><code>render/chart/</code></td>
-<td>Native vector charts (bar, line, pie, donut) <em>(v1.3.0)</em></td>
+<td>Native vector charts (bar, line, pie, donut) <em>(v1.3.0)</em>; <code>06-per-bar-colours</code> — <code>series[].colors</code> per value and an unlabelled series <em>(v1.6.0)</em></td>
+</tr>
+<tr>
+<td><code>render/images/</code></td>
+<td><code>01-jpeg2000</code> — a JPEG 2000 image block passed through as <code>/JPXDecode</code> <em>(v1.6.0)</em></td>
 </tr>
 <tr>
 <td><code>render/math/</code></td>
@@ -2202,7 +2336,7 @@ pdfnative inspect --input brochure.pdf --json --pdfx --fields pdfx.valid,pdfx.er
 </tr>
 <tr>
 <td><code>render/print/</code></td>
-<td>Bleed / trim boxes and printer&#39;s marks, viewer preferences; CMYK colours, colour bars and PDF/X-4 with a synthetic CMYK profile <em>(v1.5.0)</em></td>
+<td>Bleed / trim boxes and printer&#39;s marks, viewer preferences; CMYK colours, colour bars and PDF/X-4 with a synthetic CMYK profile <em>(v1.5.0)</em>; <code>08-spot-colours</code> (<code>/Separation</code> inks, a <code>/DeviceN</code> mix, an undeclared ink refused under <code>--dry-run</code>) and <code>09-dual-pdfa2b-pdfx4</code> (the dual claim, <code>--check pdfa,pdfx</code>, PDF/A-1b refused) <em>(v1.6.0)</em></td>
 </tr>
 <tr>
 <td><code>render/reproducible/</code>, <code>render/base14/</code></td>
@@ -2218,7 +2352,7 @@ pdfnative inspect --input brochure.pdf --json --pdfx --fields pdfx.valid,pdfx.er
 </tr>
 <tr>
 <td><code>extract-text/</code></td>
-<td>Reading-order text extraction (<code>text</code> / <code>json</code> / <code>ndjson</code>) <em>(v1.3.0)</em></td>
+<td>Reading-order text extraction (<code>text</code> / <code>json</code> / <code>ndjson</code>) <em>(v1.3.0)</em>; <code>03-rtl-logical-order</code> — Arabic and Hebrew back in logical order, and the same file with <code>--actual-text false</code> for contrast <em>(v1.6.0)</em></td>
 </tr>
 <tr>
 <td><code>merge/</code>, <code>split/</code>, <code>extract/</code>, <code>annotate/</code></td>
@@ -2226,7 +2360,7 @@ pdfnative inspect --input brochure.pdf --json --pdfx --fields pdfx.valid,pdfx.er
 </tr>
 <tr>
 <td><code>sign/</code></td>
-<td>Bash + PowerShell signing scripts (basic + with metadata)</td>
+<td>Bash + PowerShell signing scripts (basic + with metadata), the LTV ladder; <code>11-ltv-offline</code> — <code>ltv embed --cert … --match chain</code> from held material, <code>--dry-run</code> first <em>(v1.6.0)</em></td>
 </tr>
 <tr>
 <td><code>inspect/</code></td>
@@ -2252,6 +2386,78 @@ npm ci &amp;&amp; npm run build &amp;&amp; npm run test:generate
 </code></pre>
 <hr>
 <h2 id="release-history">Release history<a class="heading-anchor" href="#release-history" aria-label="Link to this section">#</a></h2>
+<h3 id="whats-new-in-v160">What&#39;s new in v1.6.0<a class="heading-anchor" href="#whats-new-in-v160" aria-label="Link to this section">#</a></h3>
+<p>v1.6.0 is built on <strong>pdfnative 1.9.0</strong> (pin <code>^1.9.0</code>) and exposes every 1.9.0 engine feature — right-to-left layout under the full Unicode Bidirectional Algorithm, five more Indic scripts (32 in all, 36 bundled font modules), spot colours, the PDF/A-2 + PDF/X-4 dual claim, JPEG 2000 images, four more diagnostics (13 diagnostic codes), the stream-limit policy of <code>extractText()</code>, offline LTV material, engine-built link bodies and <code>/Info</code> text-string decoding — and delivers every roadmap item the engine unblocked. 21 commands, 19 schema subjects, 12 stable error codes and 10 global flags are unchanged; <code>render</code> grows 57 → 59 flags, <code>extract-text</code> 9 → 10, <code>compare</code> 8 → 9, <code>ltv</code> 7 → 11. <strong>100 % backward-compatible command surface</strong> — every envelope field is additive and the v1.5.0 test suite is replayed against the current sources on every pull request (<code>compat-previous</code>, 67 files / 839 cases) — but the <em>bytes</em> differ from v1.5.0 output for every PDF that embeds a font (see <em>Compatibility</em>).</p>
+<table>
+<thead>
+<tr>
+<th>Area</th>
+<th>v1.5.0</th>
+<th>v1.6.0</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Right-to-left</td>
+<td>left-to-right only; untagged shaped runs extracted in visual order</td>
+<td><strong><code>--direction auto|ltr|rtl</code></strong> (<code>layout.direction</code>, UAX #9; no CLI default — omitted keeps the old behaviour; a paragraph&#39;s own <code>direction</code> wins), <strong><code>--actual-text [true|false]</code></strong> (<code>/Span /ActualText</code> on untagged shaped and RTL runs — <code>extract-text</code> returns <strong>logical order, as typed</strong>; only <code>false</code> changes the output); the envelope carries <code>direction</code> and, when switched off, <code>actualText: false</code></td>
+</tr>
+<tr>
+<td>Fonts</td>
+<td>27 scripts <!-- verify-docs:allow stale-token (v1.5.0-era count) -->, 31 modules</td>
+<td><strong>32 scripts</strong> / <strong>36 bundled font modules</strong> — <code>gu pa kn ml or</code> (Gujarati, Gurmukhi, Kannada, Malayalam, Odia); <code>doctor</code>, the <code>--font</code> allow-list error and <code>schema render</code> say the new numbers; <code>TEXT_GLYPH_NOT_COVERED</code> names a code point no registered font covers</td>
+</tr>
+<tr>
+<td>Print / colour</td>
+<td>CMYK, colour bars, PDF/X-4 exclusive with PDF/A</td>
+<td><strong>Spot colours</strong> from JSON (<code>layout.print.spotColours</code>, <code>{ spot }</code> / <code>{ spot, tint }</code> / <code>{ inks }</code> → <code>/Separation</code> / <code>/DeviceN</code>; <code>Spot colour </code> / <code>Ink mix </code> refusals → <code>E_INPUT</code>); chart <code>series[].colors</code> per value, optional series <code>label</code>; the <strong>PDF/A-2b|2u + PDF/X-4 dual claim</strong> (<code>--tagged pdfa2b --pdfx pdfx4</code>; the CLI pre-check is gone, <code>pdfa1b</code> / <code>pdfa3b</code> refused by the engine → <code>E_INPUT</code>); <code>--output-intent-icc</code> takes a <code>prtr</code> CMYK <strong>or Gray</strong> profile; the envelope carries <code>tagged</code></td>
+</tr>
+<tr>
+<td>Images</td>
+<td>JPEG / PNG</td>
+<td><strong>JPEG 2000</strong> (<code>.jp2</code> / <code>.j2k</code>) in <code>image</code> blocks and <code>--watermark-image</code>, sniffed by the engine, embedded as <code>/JPXDecode</code> (PDF 1.5; RGBA → <code>/SMaskInData 1</code>); <code>PDFA1_JPX_IMAGE</code> and <code>PDFA_JPX_IMAGE</code> diagnostics</td>
+</tr>
+<tr>
+<td>Diagnostics</td>
+<td>9 codes under <code>--strict</code></td>
+<td><strong>13 diagnostic codes</strong> — adds <code>PDFA_GLYPH_WITHOUT_UNICODE</code>, <code>PDFA1_JPX_IMAGE</code>, <code>PDFA_JPX_IMAGE</code>, <code>TEXT_GLYPH_NOT_COVERED</code>; <code>schema status</code> lists them</td>
+</tr>
+<tr>
+<td><code>extract-text</code> / <code>compare</code></td>
+<td>an over-cap stream yielded an empty page, <code>ok</code></td>
+<td><strong><code>--on-stream-error limit|throw|skip</code></strong> — <code>limit</code> (default) fails with <code>E_INPUT</code> naming both remedies, <code>throw</code> fails on any undecodable stream, <code>skip</code> keeps the old lenience; classified by the engine&#39;s <code>PdfStreamLimitError</code> instance, never by message; <code>compare</code> applies it to both PDFs (only <code>throw</code> rules out an equal verdict over an unread stream); <code>subs</code> / <code>sups</code> glyphs extract as their source characters</td>
+</tr>
+<tr>
+<td><code>ltv</code></td>
+<td><code>collect --online</code> → JSON → <code>embed --data</code></td>
+<td><strong><code>embed --cert &lt;pem|der&gt; --ocsp &lt;der&gt; --crl &lt;der&gt;</code></strong> (repeatable, 16 MiB each) + <strong><code>--match all|chain</code></strong> compose <code>/DSS</code> + <code>/VRI</code> through <code>composeLtvData</code> — no network, no <code>collect</code>; exclusive with <code>--data</code> (exit 2); unmatched material still ships in <code>/DSS</code> (no <code>/VRI</code> reference under <code>chain</code>), an empty set or an unsigned document → <code>E_INPUT</code>; <code>--dry-run</code> composes without writing; the envelope carries <code>match</code></td>
+</tr>
+<tr>
+<td><code>annotate</code> / <code>inspect</code> / <code>compare</code></td>
+<td>CLI-built <code>/Link</code> body; <code>--check</code> repeated only; UTF-16 <code>/Info</code> only</td>
+<td><code>link</code> bodies from the engine&#39;s <code>buildAnnotationBody</code>; <strong><code>--check pdfa,pdfx</code></strong> (comma list next to the repeated form); <code>/Info</code> strings decoded through <code>decodePdfTextString</code> (PDFDocEncoding and UTF-16)</td>
+</tr>
+<tr>
+<td><code>render --variant table</code></td>
+<td>a string <code>infoItems</code> entry rendered <code>undefined :</code></td>
+<td><code>infoItems</code> must be <code>{ label, value }</code> objects and rows must carry <code>cells</code> — refused with <code>E_INPUT</code> instead of an engine <code>TypeError</code> (<code>schema render</code> documents the shape)</td>
+</tr>
+<tr>
+<td>Agent contract</td>
+<td>31 envelope fields <!-- verify-docs:allow stale-token (v1.5.0-era count) --></td>
+<td><strong><code>schema status</code> pins 35 envelope fields</strong> (<code>tagged</code>, <code>direction</code>, <code>actualText</code>, <code>match</code> new); <code>schema render</code> describes the new shapes; <code>$id</code> = <code>https://pdfnative.dev/schema/cli/&lt;version&gt;/&lt;subject&gt;.schema.json</code>; completions carry every new flag; <code>docs/AGENT_CONTRACT.md</code> covers the stream-limit policy, logical-order extraction, the offline B-LT rung and the compatibility promise</td>
+</tr>
+<tr>
+<td>Quality</td>
+<td>1403 tests across 96 files, 86.06 % <!-- verify-docs:allow stale-token (pdfnative-cli's own suite) --></td>
+<td><strong>1555 tests across 103 files</strong>, 86.86 % statement coverage; 99 sample PDFs (82 <code>render</code>), a 25-file PDF/A + PDF/X conformance corpus validated by veraPDF; nine fuzz targets under ClusterFuzzLite; the gate required on Ubuntu (Node 22 / 24), Windows and macOS <!-- verify-docs:allow stale-token (pdfnative-cli's own suite) --></td>
+</tr>
+<tr>
+<td>Compatibility</td>
+<td><code>pdfnative ^1.8.0</code>, Node ≥ 22</td>
+<td><code>pdfnative ^1.9.0</code>, Node ≥ 22. <strong>Bytes differ from v1.5.0</strong> for every PDF that embeds a font (lean, compact subsets under the six-letter <code>ABCDEF+</code> tag), every untagged document with shaped or right-to-left text (<code>/Span /ActualText</code>), the watermarked and tagged samples and <code>annotate/linked.pdf</code>: hash-based consumers rebaseline once, then keep pinning with <code>--creation-date</code>. Over-cap streams are <code>E_INPUT</code> (were <code>E_PARSE</code>; <code>verify</code> keeps <code>E_PARSE</code>); the publish pipeline is guard → build → publish → attest (SLSA Build L2, SBOMs, Sigstore bundle)</td>
+</tr>
+</tbody></table>
+<p>Full changelog: <a href="https://github.com/Nizoka/pdfnative-cli/releases/tag/v1.6.0" target="_blank" rel="noopener">pdfnative-cli release notes v1.6.0</a>.</p>
 <h3 id="whats-new-in-v150">What&#39;s new in v1.5.0<a class="heading-anchor" href="#whats-new-in-v150" aria-label="Link to this section">#</a></h3>
 <!-- verify-docs:allow version-token (historical: this companion release was built on pdfnative 1.8.0) -->
 <p>v1.5.0 is built on <strong>pdfnative 1.8.0</strong> (pin <code>^1.8.0</code>) and exposes every 1.8.0 engine feature — the typography engine, CMYK colours and colour bars, PDF/X-4 output with a structural validator, five more scripts (27 in all) with <code>latin</code> aliases, custom fonts from disk, and UTC, pinnable creation dates that make output <strong>byte-reproducible</strong> — plus the roadmap items the engine unblocked. 21 commands, 19 schema subjects and 12 stable error codes are unchanged; the global flag count grows to 10 (<code>--creation-date</code>). <strong>100 % backward-compatible command surface</strong> — every envelope field is additive — but the <em>bytes</em> differ from v1.4.0 output (see <em>Compatibility</em>).</p>
@@ -2319,7 +2525,7 @@ npm ci &amp;&amp; npm run build &amp;&amp; npm run test:generate
 <td><code>pdfnative ^1.8.0</code>, Node ≥ 22. <strong>Bytes differ from v1.4.0</strong> (UTC dates, hinting tables kept in TrueType subsets, corrected Thai and Lao mark ordering): hash-based consumers rebaseline once, then pin with <code>--creation-date</code>. <code>samples/run-all.js</code> removed (<code>npm run test:generate</code> replaces it). SSRF guard also blocks <code>198.18.0.0/15</code>, <code>192.0.2.0/24</code> and <code>64:ff9b::/96</code>; <code>--layout</code> files share the 50 MB cap</td>
 </tr>
 </tbody></table>
-<p>Full changelog: <a href="https://github.com/Nizoka/pdfnative-cli/releases/tag/v1.5.0" target="_blank" rel="noopener">pdfnative-cli release notes v1.5.0</a>.</p>
+<p>Full changelog: <a href="https://github.com/Nizoka/pdfnative-cli/releases/tag/v1.5.0" target="_blank" rel="noopener">pdfnative-cli release notes v1.5.0</a>. <!-- verify-docs:allow version-token (historical link) --></p>
 <h3 id="whats-new-in-v140">What&#39;s new in v1.4.0<a class="heading-anchor" href="#whats-new-in-v140" aria-label="Link to this section">#</a></h3>
 <p>v1.4.0 requires <strong>pdfnative ≥ 1.7.0</strong> (pin <code>^1.7.0</code>) and completes the signature story: the full <strong>PAdES ladder</strong> (B-B → B-T → B-LT → B-LTA) is now writable from the command line, alongside signature-safe metadata edits, a CI-grade document diff, and a declarative batch pipeline. <strong>No contract change</strong> — every flag, default, exit code, error code and envelope from 1.x behaves identically on Node ≥ 22.</p>
 <table>
@@ -2633,6 +2839,42 @@ npm ci &amp;&amp; npm run build &amp;&amp; npm run test:generate
 </tr>
 </tbody></table>
 <hr>
+<h2 id="migration-v150--v160">Migration v1.5.0 → v1.6.0<a class="heading-anchor" href="#migration-v150--v160" aria-label="Link to this section">#</a></h2>
+<p><strong>100 % backward-compatible command surface</strong> — no flag, default, exit code or error code changed; every envelope field is additive and pinned by <code>schema status</code>, and the v1.5.0 test suite is replayed against the current sources on every pull request. What to plan for:</p>
+<ol>
+<li><strong>Pin <code>pdfnative-cli@^1.6.0</code></strong> (it depends on <code>pdfnative ^1.9.0</code>, Node ≥ 22 unchanged). <code>doctor</code> reports <code>36 modules / 32 scripts</code> and <code>conformance</code> unchanged.</li>
+<li><strong>Rebaseline hashes once, then keep pinning the date.</strong> The 1.9.0 engine changes the bytes of every PDF that embeds a font (lean, compact subsets under the six-letter <code>ABCDEF+</code> tag — withheld under PDF/A-1), of every untagged document with shaped or right-to-left text (<code>/Span /ActualText</code>, one text object per line), of every watermarked or tagged document (a page transparency group; table <code>/Scope</code> / <code>/Headers</code> / <code>/IDTree</code>) and of <code>annotate/linked.pdf</code> (the engine&#39;s <code>/Link</code> body). Spec-valid throughout; <code>--creation-date</code> / <code>SOURCE_DATE_EPOCH</code> still make the new bytes reproducible.</li>
+<li><strong><code>extract-text</code> / <code>compare</code> now refuse an over-cap stream.</strong> A content or font stream past <code>--max-inflate-size</code> is <code>E_INPUT</code> where v1.5.0 answered <code>ok</code> with an empty page. Pass <code>--on-stream-error skip</code> for the old answer, or raise the cap for a trusted file. On every other command that opens a PDF the same condition moved from <code>E_PARSE</code> to <code>E_INPUT</code> (with a message naming the flag); <code>verify</code> keeps its own <code>E_PARSE</code> — branch on the code, not the message.</li>
+<li><strong>The dual claim succeeds where it was a usage error.</strong> <code>--pdfx pdfx4 --tagged pdfa2b|pdfa2u</code> renders one file with both claims (exit 0); a script that relied on the exit-2 refusal must be revisited. <code>pdfa1b</code> / <code>pdfa3b</code> with <code>--pdfx</code> are still refused, now by the engine as <code>E_INPUT</code> (exit 1).</li>
+<li><strong><code>--variant table</code> validates <code>infoItems</code> and <code>rows[].cells</code>.</strong> Plain-string <code>infoItems</code> (which rendered <code>undefined :</code> labels) are refused with <code>E_INPUT</code> naming the <code>{ &quot;label&quot;, &quot;value&quot; }</code> shape; the shipped <code>table-variant</code> sample is corrected.</li>
+<li><strong>Right-to-left is opt-in.</strong> <code>--direction</code> has no CLI default: without it (and without <code>layout.direction</code>) nothing is set and the layout stays left-to-right as before (the bytes still move with pdfnative 1.9.0: compact subsets, one text object per line, <code>/ActualText</code> on right-to-left and reordered runs). <code>--actual-text false</code> removes those spans without restoring 1.8.0 bytes; it removes the logical-order guarantee of <code>extract-text</code> on that file.</li>
+<li><strong>Logical-order extraction rides on the <code>/Span /ActualText</code> the 1.9.0 engine writes.</strong> A file rendered by an earlier release carries none on its untagged shaped runs, so the upgrade alone does not change what <code>extract-text</code> returns for it; a re-render of the same JSON extracts as typed (Arabic, Hebrew, Khmer, Myanmar, Indic), and a <code>subs</code> / <code>sups</code> glyph extracts as its source character. Diff-based consumers of <code>extract-text</code> over a re-rendered corpus should expect that.</li>
+<li><strong>Inventory strings and schemas grew, additively.</strong> <code>doctor</code>, the <code>--font</code> allow-list error and <code>schema render</code> say 32 scripts / 36 modules and 13 diagnostic codes; <code>schema status</code> has 35 properties (<code>tagged</code>, <code>direction</code>, <code>actualText</code>, <code>match</code>); <code>inspect --check</code> accepts <code>pdfa,pdfx</code>; <code>ltv embed</code> gains <code>--cert</code> / <code>--ocsp</code> / <code>--crl</code> / <code>--match</code> (exclusive with <code>--data</code>). Consumers that parse those strings or validate against a captured 1.5.0 schema should refresh the capture — a minor only adds.</li>
+</ol>
+<pre><code class="language-diff"># 1. Right-to-left layout, logical-order extraction (opt-in; omitted = unchanged output)
+- pdfnative render --input letter.json --output letter.pdf --font ar --font latin --lang ar,latin
++ pdfnative render --input letter.json --output letter.pdf --font ar --font latin --lang ar,latin --direction auto
++ pdfnative extract-text --input letter.pdf --format ndjson
+
+# 2. The dual claim — was exit 2, now one file with both claims
+- pdfnative render --input brochure.json --output brochure.pdf --pdfx pdfx4 --output-intent-icc press.icc --trapped false --font latin --lang latin
++ pdfnative render --input brochure.json --output brochure.pdf --pdfx pdfx4 --tagged pdfa2b --output-intent-icc press.icc --trapped false --font latin --lang latin
++ pdfnative inspect --input brochure.pdf --check pdfa,pdfx
+
+# 3. An over-cap stream is E_INPUT by default — opt back into the old lenience, or raise the cap
+  pdfnative extract-text --input scanned.pdf --format ndjson
++ pdfnative extract-text --input scanned.pdf --format ndjson --on-stream-error skip
++ pdfnative --max-inflate-size 536870912 extract-text --input big-but-trusted.pdf --format ndjson
+
+# 4. --variant table: infoItems as { label, value } objects (plain strings are now E_INPUT)
+-   &quot;infoItems&quot;: [&quot;Period: Q1 2026&quot;]
++   &quot;infoItems&quot;: [{ &quot;label&quot;: &quot;Period&quot;, &quot;value&quot;: &quot;Q1 2026&quot; }]
+
+# 5. PAdES B-LT from material you hold — no collect step, no network
+- pdfnative ltv collect --input signed.pdf --online --output ltv-data.json
+- pdfnative ltv embed --input signed.pdf --data ltv-data.json --output signed.lt.pdf
++ pdfnative ltv embed --input signed.pdf --output signed.lt.pdf --cert chain.pem --ocsp signer.ocsp.der --crl ca.crl --match chain
+</code></pre>
 <h2 id="migration-v140--v150">Migration v1.4.0 → v1.5.0<a class="heading-anchor" href="#migration-v140--v150" aria-label="Link to this section">#</a></h2>
 <!-- verify-docs:allow version-token (historical: this companion release was built on pdfnative 1.8.0) -->
 <p><strong>100 % backward-compatible command surface</strong> — no flag, default, exit code or error code changed. The <em>bytes</em> changed with the pdfnative 1.8.0 engine (UTC dates, hinting tables kept in TrueType subsets, corrected Thai and Lao mark ordering), so hash-based consumers rebaseline once and then pin the date:</p>
@@ -2706,13 +2948,19 @@ npm ci &amp;&amp; npm run build &amp;&amp; npm run test:generate
 <h3 id="e_network-opt-in-network-operation-failed"><code>E_NETWORK: opt-in network operation failed</code><a class="heading-anchor" href="#e_network-opt-in-network-operation-failed" aria-label="Link to this section">#</a></h3>
 <p>A TSA / OCSP / CRL fetch (<code>sign --timestamp</code>, <code>ltv --online</code>, <code>doc-timestamp</code>, <code>verify --revocation online</code>) failed at the transport level. The SSRF guard allows http/https only, blocks private / loopback / metadata addresses, follows no redirects, and enforces a 10 s timeout and a 5 MiB response cap — check the URL is public and reachable, or raise <code>--timeout</code> where the command exposes it (<code>ltv</code>, <code>doc-timestamp</code>; <code>sign --timestamp-timeout &lt;ms&gt;</code> since v1.5.0). Since v1.5.0 the guard also refuses <code>198.18.0.0/15</code>, <code>192.0.2.0/24</code> and <code>64:ff9b::/96</code>. A <em>malformed</em> TSA response is <code>E_PARSE</code> instead. There is never a silent fallback: either the token is embedded and verified, or the command fails.</p>
 <h3 id="e_parse-on-a-pdf-that-other-tools-open"><code>E_PARSE</code> on a PDF that other tools open<a class="heading-anchor" href="#e_parse-on-a-pdf-that-other-tools-open" aria-label="Link to this section">#</a></h3>
-<p>If the message mentions an inflate cap, one of the PDF&#39;s compressed streams expands past the anti-zip-bomb ceiling (default 100 MiB). For a trusted file, raise it with the global <code>--max-inflate-size &lt;bytes&gt;</code> <em>(v1.4.0)</em>.</p>
+<p>If the message mentions an inflate cap, one of the PDF&#39;s compressed streams expands past the anti-zip-bomb ceiling (default 100 MiB). For a trusted file, raise it with the global <code>--max-inflate-size &lt;bytes&gt;</code> <em>(v1.4.0)</em>. Since v1.6.0 that condition is reported as <code>E_INPUT</code> with a message naming the flag on every command that opens a PDF — <code>verify</code> is the one command that keeps <code>E_PARSE</code> for it; a genuinely malformed file stays <code>E_PARSE</code> everywhere.</p>
+<h3 id="e_input-ending-in-raise---max-inflate-size-or-pass---on-stream-error-skip-to-read-the-other-streams"><code>E_INPUT</code> ending in <code>(raise --max-inflate-size, or pass --on-stream-error skip to read the other streams)</code><a class="heading-anchor" href="#e_input-ending-in-raise---max-inflate-size-or-pass---on-stream-error-skip-to-read-the-other-streams" aria-label="Link to this section">#</a></h3>
+<p><code>extract-text</code> or <code>compare</code> <em>(v1.6.0)</em> met a content or font stream the engine refused to inflate (<code>PdfStreamLimitError</code>, code <code>PDF_STREAM_LIMIT</code>) and the default policy <code>--on-stream-error limit</code> turned it into a refusal rather than an empty page. Two remedies, both named in the message: raise the global <code>--max-inflate-size &lt;bytes&gt;</code> for a trusted large file (the right answer for untrusted input is to keep <code>limit</code>), or pass <code>--on-stream-error skip</code> to read the page without that stream&#39;s text. A corrupt stream is skipped under <code>limit</code> too, so <code>throw</code> — any undecodable stream fails — is the only policy under which <code>compare</code> cannot call two files equal over an unread stream.</p>
+<h3 id="--pdfx-is-mutually-exclusive-with---tagged--but-i-need-pdfa-and-pdfx"><code>--pdfx is mutually exclusive with --tagged</code> — but I need PDF/A <strong>and</strong> PDF/X<a class="heading-anchor" href="#--pdfx-is-mutually-exclusive-with---tagged--but-i-need-pdfa-and-pdfx" aria-label="Link to this section">#</a></h3>
+<p>That usage error (exit 2) belonged to v1.5.0. Since v1.6.0 <code>--tagged pdfa2b</code> or <code>pdfa2u</code> next to <code>--pdfx pdfx4</code> is the supported <strong>dual claim</strong> (two OutputIntents, both identifications in the XMP; verify with <code>inspect --check pdfa,pdfx</code>). What is still refused — now by the engine, as <code>E_INPUT</code> with a level-specific message — is <code>pdfa1b</code> or <code>pdfa3b</code> with <code>--pdfx</code>: pick PDF/A-2 for the dual claim, or drop one of the two claims. Encryption remains exclusive with both (exit 2).</p>
+<h3 id="infoitems0-expected--label-string-value-string----variant-table"><code>infoItems[0]: expected { label: string, value: string }</code> (<code>--variant table</code>)<a class="heading-anchor" href="#infoitems0-expected--label-string-value-string----variant-table" aria-label="Link to this section">#</a></h3>
+<p>Since v1.6.0 the table variant validates the <code>PdfParams</code> shape the engine types but does not check: <code>infoItems</code> is an array of <code>{ &quot;label&quot;, &quot;value&quot; }</code> objects (a plain string such as <code>&quot;Period: Q1&quot;</code> rendered an <code>undefined :</code> label in earlier releases and crashes the 1.9.0 base-14 emitter with a <code>TypeError</code>), and every row carries <code>cells: string[]</code>. Rewrite <code>&quot;Period: Q1&quot;</code> as <code>{ &quot;label&quot;: &quot;Period&quot;, &quot;value&quot;: &quot;Q1&quot; }</code>; <code>pdfnative schema render</code> documents the shape.</p>
 <h3 id="enoent-no-such-file-or-directory-d--windows"><code>ENOENT: no such file or directory, &#39;D\&#39;</code>  (Windows)<a class="heading-anchor" href="#enoent-no-such-file-or-directory-d--windows" aria-label="Link to this section">#</a></h3>
 <p>This was a v0.1.0 / pre-v0.2.0 regression: <code>--attachment D:\file.xml</code> was split at the drive-letter colon. Fixed in v0.2.0 — make sure you&#39;re on <code>pdfnative-cli@^0.2.0</code>.</p>
 <h3 id="layout-file-is-ignored-when-i-also-pass-cli-flags">Layout file is ignored when I also pass CLI flags<a class="heading-anchor" href="#layout-file-is-ignored-when-i-also-pass-cli-flags" aria-label="Link to this section">#</a></h3>
 <p>That is the <strong>intended precedence</strong>: <code>CLI flags &gt; --layout file &gt; pdfnative defaults</code>. To merge nested objects (e.g. a watermark in the layout file plus a <code>--watermark-text</code> on the CLI), the CLI now correctly merges <code>params.layout</code> with CLI-derived flags as of v0.2.0 (previously the JSON-embedded layout could be silently dropped — fixed).</p>
 <h3 id="--lang-th-does-not-produce-thai-glyphs"><code>--lang th</code> does not produce Thai glyphs<a class="heading-anchor" href="#--lang-th-does-not-produce-thai-glyphs" aria-label="Link to this section">#</a></h3>
-<p><code>--lang</code> only <em>activates</em> fonts that are registered in the CLI process — pass <code>--font th</code> as well so the bundled Noto Thai module is registered (<code>--font</code> covers all 27 bundled scripts, <code>latin</code>, <code>emoji</code>, <code>color-emoji</code>, <code>math</code>). A wrapper script that registers fonts and then spawns the CLI does <strong>not</strong> work: in-memory registration does not cross a process boundary. For a font file you ship yourself, use <code>--font-file &lt;path.ttf&gt;[:name]</code> <em>(v1.5.0)</em>; for a custom loader, call the library directly — see <em>Recipes → Multilang fonts</em>.</p>
+<p><code>--lang</code> only <em>activates</em> fonts that are registered in the CLI process — pass <code>--font th</code> as well so the bundled Noto Thai module is registered (<code>--font</code> covers all 32 bundled scripts, <code>latin</code>, <code>emoji</code>, <code>color-emoji</code>, <code>math</code> — 36 bundled font modules). A wrapper script that registers fonts and then spawns the CLI does <strong>not</strong> work: in-memory registration does not cross a process boundary. For a font file you ship yourself, use <code>--font-file &lt;path.ttf&gt;[:name]</code> <em>(v1.5.0)</em>; for a custom loader, call the library directly — see <em>Recipes → Multilang fonts</em>.</p>
 <h3 id="signed-pdf-fails-adobe-verification">Signed PDF fails Adobe verification<a class="heading-anchor" href="#signed-pdf-fails-adobe-verification" aria-label="Link to this section">#</a></h3>
 <p>Ensure your certificate&#39;s signing-key usage extension includes <code>digitalSignature</code> (key usage 0). Self-signed certificates work for testing but require the validator to trust the issuer — pass <code>--trust ca-root.pem</code> to <code>verify</code> for self-signed setups.</p>
 <hr>

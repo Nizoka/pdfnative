@@ -32,7 +32,7 @@
     .cli-tab { padding: 10px 18px; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--c-text-dim); cursor: pointer; font-size: 14px; font-weight: 600; }
     .cli-tab:hover { color: var(--c-text); }
     .cli-tab[aria-selected="true"] { color: var(--c-primary); border-bottom-color: var(--c-primary); }
-    .cli-tab .new-badge { display: inline-block; margin-left: 6px; padding: 1px 6px; border-radius: 4px; background: var(--c-success); color: #fff; font-size: 10px; font-weight: 700; vertical-align: middle; }
+    .cli-tab .new-badge { display: inline-block; margin-left: 6px; padding: 1px 6px; border-radius: 4px; background: #15803d; color: #fff; font-size: 10px; font-weight: 700; vertical-align: middle; }
     .cli-form { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 18px; margin-top: 24px; }
     .cli-form .full { grid-column: 1 / -1; }
     .cli-form label { display: block; font-size: 13px; font-weight: 600; color: var(--c-text); margin-bottom: 4px; }
@@ -49,13 +49,15 @@
     .cli-preview { margin-top: 28px; }
     .cli-preview h3 { font-size: 16px; font-weight: 700; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
     .cli-preview pre { background: var(--c-code-bg); color: var(--c-code-text); padding: 16px; border-radius: 8px; font-size: 13px; overflow-x: auto; line-height: 1.5; }
-    .cli-preview .copy-btn { padding: 4px 10px; font-size: 12px; background: var(--c-primary); color: #fff; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; }
+    .cli-preview .copy-btn { padding: 4px 10px; font-size: 12px; background: var(--c-primary); color: var(--c-primary-fg); border: none; border-radius: 4px; cursor: pointer; font-weight: 600; }
     .cli-preview .copy-btn:hover { background: var(--c-accent); }
     .cli-validation { margin-top: 14px; padding: 12px 14px; border-radius: 6px; font-size: 13px; line-height: 1.5; display: none; }
     .cli-validation.error { display: block; background: #fee2e2; border: 1px solid #fca5a5; color: #991b1b; }
     [data-theme="dark"] .cli-validation.error { background: #450a0a; border-color: #7f1d1d; color: #fecaca; }
     .cli-validation.warn { display: block; background: #fef3c7; border: 1px solid #fcd34d; color: #78350f; }
     [data-theme="dark"] .cli-validation.warn { background: #422006; border-color: #92400e; color: #fde68a; }
+    .cli-validation.info { display: block; background: #dbeafe; border: 1px solid #93c5fd; color: #1e3a8a; }
+    [data-theme="dark"] .cli-validation.info { background: #172554; border-color: #1e40af; color: #bfdbfe; }
     .cli-presets { display: flex; gap: 8px; align-items: center; margin: 18px 0 0; flex-wrap: wrap; }
     .cli-presets select { padding: 6px 10px; border: 1px solid var(--c-border); border-radius: 6px; font-size: 13px; background: var(--c-bg); color: var(--c-text); }
     .cli-panel { display: none; }
@@ -75,7 +77,17 @@
     "description": "Interactive command-builder for pdfnative-cli — assemble all 21 commands, from render and fill to the PAdES ladder (sign --timestamp, ltv, doc-timestamp), metadata, compare and batch manifests, with a live shell preview.",
     "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
     "isPartOf": { "@type": "WebSite", "name": "pdfnative", "url": "https://pdfnative.dev" },
-    "author": { "@type": "Organization", "name": "Nizoka", "url": "https://github.com/Nizoka" }
+    "author": { "@type": "Organization", "name": "Nizoka", "url": "https://github.com/Nizoka" },
+    "about": {
+      "@type": "SoftwareApplication",
+      "@id": "https://pdfnative.dev/#cli",
+      "inLanguage": "en",
+      "name": "pdfnative-cli",
+      "softwareVersion": "1.6.0",
+      "applicationCategory": "DeveloperApplication",
+      "operatingSystem": "Node.js",
+      "url": "https://github.com/Nizoka/pdfnative-cli"
+    }
   }
   </script>
 </head>
@@ -131,7 +143,7 @@
   </nav>
   <article class="guide-content">
     <h1>pdfnative-cli command builder</h1>
-    <p>Pick a command, fill the form, copy the resulting <code>npx pdfnative-cli</code> invocation. Covers all twenty-one commands of <strong>pdfnative-cli v1.5.0</strong> (engine pdfnative ≥ 1.8.0) — authoring (<code>render</code>, <code>fill</code>, <code>annotate</code>, <code>metadata</code>), the page tree (<code>merge</code>, <code>split</code>, <code>extract</code>), the complete PAdES ladder (<code>sign --timestamp</code> B-T, <code>ltv</code> B-LT, <code>doc-timestamp</code> B-LTA, plus <code>encrypt</code> / <code>decrypt</code> and <code>verify</code>), reading (<code>inspect</code>, <code>extract-text</code>, <code>compare</code>), and automation (<code>batch</code> with declarative manifests, <code>doctor</code>, <code>schema</code>, <code>completion</code>, <code>govern</code>). The most-used flags have form fields; the <a href="../guides/cli.html">CLI guide</a> is the exhaustive flag reference. The builder runs entirely in your browser — nothing is uploaded.</p>
+    <p>Pick a command, fill the form, copy the resulting <code>npx pdfnative-cli</code> invocation. Covers all 21 commands of <strong>pdfnative-cli v1.6.0</strong> (engine pdfnative ≥ 1.9.0) — authoring (<code>render</code> with its 59 flags — <code>--direction</code> and <code>--actual-text</code> since v1.6.0 —, <code>fill</code>, <code>annotate</code>, <code>metadata</code>), the page tree (<code>merge</code>, <code>split</code>, <code>extract</code>), the complete PAdES ladder (<code>sign --timestamp</code> B-T, <code>ltv</code> B-LT, <code>doc-timestamp</code> B-LTA, plus <code>encrypt</code> / <code>decrypt</code> and <code>verify</code>), reading (<code>inspect</code>, <code>extract-text</code>, <code>compare</code>), and automation (<code>batch</code> with declarative manifests, <code>doctor</code>, <code>schema</code>, <code>completion</code>, <code>govern</code>). The most-used flags have form fields; the <a href="../guides/cli.html">CLI guide</a> is the exhaustive flag reference. The builder runs entirely in your browser — nothing is uploaded.</p>
 
     <div class="cli-presets">
       <label for="preset"><strong>Quick preset:</strong></label>
@@ -176,6 +188,17 @@
         <option value="verify-weak-digest">verify · strict — weak SHA-1 timestamp digest · v1.5</option>
         <option value="doctor-conformance">doctor · fonts, unicode &amp; conformance checks · v1.5</option>
         <option value="global-flags-first">global flags before the command · v1.5</option>
+        <option value="render-rtl-direction">render · right-to-left paragraphs (--direction auto) · v1.6</option>
+        <option value="render-actual-text-off">render · --actual-text false (no spans) · v1.6</option>
+        <option value="render-spot-colours">render · spot colours under PDF/X-4 · v1.6</option>
+        <option value="render-dual-claim">render · PDF/A-2b + PDF/X-4 dual claim · v1.6</option>
+        <option value="inspect-dual-check">inspect · --check pdfa + pdfx, one exit code · v1.6</option>
+        <option value="render-jpeg2000">render · JPEG 2000 image (/JPXDecode) · v1.6</option>
+        <option value="render-indic-five">render · five more Indic scripts (gu, pa, kn, ml, or) · v1.6</option>
+        <option value="extract-text-stream-policy">extract-text · --on-stream-error policy · v1.6</option>
+        <option value="compare-stream-policy">compare · --on-stream-error policy · v1.6</option>
+        <option value="ltv-embed-offline">ltv · embed offline material (--cert / --ocsp / --crl, --match) · v1.6</option>
+        <option value="schema-status">schema · status envelope (35 fields) · v1.6</option>
       </select>
       <button id="reset" class="btn btn-secondary" style="padding: 6px 14px; font-size: 13px;">Reset</button>
     </div>
@@ -266,7 +289,7 @@
         </div>
         <div>
           <label><input type="checkbox" data-cmd="render" data-flag="--strict"> --strict <span class="new-badge" style="background:var(--c-success);color:#fff;padding:1px 6px;border-radius:4px;font-size:10px;">v1.4</span></label>
-          <span class="hint">Escalate PDF/A and PDF/X diagnostics (unembedded form fonts, DeviceCMYK images, <code>PDFX_ANNOTATIONS</code>, <code>TYPOGRAPHY_FEATURE_INEFFECTIVE</code>… — 9 codes since v1.5.0) into a hard failure before the first byte — exit 1 / <code>E_CHECK_FAILED</code>.</span>
+          <span class="hint">Escalate PDF/A and PDF/X diagnostics (unembedded form fonts, DeviceCMYK images, <code>PDFX_ANNOTATIONS</code>, <code>TYPOGRAPHY_FEATURE_INEFFECTIVE</code>… — 13 codes since v1.6.0, the four new ones being <code>PDFA_GLYPH_WITHOUT_UNICODE</code>, <code>PDFA1_JPX_IMAGE</code>, <code>PDFA_JPX_IMAGE</code> and <code>TEXT_GLYPH_NOT_COVERED</code>) into a hard failure before the first byte — exit 1 / <code>E_CHECK_FAILED</code>.</span>
         </div>
         <div>
           <label for="r-chunk">--chunk-size <span class="new-badge" style="background:var(--c-success);color:#fff;padding:1px 6px;border-radius:4px;font-size:10px;">v1.4</span></label>
@@ -281,7 +304,7 @@
         <div class="full">
           <label for="r-lang">--lang</label>
           <input id="r-lang" type="text" data-cmd="render" data-flag="--lang" placeholder="th,ja,ar">
-          <span class="hint">Comma-separated language codes. Non-Latin scripts need their font registered — pass the same code to <code>--font</code> (27 bundled scripts; <code>lo</code>, <code>nod</code>, <code>khb</code>, <code>tdd</code>, <code>cjm</code> since v1.5.0). <code>ha</code>, <code>yo</code>, <code>ig</code>, <code>sw</code> are aliases of <code>latin</code>.</span>
+          <span class="hint">Comma-separated language codes. The font registry starts empty: every code here needs its font registered — pass the same code to <code>--font</code> (32 bundled scripts; <code>gu</code>, <code>pa</code>, <code>kn</code>, <code>ml</code>, <code>or</code> since v1.6.0) or ship it with <code>--font-file</code>. <code>ha</code>, <code>yo</code>, <code>ig</code>, <code>sw</code> are aliases of <code>latin</code>.</span>
         </div>
         <div class="full">
           <label for="r-font-file">--font-file (one per line) <span class="new-badge" style="background:var(--c-success);color:#fff;padding:1px 6px;border-radius:4px;font-size:10px;">v1.5</span></label>
@@ -305,12 +328,78 @@
               <label for="r-font">--font</label>
               <select id="r-font" data-cmd="render" data-flag="--font">
                 <option value="">— none —</option>
-                <option value="latin">latin (Noto Sans VF)</option>
-                <option value="emoji">emoji (Noto Emoji)</option>
-                <option value="math">math (Noto Sans Math) · v1.2</option>
-                <option value="color-emoji">color-emoji</option>
+                <optgroup label="Utility faces (4)">
+                  <option value="latin">latin (Noto Sans VF)</option>
+                  <option value="emoji">emoji (Noto Emoji)</option>
+                  <option value="math">math (Noto Sans Math) · v1.2</option>
+                  <option value="color-emoji">color-emoji</option>
+                </optgroup>
+                <optgroup label="Scripts (32)">
+                  <option value="ar">ar — Arabic</option>
+                  <option value="hy">hy — Armenian</option>
+                  <option value="bn">bn — Bengali</option>
+                  <option value="ru">ru — Cyrillic</option>
+                  <option value="hi">hi — Devanagari</option>
+                  <option value="am">am — Ethiopic</option>
+                  <option value="ka">ka — Georgian</option>
+                  <option value="el">el — Greek</option>
+                  <option value="he">he — Hebrew</option>
+                  <option value="ja">ja — Japanese</option>
+                  <option value="km">km — Khmer</option>
+                  <option value="ko">ko — Korean</option>
+                  <option value="my">my — Myanmar</option>
+                  <option value="pl">pl — Polish</option>
+                  <option value="zh">zh — Simplified Chinese</option>
+                  <option value="si">si — Sinhala</option>
+                  <option value="ta">ta — Tamil</option>
+                  <option value="te">te — Telugu</option>
+                  <option value="th">th — Thai</option>
+                  <option value="bo">bo — Tibetan</option>
+                  <option value="tr">tr — Turkish</option>
+                  <option value="vi">vi — Vietnamese</option>
+                  <option value="lo">lo — Lao · v1.5</option>
+                  <option value="nod">nod — Tai Tham · v1.5</option>
+                  <option value="khb">khb — New Tai Lue · v1.5</option>
+                  <option value="tdd">tdd — Tai Le · v1.5</option>
+                  <option value="cjm">cjm — Cham · v1.5</option>
+                  <option value="gu">gu — Gujarati · v1.6</option>
+                  <option value="pa">pa — Gurmukhi (Punjabi) · v1.6</option>
+                  <option value="kn">kn — Kannada · v1.6</option>
+                  <option value="ml">ml — Malayalam · v1.6</option>
+                  <option value="or">or — Odia · v1.6</option>
+                </optgroup>
               </select>
-              <span class="hint">Bundled font codes — besides these, any of the 27 script codes (<code>ar</code>, <code>th</code>, <code>ja</code>… plus <code>lo</code>, <code>nod</code>, <code>khb</code>, <code>tdd</code>, <code>cjm</code> since v1.5.0) works and doubles as the <code>--lang</code> code; 31 bundled font modules in total.</span>
+              <span class="hint">Bundled font codes — 4 utility faces + the 32 script codes = 36 bundled font modules, each a Noto module probed on disk (<code>doctor</code> lists them). A script code doubles as its <code>--lang</code> code; <code>gu</code>, <code>pa</code>, <code>kn</code>, <code>ml</code>, <code>or</code> since v1.6.0.</span>
+            </div>
+            <div>
+              <label for="r-font-extra">more --font (one code per line) <span class="new-badge" style="background:var(--c-success);color:#fff;padding:1px 6px;border-radius:4px;font-size:10px;">v1.6</span></label>
+              <textarea id="r-font-extra" data-cmd="render" data-flag="--font-extra" placeholder="he&#10;latin"></textarea>
+              <span class="hint"><code>--font</code> is repeatable: each line is emitted as one more <code>--font &lt;code&gt;</code> after the selected one (a builder helper, not a CLI flag). A multilingual document registers one module per script it uses — <code>--font ar --font he --font latin --lang ar,he,latin</code>.</span>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Text direction &amp; extraction <span class="new-badge" style="background:var(--c-success);color:#fff;padding:1px 6px;border-radius:4px;font-size:10px;">v1.6</span></legend>
+          <div class="grid">
+            <div>
+              <label for="r-direction">--direction</label>
+              <select id="r-direction" data-cmd="render" data-flag="--direction">
+                <option value="">unset (no CLI default)</option>
+                <option value="auto">auto — each paragraph from its first strong character (UAX #9 P2–P3)</option>
+                <option value="ltr">ltr</option>
+                <option value="rtl">rtl</option>
+              </select>
+              <span class="hint">Base direction of every paragraph (full UAX #9, pdfnative ≥ 1.9.0): alignment and justification follow it. No CLI default — omitted, nothing is set and the output is the 1.8.0 left-aligned layout; a paragraph block's own <code>direction</code> wins over the flag.</span>
+            </div>
+            <div>
+              <label for="r-actual-text">--actual-text</label>
+              <select id="r-actual-text" data-cmd="render" data-flag="--actual-text">
+                <option value="">unset (default: true)</option>
+                <option value="true">true</option>
+                <option value="false">false — no spans (bare runs)</option>
+              </select>
+              <span class="hint">Untagged right-to-left and reordered (shaped) runs carry their logical text as <code>/Span /ActualText</code>, so <code>extract-text</code> returns the string as typed without <code>--tagged</code>. Only <code>false</code> changes the bytes — <code>true</code> is the default and the envelope carries <code>actualText: false</code> only on the opt-out.</span>
             </div>
           </div>
         </fieldset>
@@ -368,7 +457,7 @@
                 <option value="">none (default)</option>
                 <option value="pdfx4">pdfx4 (ISO 15930-7)</option>
               </select>
-              <span class="hint">PDF/X-4 claim. Needs an output ICC profile, every font embedded, <code>--trapped true|false</code> and a TrimBox or ArtBox per page. Exclusive with <code>--tagged pdfa*</code> and encryption.</span>
+              <span class="hint">PDF/X-4 claim. Needs an output ICC profile (CMYK or Gray <code>prtr</code>), every font embedded, <code>--trapped true|false</code> and a TrimBox or ArtBox per page. Since v1.6.0 it combines with <code>--tagged pdfa2b</code> or <code>pdfa2u</code> (the dual claim: <code>pdfaid</code> + <code>pdfxid</code> in the XMP, two OutputIntents on one profile); <code>pdfa1b</code> and <code>pdfa3b</code> are refused by the engine → <code>E_INPUT</code>. Exclusive with encryption.</span>
             </div>
             <div>
               <label for="r-oi-icc">--output-intent-icc</label>
@@ -391,7 +480,7 @@
               <span class="hint"><code>/Info /Trapped</code>. Under <code>--pdfx</code>, <code>unknown</code> is refused and unset means <code>false</code>.</span>
             </div>
           </div>
-          <span class="hint" style="margin-top: 8px; display: block;">Colours everywhere also accept CMYK — <code>[c, m, y, k]</code> percent or <code>"c m y k"</code> operands 0–1 (DeviceCMYK). Check the result with <code>inspect --check pdfx</code>.</span>
+          <span class="hint" style="margin-top: 8px; display: block;">Colours everywhere also accept CMYK — <code>[c, m, y, k]</code> percent or <code>"c m y k"</code> operands 0–1 (DeviceCMYK). Spot colours (v1.6.0, pdfnative ≥ 1.9.0) live in the JSON only: declare the inks in <code>layout.print.spotColours</code> (<code>{ "name", "alternate": [c, m, y, k] }</code>), then paint with <code>{ "spot": "PANTONE 300 C" }</code>, <code>{ "spot": …, "tint": 0.4 }</code> (<code>/Separation</code>) or <code>{ "inks": { "PANTONE 300 C": 1, "Varnish": 0.4 } }</code> (<code>/DeviceN</code>) — no flag; an undeclared ink is refused with <code>E_INPUT</code> before any byte is written. Check the result with <code>inspect --check pdfx</code>.</span>
         </fieldset>
 
         <fieldset>
@@ -404,6 +493,7 @@
             <div>
               <label for="r-wm-image">--watermark-image</label>
               <input id="r-wm-image" type="text" data-cmd="render" data-flag="--watermark-image" placeholder="logo.png">
+              <span class="hint">PNG, JPEG or (since v1.6.0) JPEG 2000 — the format is sniffed from the bytes, not the extension.</span>
             </div>
             <div>
               <label for="r-wm-opacity">--watermark-opacity</label>
@@ -680,7 +770,7 @@
               <span class="hint">Minimum number of real signatures.</span>
             </div>
           </div>
-          <span class="hint" style="margin-top: 8px; display: block;">Exit code 0 on all-pass, 1 on any failure. Composable with <code>--format</code>. Since v1.4.0, <code>--check signed</code> counts only real signatures — unsigned placeholders and <code>/DocTimeStamp</code> revisions no longer pass.</span>
+          <span class="hint" style="margin-top: 8px; display: block;">Exit code 0 on all-pass, 1 on any failure. Composable with <code>--format</code>. Since v1.4.0, <code>--check signed</code> counts only real signatures — unsigned placeholders and <code>/DocTimeStamp</code> revisions no longer pass. The builder emits one <code>--check</code> per assertion; since v1.6.0 the CLI also accepts a comma list — <code>--check pdfa,pdfx</code> asserts the PDF/A-2b + PDF/X-4 dual claim in one exit code.</span>
         </fieldset>
       </div>
     </section>
@@ -824,7 +914,7 @@
         <div class="full">
           <label for="a-annotations">--annotations (file path)</label>
           <input id="a-annotations" type="text" data-cmd="annotate" data-flag="--annotations" placeholder="notes.json">
-          <span class="hint">JSON array (or <code>{ "annotations": [...] }</code>): each entry a markup annotation plus a 1-based <code>page</code>. Link entry (v1.5.0): <code>{ "type": "link", "page": 1, "rect": [72, 700, 300, 720], "url": "https://pdfnative.dev" }</code> — <code>http:</code>, <code>https:</code> or <code>mailto:</code> only, otherwise <code>E_INPUT</code>.</span>
+          <span class="hint">JSON array (or <code>{ "annotations": [...] }</code>): each entry a markup annotation plus a 1-based <code>page</code>. Link entry (v1.5.0): <code>{ "type": "link", "page": 1, "rect": [72, 700, 300, 720], "url": "https://pdfnative.dev" }</code> — <code>http:</code>, <code>https:</code> or <code>mailto:</code> only, otherwise <code>E_INPUT</code>; since v1.6.0 the <code>/Link</code> + <code>/URI</code> body is built by the engine's own <code>buildAnnotationBody</code> (pdfnative ≥ 1.9.0), not by the CLI.</span>
         </div>
         <div>
           <label for="a-password">--password <span class="new-badge" style="background:var(--c-success);color:#fff;padding:1px 6px;border-radius:4px;font-size:10px;">v1.4</span></label>
@@ -835,7 +925,7 @@
           <label><input type="checkbox" data-cmd="annotate" data-flag="--dry-run"> --dry-run</label>
         </div>
       </div>
-      <p class="hint" style="margin-top: 14px;">Written with an <strong>incremental save</strong>, so existing signatures stay valid. Types: text, highlight, underline, strikeout, squiggly, square, circle, line, freetext, and <code>link</code> (v1.5.0 — a <code>/Link</code> with a <code>/URI</code> action over a click rectangle). Colours accept CMYK too. <strong>Overlay, not redaction.</strong></p>
+      <p class="hint" style="margin-top: 14px;">Written with an <strong>incremental save</strong>, so existing signatures stay valid. Types: text, highlight, underline, strikeout, squiggly, square, circle, line, freetext, and <code>link</code> (v1.5.0 — a <code>/Link</code> with a <code>/URI</code> action over a click rectangle; engine-built body since v1.6.0). Colours accept CMYK too. <strong>Overlay, not redaction.</strong></p>
     </section>
 
     <!-- ─────────────── GOVERN (v1.2) ─────────────── -->
@@ -938,7 +1028,7 @@
         <div>
           <label for="l-data">--data (for embed)</label>
           <input id="l-data" type="text" data-cmd="ltv" data-flag="--data" placeholder="ltv-data.json">
-          <span class="hint">Evidence JSON produced by <code>collect</code> — the air-gap bridge.</span>
+          <span class="hint">Evidence JSON produced by <code>collect</code> — the air-gap bridge. Exclusive with the offline material below (exit 2 when both are given).</span>
         </div>
         <div>
           <label for="l-prefer">--prefer</label>
@@ -959,9 +1049,40 @@
         </div>
         <div>
           <label><input type="checkbox" data-cmd="ltv" data-flag="--dry-run"> --dry-run</label>
+          <span class="hint">With offline material: composes the <code>/DSS</code> data and reports the counts (<code>certificates</code>, <code>ocspResponses</code>, <code>crls</code>, <code>vri</code>), writes nothing.</span>
         </div>
+        <fieldset class="full">
+          <legend>Offline material (embed) <span class="new-badge" style="background:var(--c-success);color:#fff;padding:1px 6px;border-radius:4px;font-size:10px;">v1.6</span></legend>
+          <div class="grid">
+            <div>
+              <label for="l-cert">--cert (one per line)</label>
+              <textarea id="l-cert" data-cmd="ltv" data-flag="--cert" placeholder="issuing-ca.pem&#10;root-ca.der"></textarea>
+              <span class="hint">Certificate files, PEM (every <code>CERTIFICATE</code> block) or DER. Repeatable, 16 MiB each.</span>
+            </div>
+            <div>
+              <label for="l-ocsp">--ocsp (one per line)</label>
+              <textarea id="l-ocsp" data-cmd="ltv" data-flag="--ocsp" placeholder="signer.ocsp.der"></textarea>
+              <span class="hint">OCSP responses, DER. Repeatable, 16 MiB each.</span>
+            </div>
+            <div>
+              <label for="l-crl">--crl (one per line)</label>
+              <textarea id="l-crl" data-cmd="ltv" data-flag="--crl" placeholder="issuing-ca.crl"></textarea>
+              <span class="hint">CRLs, DER. Repeatable, 16 MiB each.</span>
+            </div>
+            <div>
+              <label for="l-match">--match</label>
+              <select id="l-match" data-cmd="ltv" data-flag="--match">
+                <option value="">all (default)</option>
+                <option value="all">all — every item in every VRI (the Adobe-tolerant superset)</option>
+                <option value="chain">chain — each VRI references only what validates its signature</option>
+              </select>
+              <span class="hint">How the material is attributed to the document's signatures (pdfnative ≥ 1.9.0 <code>composeLtvData</code>). Applies to offline material only — with <code>--data</code> it is a usage error (exit 2).</span>
+            </div>
+          </div>
+          <span class="hint" style="margin-top: 8px; display: block;"><code>ltv embed</code> takes <strong>either</strong> <code>--data &lt;ltv.json&gt;</code> <strong>or</strong> offline material (<code>--cert</code>, <code>--ocsp</code>, <code>--crl</code>), never both; a chain certificate for the online commands still goes through <code>--extra-cert</code>. Nothing here opens a socket. The envelope reports <code>match</code> next to the counts.</span>
+        </fieldset>
       </div>
-      <p class="hint" style="margin-top: 14px;"><strong>Air-gapped workflow:</strong> <code>ltv collect --online</code> on a connected machine → transfer the JSON → <code>ltv embed --data</code> inside the enclave, where no network I/O is even possible. Continue to B-LTA with <code>doc-timestamp</code>.</p>
+      <p class="hint" style="margin-top: 14px;"><strong>Air-gapped workflow:</strong> <code>ltv collect --online</code> on a connected machine → transfer the JSON → <code>ltv embed --data</code> inside the enclave, where no network I/O is even possible — or, since v1.6.0, <code>ltv embed --cert / --ocsp / --crl</code> straight from material you already hold. Continue to B-LTA with <code>doc-timestamp</code>.</p>
     </section>
 
     <!-- ─────────────── DOC-TIMESTAMP (v1.4) ─────────────── -->
@@ -1123,6 +1244,16 @@
           <span class="hint">(json) Emit only <code>{ pages, characters }</code>.</span>
         </div>
         <div>
+          <label for="et-stream-error">--on-stream-error <span class="new-badge" style="background:var(--c-success);color:#fff;padding:1px 6px;border-radius:4px;font-size:10px;">v1.6</span></label>
+          <select id="et-stream-error" data-cmd="extract-text" data-flag="--on-stream-error">
+            <option value="">limit (default)</option>
+            <option value="limit">limit — a stream over the inflate cap is E_INPUT</option>
+            <option value="throw">throw — any undecodable stream is an error</option>
+            <option value="skip">skip — the 1.8.0 lenience: the page comes back short</option>
+          </select>
+          <span class="hint">pdfnative ≥ 1.9.0 <code>extractText({ onStreamError })</code>. <code>limit</code> (default): a content or font stream past <code>--max-inflate-size</code> is <code>E_INPUT</code>, and the message names both remedies — raise <code>--max-inflate-size</code>, or pass <code>--on-stream-error skip</code> to read the other streams. <code>throw</code> also refuses a corrupt stream; <code>skip</code> silently drops the unreadable stream.</span>
+        </div>
+        <div>
           <label><input type="checkbox" data-cmd="extract-text" data-flag="--pretty"> --pretty</label>
         </div>
       </div>
@@ -1176,6 +1307,16 @@
         <div>
           <label for="c-pass-b">--password-b</label>
           <input id="c-pass-b" type="text" data-cmd="compare" data-flag="--password-b">
+        </div>
+        <div>
+          <label for="c-stream-error">--on-stream-error <span class="new-badge" style="background:var(--c-success);color:#fff;padding:1px 6px;border-radius:4px;font-size:10px;">v1.6</span></label>
+          <select id="c-stream-error" data-cmd="compare" data-flag="--on-stream-error">
+            <option value="">limit (default)</option>
+            <option value="limit">limit — a stream over the inflate cap is E_INPUT</option>
+            <option value="throw">throw — any undecodable stream is an error</option>
+            <option value="skip">skip — compare what the other streams say</option>
+          </select>
+          <span class="hint">Same three policies as <code>extract-text</code>, applied to the text pass of both documents. Under <code>limit</code> (default) a stream past the inflate cap fails the run with <code>E_INPUT</code> (naming <code>--max-inflate-size</code> and <code>--on-stream-error skip</code>) while a corrupt stream is skipped as before; <code>throw</code> fails on any undecodable stream — the only policy that rules out an “equal” over an unread stream; <code>skip</code> drops the unreadable stream and compares the rest.</span>
         </div>
         <div>
           <label><input type="checkbox" data-cmd="compare" data-flag="--pretty"> --pretty</label>
@@ -1291,8 +1432,7 @@
           <label><input type="checkbox" data-cmd="doctor" data-flag="--pretty"> --pretty</label>
         </div>
       </div>
-<!-- verify-docs:allow stale-token (historical: this companion release was built on pdfnative 1.8.0 (27 scripts)) -->
-      <p class="hint" style="margin-top: 14px;">Eight offline checks: <code>cli</code> version, <code>node</code> (≥ 22 since v1.4.0), <code>webcrypto</code> CSPRNG, the resolved <code>pdfnative</code> engine version, the <code>commands</code> count, and since v1.5.0 <code>fonts</code> (31 modules / 27 scripts, probed on disk), <code>unicode</code> (the USE database version) and <code>conformance</code> (<code>pdfa1b,pdfa2b,pdfa2u,pdfa3b,pdfx4</code>). <code>--json</code> emits <code>{ ok, checks: [{ name, status, value, detail }] }</code>. The first thing to run in a new environment — and the first thing an agent should call.</p>
+      <p class="hint" style="margin-top: 14px;">Eight offline checks: <code>cli</code> version, <code>node</code> (≥ 22 since v1.4.0), <code>webcrypto</code> CSPRNG, the resolved <code>pdfnative</code> engine version, the <code>commands</code> count, and since v1.5.0 <code>fonts</code> (36 modules / 32 scripts with pdfnative 1.9.0, probed on disk), <code>unicode</code> (the USE database version) and <code>conformance</code> (<code>pdfa1b,pdfa2b,pdfa2u,pdfa3b,pdfx4</code>). <code>--json</code> emits <code>{ ok, checks: [{ name, status, value, detail }] }</code>. The first thing to run in a new environment — and the first thing an agent should call.</p>
     </section>
 
     <!-- ─────────────── SCHEMA ─────────────── -->
@@ -1318,11 +1458,11 @@
             <option value="ltv-data">ltv-data · v1.4</option>
             <option value="compare">compare · v1.4</option>
             <option value="batch-manifest">batch-manifest · v1.4</option>
-            <option value="status">status</option>
+            <option value="status">status — the --json success envelope, 35 fields (v1.6)</option>
             <option value="manifest">manifest (capability document)</option>
             <option value="doctor">doctor</option>
           </select>
-          <span class="hint">Versioned JSON Schemas (Draft 2020-12) — the <code>$id</code> embeds the CLI version, so agents can self-validate before invoking a command. 19 subjects in v1.5.0.</span>
+          <span class="hint">Versioned JSON Schemas (Draft 2020-12) — the <code>$id</code> is <code>https://pdfnative.dev/schema/cli/&lt;version&gt;/&lt;subject&gt;.schema.json</code>, so agents can pin the schema of the CLI they run and self-validate before invoking a command. 19 subjects in v1.6.0; <code>status</code> pins every field any write command emits — 35 since v1.6.0 (+ <code>match</code>, <code>tagged</code>, <code>direction</code>, <code>actualText</code>), additions only.</span>
         </div>
       </div>
     </section>
@@ -1430,7 +1570,13 @@
   let activeCmd = 'render';
 
   // Repeatable flags (one occurrence per item)
-  const REPEATABLE = new Set(['--cert-chain', '--attachment', '--trust', '--check', '--extra-cert', '--font-file']);
+  const REPEATABLE = new Set(['--cert-chain', '--attachment', '--trust', '--check', '--extra-cert', '--font-file', '--font', '--cert', '--ocsp', '--crl']);
+
+  // Script codes whose untagged runs carry /ActualText (pdfnative ≥ 1.9.0): right-to-left
+  // runs, Thai/Lao sara am, and reordered Indic / Khmer / Myanmar / Tai Tham / Cham runs.
+  const ACTUAL_TEXT_SCRIPTS = new Set(['ar', 'he', 'th', 'lo', 'km', 'my', 'nod', 'cjm', 'hi', 'bn', 'ta', 'te', 'si', 'gu', 'pa', 'kn', 'ml', 'or']);
+  // --lang aliases over the latin module (Hausa, Yoruba, Igbo, Swahili).
+  const LANG_ALIASES = { ha: 'latin', yo: 'latin', ig: 'latin', sw: 'latin' };
 
   // ── DOM helpers ───────────────────────────────────
   const $  = (id) => document.getElementById(id);
@@ -1495,15 +1641,36 @@
   }
 
   // ── Validation rules ──────────────────────────────
+  // Every font code the render form registers: the --font select, the extra --font lines
+  // and the names of the --font-file programs (`path[:name]`, default: the file stem).
+  function registeredFontCodes(r) {
+    const codes = [];
+    if (r['--font']) codes.push(String(r['--font']).toLowerCase());
+    (r['--font-extra'] || []).forEach((c) => codes.push(String(c).toLowerCase()));
+    (r['--font-file'] || []).forEach((line) => {
+      const m = /^(.*?\.(?:ttf|otf))(?::([^:]+))?$/i.exec(line.trim());
+      if (m) {
+        const name = m[2] ? m[2].trim() : (m[1].split(/[\\/]/).pop() || '').replace(/\.(ttf|otf)$/i, '');
+        if (name) codes.push(name.toLowerCase());
+      }
+    });
+    return codes;
+  }
+
   function validate() {
     const errors = [];
     const warns = [];
+    const infos = [];
 
     if (activeCmd === 'render') {
       const r = state.render;
       const tagged = r['--tagged'];
       const hasEncrypt = Object.keys(r).some((k) => k.startsWith('--encrypt-'));
       const taggedIsPdfA = tagged && /^pdfa/.test(tagged);
+      const fontCodes = registeredFontCodes(r);
+      const langCodes = r['--lang']
+        ? String(r['--lang']).split(',').map((s) => s.trim().toLowerCase()).filter(Boolean).map((c) => LANG_ALIASES[c] || c)
+        : [];
 
       if (hasEncrypt && taggedIsPdfA) {
         errors.push('Encryption (`--encrypt-*`) is mutually exclusive with `--tagged pdfa*` per ISO 19005-1 §6.3.2.');
@@ -1530,25 +1697,37 @@
       const pdfx = r['--pdfx'];
       if (r['--output-intent-id'] && !r['--output-intent-icc']) {
         if (r['--layout']) warns.push('`--output-intent-id` without `--output-intent-icc` only works when the `--layout` file carries `outputIntent.iccProfile` — otherwise the CLI exits 2.');
-        else errors.push('`--output-intent-id` needs an ICC profile: pass `--output-intent-icc <file.icc>` (or `outputIntent.iccProfile` in `--layout`) — the CLI exits 2.');
+        else errors.push('`--output-intent-id` needs an ICC profile: pass `--output-intent-icc &lt;file.icc&gt;` (or `outputIntent.iccProfile` in `--layout`) — the CLI exits 2.');
       }
-      if (pdfx && taggedIsPdfA) {
-        errors.push('`--pdfx` and `--tagged pdfa*` are mutually exclusive: pdfnative writes one conformance claim per file (PDF/X-4 or PDF/A).');
+      // v1.6.0 — the dual claim: PDF/A-2b or 2u next to PDF/X-4 is accepted (no CLI pre-check);
+      // PDF/A-1b and 3b are refused by the engine with a level-specific message (E_INPUT).
+      if (pdfx && (tagged === 'pdfa1b' || tagged === 'pdfa3b')) {
+        errors.push('`--pdfx pdfx4` with `--tagged ' + tagged + '` is refused by the engine (`E_INPUT`): PDF/A-1 is PDF 1.4 while PDF/X-4 needs PDF 1.6, and PDF/A-3 allows embedded files PDF/X-4 forbids. Only `pdfa2b` and `pdfa2u` combine with PDF/X-4.');
+      } else if (pdfx && taggedIsPdfA) {
+        infos.push('Dual claim (since v1.6.0, pdfnative ≥ 1.9.0): the file carries `pdfaid` and `pdfxid` in its XMP and two OutputIntents on the one ICC profile. Assert both with `inspect --check pdfa,pdfx`.');
       }
       if (pdfx && hasEncrypt) {
         errors.push('`--pdfx` is mutually exclusive with encryption (PDF/X forbids encryption, ISO 15930-7).');
       }
       if (pdfx && !r['--output-intent-icc']) {
-        warns.push('PDF/X-4 needs an output (printer) ICC profile — add `--output-intent-icc <file.icc>` or `outputIntent` in `--layout`, otherwise the engine refuses with `E_INPUT`.');
+        warns.push('PDF/X-4 needs an output (printer) ICC profile — add `--output-intent-icc &lt;file.icc&gt;` or `outputIntent` in `--layout`, otherwise the engine refuses with `E_INPUT`.');
       }
       if (pdfx && r['--trapped'] === 'unknown') {
         warns.push('PDF/X-4 refuses `--trapped unknown` (E_INPUT) — pass `true` or `false`, or omit the flag: the file then declares /Trapped /False.');
       }
       if (pdfx && !r['--lang'] && !r['--font-file']) {
-        warns.push('PDF/X-4 requires every font embedded — add `--font latin --lang latin` or `--font-file <path.ttf>` (otherwise PDFX_NO_FONT_ENTRIES, an error under `--strict`).');
+        warns.push('PDF/X-4 requires every font embedded — add `--font latin --lang latin` or `--font-file &lt;path.ttf&gt;` (otherwise PDFX_NO_FONT_ENTRIES, an error under `--strict`).');
       }
       if (r['--kerning'] && !r['--font'] && !r['--font-file']) {
         warns.push('`--kerning` needs a registered font — add `--font latin --lang latin` (or `--font-file`).');
+      }
+      // v1.6.0 — every --lang code needs its font: --font <code>, an extra --font line or a --font-file name.
+      const uncovered = langCodes.filter((c) => !fontCodes.includes(c));
+      if (uncovered.length) {
+        warns.push('`--lang ' + uncovered.join(',') + '` — the font registry starts empty: pass the same code to `--font` (`--font ' + uncovered.join(' --font ') + '`) or ship the font with `--font-file &lt;path.ttf&gt;:' + uncovered[0] + '`; otherwise the text falls back to the unembedded base-14 fonts (TEXT_GLYPH_NOT_COVERED for glyphs they lack).');
+      }
+      if (r['--actual-text'] === 'false' && !fontCodes.concat(langCodes).some((c) => ACTUAL_TEXT_SCRIPTS.has(c))) {
+        infos.push('`--actual-text false` only changes the bytes of untagged right-to-left runs (`ar`, `he`), Thai/Lao sara am and reordered Indic / Khmer / Myanmar / Tai Tham / Cham runs — none of the `--font` / `--lang` codes here is one, so the output is byte-identical to the default.');
       }
     }
 
@@ -1573,7 +1752,7 @@
         errors.push('`--signing-time` must be ISO 8601 (e.g. `2026-04-28T10:00:00Z`).');
       }
       if (s['--timestamp-timeout'] && !s['--timestamp']) {
-        errors.push('`--timestamp-timeout` only applies together with `--timestamp <url>` — the CLI exits 2.');
+        errors.push('`--timestamp-timeout` only applies together with `--timestamp &lt;url&gt;` — the CLI exits 2.');
       }
       if (s['--timestamp-timeout'] && !/^[1-9]\d*$/.test(String(s['--timestamp-timeout']).trim())) {
         errors.push('`--timestamp-timeout` must be a positive integer number of milliseconds.');
@@ -1625,8 +1804,21 @@
       if ((sub === 'collect' || sub === 'add') && !l['--online']) {
         errors.push('`ltv ' + sub + '` requires the explicit `--online` opt-in — without it the CLI refuses with exit 2.');
       }
-      if (sub === 'embed' && !l['--data']) {
-        warns.push('`ltv embed` needs `--data <ltv-data.json>` (the evidence produced by `collect`).');
+      // v1.6.0 — offline material (--cert / --ocsp / --crl, attributed with --match) is an embed-only
+      // alternative to --data; the two sources are exclusive (exit 2).
+      const hasMaterial = !!(l['--cert'] || l['--ocsp'] || l['--crl']);
+      const materialFlags = ['--cert', '--ocsp', '--crl'].filter((f) => l[f]);
+      if (sub !== 'embed' && (hasMaterial || l['--match'])) {
+        errors.push('Only `ltv embed` takes `' + materialFlags.concat(l['--match'] ? ['--match'] : []).join('`, `') + '` — `collect` and `add` fetch their material online; use `--extra-cert` for chain certificates there.');
+      }
+      if (sub === 'embed' && l['--data'] && hasMaterial) {
+        errors.push('`ltv embed` takes either `--data &lt;ltv.json&gt;` or offline material (`' + materialFlags.join('`, `') + '`), not both — the CLI exits 2.');
+      }
+      if (sub === 'embed' && l['--data'] && l['--match'] && !hasMaterial) {
+        errors.push('`--match` applies to offline material (`--cert`, `--ocsp`, `--crl`), not to `--data` — the CLI exits 2.');
+      }
+      if (sub === 'embed' && !l['--data'] && !hasMaterial) {
+        warns.push('`ltv embed` needs `--data &lt;ltv-data.json&gt;` (the evidence produced by `collect`) or offline material — `--cert &lt;pem|der&gt;`, `--ocsp &lt;der&gt;`, `--crl &lt;der&gt;` (each repeatable), attributed with `--match all|chain`.');
       }
       if (sub === 'embed' && l['--online']) {
         warns.push('`--online` has no effect on `embed` — it is 100 % offline by design.');
@@ -1635,7 +1827,7 @@
 
     if (activeCmd === 'doc-timestamp') {
       const dt = state['doc-timestamp'];
-      if (!dt['--url']) errors.push('`doc-timestamp` requires `--url <tsa-endpoint>` — the network use is an explicit opt-in.');
+      if (!dt['--url']) errors.push('`doc-timestamp` requires `--url &lt;tsa-endpoint&gt;` — the network use is an explicit opt-in.');
     }
 
     if (activeCmd === 'encrypt') {
@@ -1662,7 +1854,7 @@
     if (activeCmd === 'fill') {
       const f = state.fill;
       if (!f['--data'] && !f['--flatten'] && !f['--export']) {
-        warns.push('`fill` needs `--data <values.json>` unless `--flatten` or `--export` is set.');
+        warns.push('`fill` needs `--data &lt;values.json&gt;` unless `--flatten` or `--export` is set.');
       }
       if (f['--export'] && (f['--data'] || f['--flatten'])) {
         warns.push('`--export` is read-only — it does not combine with `--data` / `--flatten`.');
@@ -1682,7 +1874,7 @@
       }
     }
 
-    return { errors, warns };
+    return { errors, warns, infos };
   }
 
   // ── Command rendering ─────────────────────────────
@@ -1776,10 +1968,16 @@
       }
     }
 
+    // Special render: the extra --font lines (pseudo-flag --font-extra) are emitted as repeated
+    // --font <code> right after the selected --font, or on their own when none is selected.
+    const fontExtra = activeCmd === 'render' && Array.isArray(bag['--font-extra']) ? bag['--font-extra'] : [];
+    const pushFontExtra = () => { fontExtra.forEach((code) => { parts.push('--font', shellEscape(code)); }); };
+
     Object.keys(bag).forEach((flag) => {
       if (flag === '--page-size' || flag === '--page-size-custom') return; // handled above
       if (flag === '--check-signatures') return;                           // inspect, handled above
       if (flag === '__positional__' || flag === '__arg__') return;         // positionals, handled above
+      if (flag === '--font-extra') { if (!bag['--font']) pushFontExtra(); return; } // render, see above
       const v = bag[flag];
       if (v === true) {
         parts.push(flag);
@@ -1788,6 +1986,7 @@
       } else {
         parts.push(flag, shellEscape(v));
       }
+      if (flag === '--font') pushFontExtra();
     });
 
     // Global flags after the command (the default placement)
@@ -1814,14 +2013,17 @@
     out.textContent = cmd;
     if (window.Prism) window.Prism.highlightElement(out);
 
-    const { errors, warns } = validate();
+    const { errors, warns, infos } = validate();
     const v = $('validation');
     if (errors.length) {
       v.className = 'cli-validation error';
       v.innerHTML = '<strong>Validation errors:</strong><ul style="margin: 6px 0 0 18px;">' + errors.map((e) => '<li>' + e + '</li>').join('') + '</ul>';
     } else if (warns.length) {
       v.className = 'cli-validation warn';
-      v.innerHTML = '<strong>Heads up:</strong><ul style="margin: 6px 0 0 18px;">' + warns.map((w) => '<li>' + w + '</li>').join('') + '</ul>';
+      v.innerHTML = '<strong>Heads up:</strong><ul style="margin: 6px 0 0 18px;">' + warns.concat(infos).map((w) => '<li>' + w + '</li>').join('') + '</ul>';
+    } else if (infos.length) {
+      v.className = 'cli-validation info';
+      v.innerHTML = '<strong>Note:</strong><ul style="margin: 6px 0 0 18px;">' + infos.map((i) => '<li>' + i + '</li>').join('') + '</ul>';
     } else {
       v.className = 'cli-validation';
       v.innerHTML = '';
@@ -1865,7 +2067,8 @@
     'render-encrypted':  { tab: 'render', fields: { 'r-input': 'contract.json', 'r-output': 'contract.encrypted.pdf', 'r-enc-algo': 'aes256', 'r-enc-perm': 'print' } },
     'render-headers':    { tab: 'render', fields: { 'r-input': 'report.json', 'r-output': 'report.pdf', 'r-hl': '{title}', 'r-hr': '{date}', 'r-fc': 'Page {page} / {pages}' } },
     'render-attachment': { tab: 'render', fields: { 'r-input': 'invoice.json', 'r-output': 'invoice.pdf', 'r-tagged': 'pdfa3b' }, textareas: { 'r-attach': 'factur-x.xml:application/xml:Source:Structured invoice data' } },
-    'render-table':      { tab: 'render', fields: { 'r-input': 'ledger.json', 'r-output': 'ledger.pdf', 'r-variant': 'table', 'r-layout': 'layout.json' } },
+    'render-table':      { tab: 'render', fields: { 'r-input': 'ledger.json', 'r-output': 'ledger.pdf', 'r-variant': 'table', 'r-layout': 'layout.json' },
+      hint: 'The table variant takes <code>PdfParams</code>: <code>infoItems</code> must be an array of <code>{ "label", "value" }</code> objects and each <code>rows[i].cells</code> an array of strings — since v1.6.0 a bare string in <code>infoItems</code> is refused with <code>E_INPUT</code> before the engine sees it (it rendered as <code>undefined</code> in 1.8.0 and crashes the base-14 emitter of 1.9.0). <code>--layout</code> loads any subset of <code>PdfLayoutOptions</code>; CLI flags override the file.' },
     'sign-meta':         { tab: 'sign',   fields: { 's-input': 'report.pdf', 's-output': 'signed.pdf', 's-reason': 'Approved by Finance', 's-name': 'Finance Team', 's-loc': 'Paris, FR', 's-time': '2026-04-28T10:00:00Z' }, textareas: { 's-chain': 'intermediate.pem' } },
     'inspect-check':     { tab: 'inspect', fields: { 'i-input': 'signed.pdf', 'i-format': 'json' }, checks: ['--verbose'], multiCheck: { '--check': ['pdfa', 'signed'] } },
     'inspect-annotations': { tab: 'inspect', fields: { 'i-input': 'annotated.pdf', 'i-format': 'json' }, checks: ['--annotations'] },
@@ -1891,7 +2094,7 @@
     'render-typography': { tab: 'render',  fields: { 'r-input': 'report.json', 'r-output': 'report.pdf', 'r-font': 'latin', 'r-lang': 'latin', 'r-font-features': 'onum,smcp' }, checks: ['--split-paragraphs', '--keep-headings-with-next', '--kerning'],
       hint: 'Typography needs a registered font (<code>--font latin --lang latin</code>): paragraphs may split across pages with widows/orphans at 2, headings stay with the next block, pair kerning is applied and old-style numerals + small caps are requested. <code>TYPOGRAPHY_FEATURE_INEFFECTIVE</code> warns (or fails under <code>--strict</code>) when the font lacks a tag. Paragraph <code>align: "justify"</code>, <code>keepWithNext</code>, <code>splittable</code> and soft hyphens live in the JSON.' },
     'render-pdfx4-cmyk': { tab: 'render',  fields: { 'r-input': 'catalogue.json', 'r-output': 'catalogue.pdf', 'r-font': 'latin', 'r-lang': 'latin', 'r-pdfx': 'pdfx4', 'r-oi-icc': 'press.icc', 'r-oi-id': 'ISO Coated v2 (ECI)', 'r-trapped': 'false' }, checks: ['--strict'],
-      hint: 'PDF/X-4 (ISO 15930-7): the printer ICC profile becomes the OutputIntent (<code>prtr</code> class, 16 MiB cap), every font is embedded, <code>/Trapped</code> is declared (<code>unknown</code> is refused, unset means <code>false</code>) and each page carries a TrimBox — from <code>layout.print</code> in the JSON, else the MediaBox — or an ArtBox, not both. CMYK colours — <code>[c, m, y, k]</code> percent or <code>"c m y k"</code> — are written as DeviceCMYK; RGB content stays conformant through a calibrated <code>/DefaultRGB</code>. <code>--strict</code> turns <code>PDFX_*</code> diagnostics into exit 1 / <code>E_CHECK_FAILED</code>; PDF/X is exclusive with <code>--tagged pdfa*</code> and encryption. Check the result with <code>inspect --check pdfx</code>.' },
+      hint: 'PDF/X-4 (ISO 15930-7): the printer ICC profile becomes the OutputIntent (CMYK or Gray <code>prtr</code> class, 16 MiB cap), every font is embedded, <code>/Trapped</code> is declared (<code>unknown</code> is refused, unset means <code>false</code>) and each page carries a TrimBox — from <code>layout.print</code> in the JSON, else the MediaBox — or an ArtBox, not both. CMYK colours — <code>[c, m, y, k]</code> percent or <code>"c m y k"</code> — are written as DeviceCMYK; RGB content stays conformant through a calibrated <code>/DefaultRGB</code>. <code>--strict</code> turns <code>PDFX_*</code> diagnostics into exit 1 / <code>E_CHECK_FAILED</code>; PDF/X is exclusive with encryption, and since v1.6.0 it combines with <code>--tagged pdfa2b</code> or <code>pdfa2u</code> (the dual claim — <code>pdfa1b</code> and <code>pdfa3b</code> are refused by the engine, <code>E_INPUT</code>). Check the result with <code>inspect --check pdfx</code>.' },
     'render-font-file':  { tab: 'render',  fields: { 'r-input': 'brochure.json', 'r-output': 'brochure.pdf', 'r-font': 'latin', 'r-lang': 'house,latin' }, textareas: { 'r-font-file': './fonts/HouseSerif.ttf:house' },
       hint: 'Ship your own TrueType/OpenType font: the file is path-checked, capped at 32 MiB, must carry an sfnt signature (no collections, no WOFF) and is parsed and validated by pdfnative\'s font compiler before registration — never loaded from JSON. The name after the colon (default: the file stem) doubles as a <code>--lang</code> code and is appended when absent. There is no per-block font property: each code point goes to the first font in <code>--lang</code> order whose cmap covers it, so list <code>house</code> first and keep <code>latin</code> as the fallback for glyphs the house font lacks.' },
     'render-reproducible': { tab: 'render', fields: { 'gl-position': 'before', 'gl-creation-date': '2026-01-01T00:00:00Z', 'r-input': 'report.json', 'r-output': 'report.pdf' }, globalChecks: ['--json'],
@@ -1901,16 +2104,38 @@
     'inspect-pdfx':      { tab: 'inspect', fields: { 'i-input': 'catalogue.pdf' }, checks: ['--pdfx', '--iso-dates', '--summary'], multiCheck: { '--check': ['pdfx'] }, globalChecks: ['--json'],
       hint: '<code>--pdfx</code> runs pdfnative\'s structural ISO 15930-7 validator and adds the report; <code>--check pdfx</code> turns it into a CI assertion (exit 1 on failure); <code>pdfxConformance</code> is always present and <code>--summary</code> adds <code>pdfx</code> to the minimal verdict. <code>--iso-dates</code> reports <code>/CreationDate</code> and <code>/ModDate</code> as ISO 8601 instead of raw PDF dates.' },
     'annotate-link':     { tab: 'annotate', fields: { 'a-input': 'doc.pdf', 'a-output': 'linked.pdf', 'a-annotations': 'links.json' },
-      hint: '<code>links.json</code>: <code>[{ "type": "link", "page": 1, "rect": [72, 700, 300, 720], "url": "https://pdfnative.dev" }]</code> — a <code>/Link</code> annotation with a <code>/URI</code> action over the click rectangle (1-based <code>page</code>, <code>rect</code> = <code>[x1, y1, x2, y2]</code> in points). Only <code>http:</code>, <code>https:</code> and <code>mailto:</code> URLs without control characters are accepted (<code>E_INPUT</code> otherwise). Incremental save: existing signatures stay valid.' },
+      hint: '<code>links.json</code>: <code>[{ "type": "link", "page": 1, "rect": [72, 700, 300, 720], "url": "https://pdfnative.dev" }]</code> — a <code>/Link</code> annotation with a <code>/URI</code> action over the click rectangle (1-based <code>page</code>, <code>rect</code> = <code>[x1, y1, x2, y2]</code> in points). Only <code>http:</code>, <code>https:</code> and <code>mailto:</code> URLs without control characters are accepted (<code>E_INPUT</code> otherwise). Since v1.6.0 the annotation body is built by the engine\'s own <code>buildAnnotationBody</code> (pdfnative ≥ 1.9.0) rather than by the CLI. Incremental save: existing signatures stay valid.' },
     'sign-timestamp-timeout': { tab: 'sign', fields: { 's-input': 'report.pdf', 's-output': 'signed.pdf', 's-profile': 'pades', 's-timestamp': 'https://tsa.example.com/rfc3161', 's-ts-timeout': '10000' },
       hint: 'PAdES B-T (<code>ETSI.CAdES.detached</code>) with an RFC 3161 token; <code>--timestamp-timeout</code> bounds the TSA round-trip in milliseconds and is reported as <code>timestamp.timeoutMs</code> in the envelope. It only applies together with <code>--timestamp</code> (exit 2 otherwise); a slow or unreachable TSA fails with <code>E_NETWORK</code> — never a silent fallback.' },
     'verify-weak-digest': { tab: 'verify', fields: { 'v-input': 'signed.pdf' }, checks: ['--strict'], globalChecks: ['--json'],
       hint: 'Since v1.5.0 every signature report carries <code>timestampDigest</code> (the RFC 3161 messageImprint algorithm). A SHA-1 imprint is reported as the note <code>weak digest: RFC 3161 messageImprint uses SHA-1 (refused under --strict)</code> and fails under <code>--strict</code> (exit 1 / <code>E_VERIFY_FAILED</code>); without <code>--strict</code> it stays a note.' },
     'doctor-conformance': { tab: 'doctor', globalChecks: ['--json'],
-// verify-docs:allow stale-token (historical: this companion release was built on pdfnative 1.8.0 (27 scripts))
-      hint: 'Eight offline checks in <code>{ ok, checks: [{ name, status, value, detail }] }</code>: <code>cli</code>, <code>node</code>, <code>webcrypto</code>, <code>pdfnative</code>, <code>commands</code>, and since v1.5.0 <code>fonts</code> (<code>31 modules / 27 scripts</code>, each bundled module probed on disk), <code>unicode</code> (the Universal Shaping Engine database version) and <code>conformance</code> (<code>pdfa1b,pdfa2b,pdfa2u,pdfa3b,pdfx4</code>). Exit 0 when every check passes.' },
+      hint: 'Eight offline checks in <code>{ ok, checks: [{ name, status, value, detail }] }</code>: <code>cli</code>, <code>node</code>, <code>webcrypto</code>, <code>pdfnative</code>, <code>commands</code>, and since v1.5.0 <code>fonts</code> (<code>36 modules / 32 scripts</code> with pdfnative 1.9.0, each bundled module probed on disk), <code>unicode</code> (the Universal Shaping Engine database version) and <code>conformance</code> (<code>pdfa1b,pdfa2b,pdfa2u,pdfa3b,pdfx4</code>). Exit 0 when every check passes.' },
     'global-flags-first': { tab: 'inspect', fields: { 'gl-position': 'before', 'i-input': 'doc.pdf' }, checks: ['--summary'], globalChecks: ['--json', '--quiet', '--no-color'],
       hint: 'Since v1.5.0 the global flags (<code>--json</code>, <code>--quiet</code>, <code>--no-color</code>, <code>--dry-run</code>, <code>--no-config</code>, <code>--config</code>, <code>--max-inflate-size</code>, <code>--creation-date</code>) may precede the command name — the dispatcher finds the command wherever the flags sit, and even a command flag placed first (<code>--strict render …</code>) no longer swallows the command name. Arguments without any command exit 2 / <code>E_USAGE</code> instead of printing the usage with exit 0; a bare <code>pdfnative</code> still prints the usage.' },
+    // ── v1.6.0 ──
+    'render-rtl-direction': { tab: 'render', fields: { 'r-input': '13-rtl-direction.json', 'r-output': 'rtl.pdf', 'r-direction': 'auto', 'r-font': 'ar', 'r-lang': 'ar,he,latin' }, textareas: { 'r-font-extra': 'he\nlatin' },
+      hint: '<code>--direction auto</code> (full UAX #9, pdfnative ≥ 1.9.0): every paragraph resolves its own base direction from its first strong character — the Arabic and Hebrew paragraphs are right-aligned and justified in visual order, the Latin one is not, and a block with its own <code>"direction": "ltr"</code> overrides the flag. There is no CLI default: omit the flag and nothing is set, the 1.8.0 left-aligned layout. <code>--font</code> is repeated once per script (<code>ar</code>, <code>he</code>, <code>latin</code>) and <code>--lang</code> lists the same codes — the registry starts empty. Untagged output carries each right-to-left run as <code>/Span /ActualText</code>, so <code>extract-text</code> returns the lines as typed (sample <code>render/multilang/13-rtl-direction.json</code>).' },
+    'render-actual-text-off': { tab: 'render', fields: { 'r-input': '13-rtl-direction.json', 'r-output': 'rtl-bare.pdf', 'r-direction': 'auto', 'r-actual-text': 'false', 'r-font': 'ar', 'r-lang': 'ar,he,latin' }, textareas: { 'r-font-extra': 'he\nlatin' },
+      hint: '<code>--actual-text false</code> drops the spans — the bare runs, not the 1.8.0 bytes (the 1.9.0 subsets and line structure still apply): no <code>/Span /ActualText</code> around untagged right-to-left or reordered runs, so <code>extract-text</code> returns the letters in visual order — every letter is there, the order is the glyph order. Only <code>false</code> changes the bytes (<code>true</code> is the default) and only then does the envelope carry <code>actualText: false</code>. Sample <code>extract-text/03-rtl-logical-order.sh</code> renders the same JSON both ways and extracts both; without a right-to-left or shaped script the flag is a no-op (the builder says so).' },
+    'render-spot-colours': { tab: 'render', fields: { 'gl-creation-date': '2026-01-01T00:00:00Z', 'r-input': '08-spot-colours.json', 'r-output': '08-spot-colours.pdf', 'r-font': 'latin', 'r-lang': 'latin', 'r-pdfx': 'pdfx4', 'r-oi-icc': 'synthetic-cmyk.icc', 'r-oi-id': 'Synthetic CMYK (pdfnative test profile)', 'r-trapped': 'false' }, checks: ['--strict'],
+      hint: 'Spot colours (pdfnative ≥ 1.9.0) are JSON only — there is no flag. The inks are declared once in <code>layout.print.spotColours</code> (<code>{ "name": "PANTONE 300 C", "alternate": [100, 44, 0, 0] }</code>, CMYK percent), then any colour slot takes <code>{ "spot": "PANTONE 300 C" }</code> or <code>{ "spot": …, "tint": 0.4 }</code> (a <code>/Separation</code> space named after the ink) or <code>{ "inks": { "PANTONE 300 C": 1, "Varnish": 0.4 } }</code> (a <code>/DeviceN</code> mix with <code>/Colorants</code>); a chart paints each bar in its plate\'s ink through <code>series[].colors</code>. An undeclared ink is refused with <code>E_INPUT</code> before any byte is written — <code>--dry-run --json</code> shows it. Under PDF/X-4 a RIP that knows the ink puts it on its own plate; a composite proof paints the alternate (sample <code>render/print/08-spot-colours.sh</code>).' },
+    'render-dual-claim': { tab: 'render', fields: { 'gl-creation-date': '2026-01-01T00:00:00Z', 'r-input': '09-dual-pdfa2b-pdfx4.json', 'r-output': '09-dual-pdfa2b-pdfx4.pdf', 'r-tagged': 'pdfa2b', 'r-pdfx': 'pdfx4', 'r-oi-icc': 'synthetic-cmyk.icc', 'r-oi-id': 'Synthetic CMYK (pdfnative test profile)', 'r-trapped': 'false', 'r-font': 'latin', 'r-lang': 'latin' }, checks: ['--strict'], globalChecks: ['--json'],
+      hint: 'PDF/A-2b and PDF/X-4 in one file (pdfnative ≥ 1.9.0): the XMP carries <code>pdfaid</code> (part 2, conformance B) and <code>pdfxid</code> (<code>GTS_PDFXVersion PDF/X-4</code>), the catalog lists two OutputIntents — <code>/GTS_PDFA1</code> and <code>/GTS_PDFX</code> — on the same ICC stream, the header says PDF 1.6, <code>/Trapped</code> is <code>False</code>. The v1.5.0 CLI pre-check is gone: <code>pdfa2b</code> and <code>pdfa2u</code> combine; <code>pdfa1b</code> (PDF 1.4) and <code>pdfa3b</code> (embedded files) are refused by the engine with a level-specific message, <code>E_INPUT</code>, which <code>--dry-run</code> reports before anything is written. The envelope reports <code>tagged</code> next to <code>pdfx</code>; assert both claims with <code>inspect --check pdfa,pdfx</code> (sample <code>render/print/09-dual-pdfa2b-pdfx4.sh</code>).' },
+    'inspect-dual-check': { tab: 'inspect', fields: { 'i-input': '09-dual-pdfa2b-pdfx4.pdf' }, checks: ['--summary'], multiCheck: { '--check': ['pdfa', 'pdfx'] }, globalChecks: ['--json'],
+      hint: 'Both claims, one exit code: <code>--check pdfa</code> runs the PDF/A assertion and <code>--check pdfx</code> pdfnative\'s structural ISO 15930-7 validator; the checks are ANDed, so exit 1 if either fails. The builder emits the repeated form (<code>--check pdfa --check pdfx</code>); since v1.6.0 the CLI also accepts the comma list <code>--check pdfa,pdfx</code>. veraPDF validates the PDF/A-2b half, pdfnative the PDF/X-4 half. <code>--summary --json</code> keeps the minimal verdict for agents.' },
+    'render-jpeg2000':   { tab: 'render', fields: { 'r-input': '01-jpeg2000.json', 'r-output': 'jpeg2000.pdf' },
+      hint: 'An image block whose <code>src</code> is a <code>.jp2</code> file (or a raw <code>.j2k</code> codestream) is embedded with the <code>/JPXDecode</code> filter — the codestream is passed through, never decoded, with the colour space and opacity its header declares; the file header is raised to PDF 1.5. Under <code>--tagged pdfa1b</code> the filter is not allowed (<code>PDFA1_JPX_IMAGE</code>); under PDF/A-2 and PDF/A-3 an opacity channel (<code>/SMaskInData</code>) or a channel count other than 1, 3 or 4 is reported (<code>PDFA_JPX_IMAGE</code>) — <code>--strict</code> turns either into <code>E_CHECK_FAILED</code>. <code>--watermark-image</code> sniffs JPEG 2000 too (sample <code>render/images/01-jpeg2000.json</code> with the engine\'s 8 × 8 <code>minimal-rgb.jp2</code>).' },
+    'render-indic-five': { tab: 'render', fields: { 'r-input': '12-five-indic-scripts.json', 'r-output': 'indic.pdf', 'r-font': 'gu', 'r-lang': 'gu,pa,kn,ml,or,latin' }, textareas: { 'r-font-extra': 'pa\nkn\nml\nor\nlatin' },
+      hint: 'Gujarati, Gurmukhi (Punjabi), Kannada, Malayalam and Odia — the five scripts pdfnative 1.9.0 adds to its Indic engine (32 scripts in all): reph, subjoined and half forms, two-part vowel signs, legacy and atomic chillus, the sentence-final danda. One <code>--font</code> per script plus <code>latin</code> for the Latin prose, and <code>--lang</code> lists the same six codes. Untagged output carries each reordered run as <code>/ActualText</code>, so <code>extract-text</code> returns the source text without <code>--tagged</code> (sample <code>render/multilang/12-five-indic-scripts.json</code>).' },
+    'extract-text-stream-policy': { tab: 'extract-text', fields: { 'et-input': 'legacy-scan.pdf', 'et-format': 'ndjson', 'et-stream-error': 'skip' },
+      hint: '<code>--on-stream-error</code> (pdfnative ≥ 1.9.0 <code>extractText({ onStreamError })</code>) decides what an unreadable content or font stream does. <code>limit</code> (the default): a stream past the inflate cap is <code>E_INPUT</code> and the message names both remedies — raise <code>--max-inflate-size</code>, or pass <code>--on-stream-error skip</code> to read the other streams. <code>throw</code>: any undecodable stream is an error. <code>skip</code>: the 1.8.0 lenience — the page comes back short, silently; choose it for a RAG feed that prefers partial text over a failed run.' },
+    'compare-stream-policy': { tab: 'compare', fields: { 'c-a': 'golden.pdf', 'c-b': 'candidate.pdf', 'c-format': 'json', 'c-stream-error': 'throw' },
+      hint: 'The same three policies on the text pass of both documents. Under <code>limit</code> (default) a stream past the inflate cap fails the run with <code>E_INPUT</code> — the message names <code>--max-inflate-size</code> and <code>--on-stream-error skip</code> — while a corrupt stream is still skipped; <code>throw</code> fails on any undecodable stream, the only policy under which <code>compare</code> cannot call two files “equal” over an unread stream; <code>skip</code> drops the unreadable stream and compares what the other streams say. A difference is still exit 1 / <code>E_CHECK_FAILED</code>, identical documents exit 0.' },
+    'ltv-embed-offline': { tab: 'ltv', fields: { 'l-sub': 'embed', 'l-input': '11-signed.pdf', 'l-output': '11-ltv-offline.pdf', 'l-match': 'chain' }, textareas: { 'l-cert': 'rsa-cert.pem' }, globalChecks: ['--json'],
+      hint: 'LTV from material you already hold, no network (pdfnative ≥ 1.9.0 <code>composeLtvData</code>): <code>--cert</code> takes certificate files (PEM — every <code>CERTIFICATE</code> block — or DER), <code>--ocsp</code> OCSP responses and <code>--crl</code> CRLs (DER), each repeatable and capped at 16 MiB. <code>--match all</code> (default) puts every item in every signature\'s VRI — the Adobe-tolerant superset; <code>--match chain</code> makes each VRI reference only what validates that signature. Material and <code>--data</code> are exclusive (exit 2), <code>--match</code> applies to material only, and the three flags belong to <code>embed</code>. <code>--dry-run --json</code> composes and reports the counts (<code>certificates</code>, <code>ocspResponses</code>, <code>crls</code>, <code>vri</code>) without writing; the envelope carries <code>match</code> (sample <code>sign/11-ltv-offline.sh</code>).' },
+    'schema-status':     { tab: 'schema', fields: { 'sc-subject': 'status' },
+      hint: '<code>schema status</code> is the JSON Schema (Draft 2020-12) of the <code>--json</code> success envelope every write command prints on stderr — 35 fields since v1.6.0, the four new ones being <code>match</code> (<code>ltv embed</code> with offline material), <code>tagged</code> (next to <code>pdfx</code> on the dual claim), <code>direction</code> (absent when the engine default applies) and <code>actualText</code> (present, <code>false</code>, only on the opt-out). Fields are additive; the command-specific ones are optional and say which command emits them. The <code>$id</code> is <code>https://pdfnative.dev/schema/cli/1.6.0/status.schema.json</code> — the CLI version is in the path, so an agent can pin the schema of the CLI it runs. 19 subjects; <code>schema list</code> enumerates them.' },
   };
 
   $('preset').addEventListener('change', (e) => {

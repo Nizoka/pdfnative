@@ -49,6 +49,10 @@ downloadBlob(pdf, 'output.pdf');
 
 For optimal compression in Node.js, call `initNodeCompression()` once at startup. In the browser, a stored-block fallback is used automatically.
 
+### One copy per build
+
+`import` and `require` resolve to two independent module instances — `dist/index.js` (ESM) and `dist/index.cjs` (CJS) — so a process that loads both holds two copies of every class and of every module-level setting. An error thrown by one copy is not `instanceof` the other copy's class: branch on `err.code` (`PDF_WRONG_PASSWORD`, `PDF_STREAM_LIMIT`, …), as the [error catalogue](../data/errors.json) already advises, and keep `instanceof` for code that controls which build it loads. The process-wide setters — `setCryptoProvider`, `setMaxInflateOutputSize`, `setDefaultCreationDate`, `setDeflateImpl` / `setDeflateRawImpl` / `setInflateImpl`, `setTimestampProvider` / `setRevocationProvider`, `setHyphenationProvider` — and the font registry (`registerFont` / `registerFonts`) apply to the copy they were imported from: call them on the copy your code uses, or load one build only (a CommonJS dependency that `require`s pdfnative while your application `import`s it is the usual way to end up with two). A cross-build brand that makes the two copies agree is a roadmap item ([Error classes across the dual build](https://github.com/Nizoka/pdfnative/blob/main/ROADMAP.md)).
+
 ### Does it work with Deno / Bun?
 
 Yes. The library is standard ESM with no Node.js-specific imports in the core. Both Deno and Bun import it directly.

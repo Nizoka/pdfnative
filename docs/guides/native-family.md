@@ -206,10 +206,10 @@ const verdict = await verifySignedData({ signedData: trim(sig.contents), content
 | Step | Library call | Terminal | Assistant (MCP) |
 |---|---|---|---|
 | Build | pdfnative `buildDocumentPDFBytes()` | `pdfnative render` | pdfnative-mcp `generate_basic_pdf` |
-| Sign, timestamp, LTV | pdfnative `signPdfBytesWithTimestamp()`, `composeLtvData()` | `pdfnative sign --timestamp`, `pdfnative ltv` | pdfnative-mcp `sign_pdf`, `add_ltv` |
+| Sign, timestamp, LTV | pdfnative `signPdfBytesWithTimestamp()`, `composeLtvData()` | `pdfnative sign --timestamp`, `pdfnative ltv` (offline material: `ltv embed --cert/--ocsp/--crl`) | pdfnative-mcp `sign_pdf`, `add_ltv` (`mode: 'offline'` with caller-supplied DER material) |
 | Pack | zipnative `createZip` | zipnative-cli | zipnative-mcp |
 | Verify the chain and the CMS | pkinative `verifyCertificateChain`, `verifySignedData` | pkinative-cli | pkinative-mcp |
-| Read back | pdfnative `listSignatures()`, `extractText()` | `pdfnative inspect`, `pdfnative verify` | pdfnative-mcp `inspect_pdf`, `verify_pdf` |
+| Read back | pdfnative `listSignatures()`, `extractText()` | `pdfnative inspect`, `pdfnative verify`, `pdfnative extract-text` | pdfnative-mcp `inspect_pdf`, `verify_pdf`, `extract_text` |
 
 **What you gain**
 

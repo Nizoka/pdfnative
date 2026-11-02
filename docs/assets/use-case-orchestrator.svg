@@ -19,7 +19,7 @@
 
   <rect width="960" height="560" fill="#F8FAFC"/>
   <text x="480" y="42" text-anchor="middle" font-size="21" font-weight="700" fill="#0F172A">Any-language orchestrator on the process contract</text>
-  <text x="480" y="66" text-anchor="middle" font-size="13" fill="#64748B">One process per task, three channels back, one exit code — pdfnative-cli v1.5.0</text>
+  <text x="480" y="66" text-anchor="middle" font-size="13" fill="#64748B">One process per task, three channels back, one exit code — pdfnative-cli v1.6.0</text>
 
   <!-- Orchestrator -->
   <rect x="40" y="118" width="220" height="228" rx="10" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.25"/>

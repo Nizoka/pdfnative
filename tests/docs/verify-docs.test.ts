@@ -155,6 +155,52 @@ describe('verify-docs', () => {
             });
         }, 120_000);
 
+        it('contrast rejects dark blocks that diverge', () => {
+            withSandbox((dir) => {
+                // The first occurrence is the [data-theme="dark"] block; the
+                // prefers-color-scheme block keeps #60a5fa, so the two disagree.
+                patch(dir, 'docs/style.css', '--c-primary:    #60a5fa;', '--c-primary:    #3b82f6;');
+                const run = runVerifier(dir);
+                expect(run.output).toContain('contrast');
+                expect(run.output).toContain('prefers-color-scheme');
+                expect(run.status).toBe(1);
+            });
+        }, 120_000);
+
+        it('contrast checks the primary button label', () => {
+            withSandbox((dir) => {
+                // Both dark blocks: white on #60a5fa is 2.54:1 (the light palette
+                // keeps white on #2563eb, 5.17:1).
+                patch(dir, 'docs/style.css', '--c-primary-fg: #0f172a;', '--c-primary-fg: #ffffff;');
+                patch(dir, 'docs/style.css', '--c-primary-fg: #0f172a;', '--c-primary-fg: #ffffff;');
+                const run = runVerifier(dir);
+                expect(run.output).toContain('contrast');
+                expect(run.output).toContain('--c-primary-fg');
+                expect(run.output).toContain('2.54');
+                expect(run.status).toBe(1);
+            });
+        }, 120_000);
+
+        it('contrast rejects a text colour the inventory does not list', () => {
+            withSandbox((dir) => {
+                patch(dir, 'docs/style.css', '.cmp-cross { color: #dc2626; }', '.cmp-cross { color: #abcdef; }');
+                const run = runVerifier(dir);
+                expect(run.output).toContain('contrast');
+                expect(run.output).toContain('not in CONTRAST_PAIRS');
+                expect(run.status).toBe(1);
+            });
+        }, 120_000);
+
+        it('css-dead-class rejects a styled class no page or script names', () => {
+            withSandbox((dir) => {
+                patch(dir, 'docs/style.css', '.sr-only {', '.sr-only, .never-used-class {');
+                const run = runVerifier(dir);
+                expect(run.output).toContain('css-dead-class');
+                expect(run.output).toContain('never-used-class');
+                expect(run.status).toBe(1);
+            });
+        }, 120_000);
+
         it('guide-render-sync catches a shell whose Markdown source moved on', () => {
             withSandbox((dir) => {
                 // Edit the .md without regenerating the pre-rendered shell.
@@ -410,7 +456,7 @@ describe('verify-docs', () => {
 
         it('jsonld-version rejects a softwareVersion that disagrees with the manifest', () => {
             withSandbox((dir) => {
-                patch(dir, 'docs/index.html', '"softwareVersion": "1.5.0"', '"softwareVersion": "1.3.0"');
+                patch(dir, 'docs/index.html', '"softwareVersion": "1.6.0"', '"softwareVersion": "1.3.0"');
                 const run = runVerifier(dir);
                 expect(run.output).toContain('jsonld-version');
                 expect(run.status).toBe(1);

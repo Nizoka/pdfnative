@@ -1,11 +1,12 @@
 # CLI use cases
 
-> **Four architectures on pdfnative-cli v1.5.0 (pdfnative ≥ 1.8.0, Node ≥ 22),
-> each assembled from flags that ship today.** They extend the
-> [ecosystem use cases](use-cases.html) with what only a command line does
-> well — byte-reproducible builds, a PDF/X-4 press handoff, a house font
-> without a code change and a process contract any language can drive — and
-> every flag below is documented in the [CLI guide](cli.html).
+> **Five architectures on pdfnative-cli v1.6.0 (requires pdfnative ≥ 1.9.0 —
+> pins `^1.9.0`; Node ≥ 22), each assembled from flags that ship today.** They
+> extend the [ecosystem use cases](use-cases.html) with what only a command
+> line does well — byte-reproducible builds, a PDF/X-4 press handoff, a house
+> font without a code change, a process contract any language can drive and a
+> right-to-left letter that extracts as typed — and every flag below is
+> documented in the [CLI guide](cli.html).
 
 Each case follows the hub's convention: the problem, the load-bearing
 invocation, what you gain and where it stops — with an architecture diagram
@@ -88,16 +89,18 @@ gate with `compare --mode both`, which survives exactly that.
 A printer's preflight is the most expensive place to learn that a logo was
 RGB, a form font was not embedded or the output intent was missing: the job is
 already late. PDF/X-4 (ISO 15930-7) is the exchange format press workflows
-expect, and v1.5.0 writes it from the same JSON template as every other
-document — with the claim **refused at build time** when its prerequisites do
+expect, and the CLI has written it since v1.5.0 from the same JSON template
+as every other document — since v1.6.0 with spot plates and next to a PDF/A-2
+claim — with the claim **refused at build time** when its prerequisites do
 not hold, rather than discovered at the printer.
 
 ![Architecture: a JSON template with CMYK colours, colour bars and a trim box, together with the printer's ICC output profile, is rendered by pdfnative render with the PDF/X-4 claim and the strict gate; engine coherence errors and PDF/X diagnostics fail the build before the first byte. The resulting PDF is asserted by pdfnative inspect --check pdfx, whose exit code 0 or 1 gates the handoff. A dry run of the same render gives the same verdict without writing a file. The final printer preflight, drawn dashed, happens outside pdfnative.](../assets/use-case-press-pdfx.svg)
 
 ```bash
 # The template carries CMYK colours ("c m y k" in 0–1 or [c,m,y,k] in percent),
-# layout.print.bleed (derives the TrimBox) and layout.print.marks.colourBars.
-# --output-intent-icc: the printer's prtr profile (16 MiB cap);
+# layout.print.bleed (derives the TrimBox), layout.print.marks.colourBars and,
+# since v1.6.0, layout.print.spotColours painted by { "spot": … } values.
+# --output-intent-icc: the printer's prtr profile, CMYK or Gray (16 MiB cap);
 # --trapped: PDF/X needs true|false, never unknown;
 # --font latin --lang latin: every font embedded;
 # --strict: PDFX_* diagnostics fail before any byte.
@@ -116,12 +119,21 @@ pdfnative --json --dry-run render --input templates/brochure.json \
 
 # Assert the claim on any file: exit 0 when the prerequisites hold, 1 otherwise.
 pdfnative inspect --input out/brochure.pdf --check pdfx --json --summary
+
+# Since v1.6.0: archive and press in one file — PDF/A-2b and PDF/X-4 together,
+# both asserted by one inspect run (--check takes a comma list).
+pdfnative render --input templates/brochure.json --output out/brochure-dual.pdf \
+  --tagged pdfa2b --pdfx pdfx4 \
+  --output-intent-icc press/printer.icc --trapped false \
+  --font latin --lang latin --strict
+pdfnative inspect --input out/brochure-dual.pdf --check pdfa,pdfx --json --summary
 ```
 
 Two layers refuse a bad file. Engine coherence errors — no output intent, an
-ICC profile without the `acsp` signature, `layout.pdfx` combined with
-`layout.tagged`, an unknown trapping state — map to `E_INPUT` and produce no
-output at all. Under `--strict`, the conformance diagnostics
+ICC profile without the `acsp` signature, `layout.pdfx` combined with a
+PDF/A-1 or PDF/A-3 `layout.tagged` level, an unknown trapping state, a spot
+plate painted but never declared — map to `E_INPUT` and produce no output at
+all. Under `--strict`, the conformance diagnostics
 `PDFX_NO_FONT_ENTRIES`, `PDFX_DEVICE_CMYK` and `PDFX_ANNOTATIONS` escalate to
 `E_CHECK_FAILED` before the first output byte; without it they are stderr
 warnings and a `diagnostics[]` array in the envelope, which also carries
@@ -141,8 +153,15 @@ What you gain, concretely:
   path you name (or the layout JSON carries the profile as an inline byte
   array, under the same 16 MiB cap); no JSON payload can ever name a file on
   disk.
-- **One template, two markets** — the same JSON renders to PDF/A for the
-  archive and PDF/X-4 for the press by changing the conformance flags.
+- **One template, two markets — or one file for both** — the same JSON
+  renders to PDF/A for the archive and PDF/X-4 for the press by changing the
+  conformance flags, and since v1.6.0 `--tagged pdfa2b` (or `pdfa2u`) next to
+  `--pdfx pdfx4` writes both claims into one file.
+- **Spot plates from the JSON** — `layout.print.spotColours` declares the
+  inks (name plus a CMYK or RGB alternate) and `{ "spot": "PANTONE 300 C" }`,
+  `{ "spot": …, "tint": 0.5 }` or `{ "inks": … }` colour values paint them as
+  `/Separation` and `/DeviceN`; like every `print.*` option it is JSON-only,
+  with no flag.
 
 The MCP server exposes the same claim as `pdfx: 'pdfx4'` on its generation
 tools and checks it with `validate_pdf` and `standard: 'pdf-x-4'`; the React
@@ -153,12 +172,18 @@ Honest limits: `inspect --check pdfx` is pdfnative's **structural validator,
 not a certified preflight** — it checks the output intent, the page boxes,
 font embedding and forbidden annotations, not colour appearance or rendering;
 the printer's preflight still runs. Only PDF/X-4 is exposed: no PDF/X-1a, no
-PDF/X-3, and no spot colours through the CLI yet — the engine's
-`print.spotColours` (1.9.0) waits for a CLI release. `metadata` rewrites the
-XMP without the PDF/X identification, so re-check any file you edit afterwards.
-In CLI 1.5.0 the claim is exclusive with PDF/A (`--tagged`) and with
-encryption — the pre-check exits 2 before the build — although the engine
-writes the dual PDF/A-2 + PDF/X-4 claim since 1.9.0. And no press profile ships: the `synthetic-cmyk.icc` under
+PDF/X-3. Spot colours are JSON-only since v1.6.0 — `layout.print.spotColours`
+plus `{ "spot" }` / `{ "inks" }` values — and the CLI adds no validator of its
+own: an undeclared plate or a mix across alternate spaces is the engine's
+`Spot colour …` / `Ink mix …` error, transmitted as `E_INPUT` (its
+`Invalid spot colour` / `Invalid ink mix` shape errors come back as `E_RUNTIME`), and there is no RGB-to-CMYK
+conversion of a process colour. `metadata` rewrites the XMP without the PDF/X
+identification, so re-check any file you edit afterwards. Since v1.6.0 the
+claim combines with PDF/A-2b or PDF/A-2u (`--tagged pdfa2b --pdfx pdfx4`,
+verified in one run by `inspect --check pdfa,pdfx`); PDF/A-1b and PDF/A-3b
+with `--pdfx` are refused by the engine (`E_INPUT`, no CLI pre-check), and
+encryption stays exclusive — PDF/X forbids it, and the usage error exits 2
+before the build. And no press profile ships: the `synthetic-cmyk.icc` under
 the CLI's samples is structurally valid and colourimetrically meaningless —
 ask the printer for theirs.
 
@@ -291,7 +316,12 @@ What you gain, concretely:
 - **Offline by default** — the only network opt-ins are explicit flags
   (`sign --timestamp`, `ltv collect|add --online`, `doc-timestamp --url`,
   `verify --revocation online`), each behind an SSRF guard, each failing with
-  `E_NETWORK` rather than a silent fallback.
+  `E_NETWORK` rather than a silent fallback. Since v1.6.0 the air-gapped
+  ladder has a second offline rung next to `ltv embed --data`: `ltv embed
+  --cert <pem|der> --ocsp <der> --crl <der> --match all|chain` builds the
+  `/DSS` from material you already hold — every flag repeatable, 16 MiB per
+  file, nothing fetched, exclusive with `--data` (one or the other, exit 2
+  for both).
 
 Honest limits: `inspect`, `verify` and `batch` put their result **on stdout as
 JSON**, not in the envelope — on success there may be no stderr line at all,
@@ -301,15 +331,140 @@ yet; run them as their own process. And the CLI is stateless by design — one
 process per task, no daemon, no session — so concurrency, retries and queueing
 are the orchestrator's job, driven by the exit code.
 
+## Case 5 — Right-to-left letter in, logical-order text out
+
+<!-- demo-language: ar (one word in visual and in logical order) -->
+A customer letter arrives as a JSON template with an Arabic body, a Hebrew
+body and a Latin closing, and the rendered PDF has to feed a search or RAG
+index afterwards. Right-to-left text breaks a PDF pipeline in two places. On
+the way in, the paragraphs are set like Latin — left-aligned, justified from
+the wrong edge — unless somebody annotates each block. On the way out, what
+extracts from the file comes back letter by letter in **visual** order, `ةيبرع`
+for `عربية`, because a content stream stores glyphs as drawn and nothing says
+which way to read them. Since v1.6.0 (pdfnative ≥ 1.9.0) one flag fixes the
+first and the engine fixes the second: `--direction auto` resolves each
+paragraph's base direction from its first strong character (full UAX #9), and
+every untagged right-to-left run leaves the writer as a `/Span /ActualText`
+carrying its logical text — which `extract-text` returns **as typed, with no
+flag and no PDF/A claim**.
+
+![Architecture: a JSON letter with Arabic and Hebrew paragraphs under layout.direction auto is rendered by pdfnative render with --direction auto and the ar, he and latin font modules into an untagged letter.pdf, where every right-to-left run is a /Span /ActualText span carrying its logical text inside one text object per line. pdfnative extract-text --format ndjson reads the file with no extra flag — the span is applied once, as Chrome and Acrobat Reader do — and writes one JSON object per page in logical order, which a search or RAG index ingests page by page without a reversal heuristic or an OCR step. The footer names --actual-text false as the switch that drops the spans (bare runs in visual order, not the 1.8.0 bytes), and the limits: a Thai above vowel and tone mark pair and a line mixing directions extract geometrically, and watermark and form-label text carries no span.](../assets/use-case-rtl-roundtrip.svg)
+
+<!-- demo-language: ar, he (right-to-left sample text) -->
+```json
+{
+  "title": "Right-to-left letter",
+  "layout": { "direction": "auto" },
+  "blocks": [
+    { "type": "heading", "text": "Right-to-left letter", "level": 1 },
+    { "type": "paragraph", "text": "السلام عليكم ورحمة الله وبركاته. هذه الفقرة مكتوبة من اليمين إلى اليسار، وتحتوي على أرقام مثل 2026 وكلمات لاتينية مثل pdfnative داخل الجملة.", "align": "justify" },
+    { "type": "paragraph", "text": "שלום עולם, ברוכים הבאים. פסקה זו נכתבת מימין לשמאל ומיושרת לימין באופן אוטומטי.", "align": "justify" },
+    { "type": "paragraph", "text": "هذه الفقرة تُجبر على الاتجاه من اليسار إلى اليمين عبر direction: ltr على الكتلة نفسها.", "direction": "ltr" },
+    { "type": "paragraph", "text": "Signed on 2026-01-01 — the Latin closing is set left to right." }
+  ]
+}
+```
+
+```bash
+# --direction auto: every paragraph resolves its own base direction (UAX #9
+# P2–P3); omit the flag and the 1.8.0 left-aligned paragraphs stay — there
+# is no default. --font registers the three modules, --lang orders the
+# fallback; --json: the envelope carries "direction": "auto".
+pdfnative --json render --input letter.json --output letter.pdf \
+  --direction auto \
+  --font ar --font he --font latin --lang ar,he,latin
+
+# Logical order, as typed — one JSON object per page for the index.
+pdfnative extract-text --input letter.pdf --format ndjson > letter.ndjson
+
+# The same page without the spans (not the 1.8.0 bytes): every letter is
+# still there, in visual order.
+pdfnative render --input letter.json --output letter-bare.pdf \
+  --direction auto --actual-text false \
+  --font ar --font he --font latin --lang ar,he,latin
+```
+
+```python
+import json
+
+# index is your own search or RAG client; its add() signature is yours
+with open("letter.ndjson", encoding="utf-8") as pages:   # {"pageIndex": 0, "text": "…"} per line
+    for line in pages:
+        page = json.loads(line)
+        index.add(doc_id="letter", page=page["pageIndex"], text=page["text"])  # logical order, as typed
+```
+
+`--direction` has no default. Omitted, nothing is set and the output is the
+1.8.0 behaviour: the bidi algorithm already orders the letters correctly, but
+every paragraph is set left-aligned, like Latin. `auto` aligns right-to-left
+paragraphs to the right and justifies them in visual order; `rtl` and `ltr`
+force a base direction on every paragraph; a paragraph block's own
+`direction` wins over all three, which is how the third paragraph above stays
+left to right. The value also travels as `layout.direction` through the
+document JSON or a `--layout` file, flags winning, and the `--json` envelope
+carries `direction` whenever it was set. `actualText: false` appears in the
+envelope only when the opt-out was used — the default emits nothing, so an
+envelope without the key means the spans are there.
+
+The extraction side needs no flag. pdfnative 1.9.0 wraps every untagged
+right-to-left run, and every shaped run whose glyph order differs from its
+text (an Indic pre-base vowel sign or reph, a Khmer or Myanmar pre-base vowel,
+a Thai tone mark set before a below vowel), in a `/Span /ActualText` carrying
+its logical text, inside one text object per line — the structure Skia and
+Chrome write — so Acrobat Reader, Chrome and `extract-text` all return the
+source string once. Tagged output (`--tagged`) carried it already in its
+structure spans; the untagged letter above needs no PDF/A claim to extract as
+typed. `--actual-text false` is the one switch that drops the spans: the bare runs
+come back in visual order, as 1.8.0 wrote them — not the 1.8.0 bytes, since
+the 1.9.0 subsets and line structure still apply — and the logical-order
+guarantee goes with them.
+
+What you gain, concretely:
+
+<!-- demo-language: ar (the greeting of the second item, logical order) -->
+- **A letter set the way its readers expect** — right-aligned, justified in
+  visual order, with the Latin closing left to right and no per-block
+  annotation.
+- **Logical-order text for the index, tagged or not** — `extract-text`
+  returns `السلام عليكم`, not its mirror image, from an untagged file; the
+  NDJSON streams page by page into a retrieval pipeline with no reversal
+  heuristic and no OCR step. `--runs` adds `{ text, x, y, fontSize,
+  fontName }` when the index wants positions.
+- **One switch for the spans** — `--actual-text false` is the only knob,
+  named in the envelope, for a pipeline that must keep the bare runs (it
+  removes the spans; it does not restore 1.8.0 bytes).
+- **The same letter, three surfaces** — the MCP server takes `direction` and
+  `actualText` on its nine document tools and `onStreamError` on
+  `extract_text`; the React renderer takes `<Document direction>` and
+  `<Paragraph direction>`, with `layout.actualText: false` as its layout-only
+  opt-out.
+
+<!-- demo-language: th (one Thai cluster in geometric and in logical order) -->
+Honest limits: a Thai above vowel and tone mark pair may still extract in
+**geometric order** from untagged output (`ตั้ง` comes back as `ตัง้`) — the
+ToUnicode is right and the span covers reordered clusters, not that pair. A
+line that mixes directions extracts **run by run**: each right-to-left run
+logical, the runs in geometric order, what a Chrome-printed page gives — so
+keep a sentence the index must quote verbatim in one direction. Text drawn
+outside the paragraph flow — a watermark, a form label — carries no span.
+And `extract-text` refuses rather than guesses: under `--on-stream-error
+limit` (the default) a content or font stream past the global
+`--max-inflate-size` (100 MiB) is `E_INPUT`, with the message naming both
+remedies — raise the cap, or `--on-stream-error skip` to read the page without
+that stream's text; `throw` fails on any undecodable stream, while `limit`
+still skips a corrupt one as before. Branch on the code and prefer `limit` for
+untrusted input; `compare` takes the same flag, and only `throw` rules out an
+equal verdict over an unread stream.
+
 ## See also
 
 - [Ecosystem use cases](use-cases.html) — the hub: five cross-surface
   architectures, including the CI regression gate and the air-gapped PAdES
   ladder these cases build on.
-- [CLI guide](cli.html) — the complete v1.5.0 command reference behind every
+- [CLI guide](cli.html) — the complete v1.6.0 command reference behind every
   flag above.
 - [MCP use cases](use-cases-mcp.html) and [React use cases](use-cases-react.html)
-  — three cases each, the same engine seen from the other two surfaces.
+  — four cases each, the same engine seen from the other two surfaces.
 - [CLI playground](../playgrounds/cli.html) — compose a `pdfnative` invocation
   in the browser.
 - [Reproducible output playground](../playgrounds/reproducible.html) — pin a

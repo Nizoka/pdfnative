@@ -16,7 +16,7 @@
  * Usage:
  *   npm run gate                     # --ci: everything except the three optional steps
  *   npm run gate:fast                # typecheck, lint, test, verify:docs
- *   npx tsx scripts/gate.ts --publish   # everything, including validate:pdfa, verify:fonts and verify:diagrams
+ *   npx tsx scripts/gate.ts --publish   # everything, including validate:pdfa, verify:fonts, verify:diagrams and verify:overflow
  *   npx tsx scripts/gate.ts --only lint
  *   npx tsx scripts/gate.ts --from build
  *   npx tsx scripts/gate.ts --ci --json
@@ -28,9 +28,9 @@
  *
  * Profiles:
  *   --fast     typecheck:all, lint, test, verify:docs
- *   --ci       every step except validate:pdfa, verify:fonts and verify:diagrams (default)
- *   --publish  every step; validate:pdfa, verify:fonts and verify:diagrams SKIP
- *              with a reason when veraPDF, fonts/ttf/ or a Chromium-family
+ *   --ci       every step except validate:pdfa, verify:fonts, verify:diagrams and verify:overflow (default)
+ *   --publish  every step; validate:pdfa, verify:fonts, verify:diagrams and verify:overflow
+ *              SKIP with a reason when veraPDF, fonts/ttf/ or a Chromium-family
  *              browser is absent, like the scripts they wrap
  *
  * Flags:
@@ -194,6 +194,10 @@ export const STEPS: readonly Step[] = [
     },
     {
         id: 'verify:diagrams', npmScript: 'verify:diagrams', profiles: ['publish'],
+        skipWhen: () => (findChromium() ? null : 'no Chromium-family browser (set CHROME_PATH)'),
+    },
+    {
+        id: 'verify:overflow', npmScript: 'verify:overflow', profiles: ['publish'],
         skipWhen: () => (findChromium() ? null : 'no Chromium-family browser (set CHROME_PATH)'),
     },
 ];

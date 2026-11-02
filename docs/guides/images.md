@@ -1,6 +1,6 @@
 # Images — JPEG, PNG and JPEG 2000
 
-> **JPEG and PNG since v1.0.0; JPEG 2000 since v1.9.0.** An `image` block embeds the file's own bytes — nothing is decoded, recompressed or rasterised: a JPEG travels as `/DCTDecode`, a PNG as `/FlateDecode` with its alpha channel split into a soft mask, a JPEG 2000 file as `/JPXDecode` with the colour and opacity the codestream declares. The library reads only the headers it needs to write the Image XObject.
+> **JPEG and PNG since v1.0.0; JPEG 2000 since v1.9.0.** An `image` block embeds the file's own bytes — nothing is decoded, recompressed or rasterised: a JPEG travels as `/DCTDecode`, a PNG as `/FlateDecode` (greyscale or RGB, 8-bit, no alpha channel — flatten a transparent PNG first), a JPEG 2000 file as `/JPXDecode` with the colour and opacity the codestream declares. The library reads only the headers it needs to write the Image XObject.
 
 ## TL;DR
 
@@ -26,12 +26,12 @@ const pdf = buildDocumentPDFBytes({
 | Format | Detected by | Written as | What is read from the file |
 |---|---|---|---|
 | JPEG | `FF D8 FF` | `/DCTDecode`, the file's bytes as the stream | Width, height and component count from the SOF marker (1 = `/DeviceGray`, 3 = `/DeviceRGB`, 4 = `/DeviceCMYK`). |
-| PNG | the 8-byte signature | `/FlateDecode` with a PNG predictor (`/Predictor 15`), the IDAT chunks concatenated | Width, height, bit depth and colour type from IHDR. Greyscale and RGB, with or without alpha; an alpha channel is separated into an `/SMask` image. 8-bit only; interlaced files are refused. |
+| PNG | the 8-byte signature | `/FlateDecode` with a PNG predictor (`/Predictor 15`), the IDAT chunks concatenated | Width, height, bit depth and colour type from IHDR. Greyscale (colour type 0) and RGB (2), 8-bit, non-interlaced. An alpha channel (colour types 4 and 6) is refused with `parsePNG: alpha channel PNGs (color type N) are not supported` — flatten the image before embedding it; palette PNGs (3), 16-bit depth and interlaced files are refused too. |
 | JPEG 2000 (v1.9.0) | the JP2 signature box, or a raw codestream (`FF 4F FF 51`) | `/JPXDecode`, the file's bytes as the stream | From the JP2 header (`ihdr`, `colr`, `cdef`) or the codestream's SIZ marker: width, height, channel count, bit depth, whether a colour space is declared, whether an opacity channel is present. |
 
 A JPEG 2000 image is a pass-through in the strictest sense: ISO 32000-1 §7.4.9 lets the viewer take the colour space, bit depth and opacity from the codestream, so the XObject omits `/ColorSpace` and `/BitsPerComponent` when the file declares its colour (`colr` box) and sets `/SMaskInData 1` when it carries an opacity channel. A raw codestream without a `colr` box is written with the device space its channel count implies. The file header becomes `%PDF-1.5`, the version that introduced `/JPXDecode`.
 
-What the library does **not** do: decode a JPEG 2000 codestream (no wavelet transform exists in pdfnative; viewers with JPX support — Acrobat, Chrome's PDFium, Firefox's pdf.js — draw it), convert formats, resample, or read TIFF and WebP (see the [roadmap](https://github.com/Nizoka/pdfnative/blob/main/ROADMAP.md)).
+What the library does **not** do: decode a JPEG 2000 codestream (no wavelet transform exists in pdfnative; viewers with JPX support — Acrobat, Chrome's PDFium, Firefox's pdf.js — draw it), split a PNG's alpha channel into a soft mask (the `buildSMaskXObject` writer is exported, but no parser feeds it: a transparent PNG is refused, not flattened), convert formats, resample, or read TIFF and WebP (see the [roadmap](https://github.com/Nizoka/pdfnative/blob/main/ROADMAP.md)).
 
 ## Inspecting an image before embedding it
 
@@ -50,7 +50,7 @@ if (img.jpx) {
 }
 ```
 
-`parseJPX(bytes)` reads a JPEG 2000 file directly; `parseImage` dispatches on the detected format and throws a plain `Error` naming the defect for a truncated or unsupported file (a 16-bit or interlaced PNG, an image with no header).
+`parseJPX(bytes)` reads a JPEG 2000 file directly; `parseImage` dispatches on the detected format and throws a plain `Error` naming the defect for a truncated or unsupported file (a PNG with an alpha channel, a palette, 16-bit depth or interlacing; an image with no header). `smask` is always `null` in the current release.
 
 ## Images under PDF/A and PDF/X
 

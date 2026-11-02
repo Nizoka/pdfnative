@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 560" role="img" aria-labelledby="ucmk-title ucmk-desc" font-family="Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif">
+  <title id="ucmk-title">Operator font sandbox and public result URLs</title>
+  <desc id="ucmk-desc">Architecture: the operator sets three environment variables read once at boot — PDFNATIVE_MCP_FONT_DIR, an absolute directory of at most 64 .ttf or .otf files of 16 MiB each, PDFNATIVE_MCP_OUTPUT_DIR, the file sandbox, and PDFNATIVE_MCP_OUTPUT_BASE_URL, the public base URL the operator serves that sandbox under. At boot pdfnative-mcp parses every font file with the engine's font compiler and registers it under the slug of its file name (Brand Sans.ttf becomes brand-sans); a slug collision, an unparsable file or an invalid base URL refuses to start, and the registry fingerprint joins the response-cache namespace. The agent calls generate_basic_pdf with font brand-sans, outputMode file and a sandbox-relative outputPath — a slug and a name, never a path or bytes. The result's text names the public URL, base plus sandbox-relative path, next to a resource_link under pdfnative://output/ and a structuredContent carrying mode, sizeBytes, filePath and url; a human opens the URL on the operator's own static file server, which pdfnative-mcp never requests. An unknown slug fails the call with FONT_NOT_FOUND listing the registered slugs. The font input exists on three tools only, and there is one font directory and one sandbox for every client.</desc>
+
+  <defs>
+    <marker id="ucmk-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#475569"/>
+    </marker>
+    <marker id="ucmk-ah-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#16A34A"/>
+    </marker>
+    <marker id="ucmk-ah-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#2563EB"/>
+    </marker>
+    <marker id="ucmk-ah-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#DC2626"/>
+    </marker>
+  </defs>
+
+  <rect width="960" height="560" fill="#F8FAFC"/>
+  <text x="480" y="40" text-anchor="middle" font-size="21" font-weight="700" fill="#0F172A">Operator font sandbox and public result URLs</text>
+  <text x="480" y="62" text-anchor="middle" font-size="13" fill="#64748B">PDFNATIVE_MCP_FONT_DIR and PDFNATIVE_MCP_OUTPUT_BASE_URL — two operator knobs of pdfnative-mcp v1.8.0</text>
+
+  <!-- Row 1: operator environment → server boot -->
+  <rect x="40" y="84" width="400" height="118" rx="10" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.25"/>
+  <text x="240" y="107" text-anchor="middle" font-size="13" font-weight="700" fill="#334155">Operator — environment, read once at boot</text>
+  <text x="240" y="126" text-anchor="middle" font-size="11" fill="#64748B">PDFNATIVE_MCP_FONT_DIR=/srv/fonts</text>
+  <text x="240" y="142" text-anchor="middle" font-size="11" fill="#64748B">PDFNATIVE_MCP_OUTPUT_DIR=/srv/pdfnative/out</text>
+  <text x="240" y="158" text-anchor="middle" font-size="11" fill="#64748B">PDFNATIVE_MCP_OUTPUT_BASE_URL=</text>
+  <text x="240" y="174" text-anchor="middle" font-size="11" fill="#64748B">https://files.example.com/pdf/ · needs OUTPUT_DIR</text>
+  <text x="240" y="190" text-anchor="middle" font-size="11" fill="#64748B">an invalid value refuses to start</text>
+
+  <line x1="440" y1="143" x2="518" y2="143" stroke="#2563EB" stroke-width="1.75" marker-end="url(#ucmk-ah-blue)"/>
+  <rect x="447" y="123" width="66" height="18" rx="9" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1"/>
+  <text x="480" y="136" text-anchor="middle" font-size="10.5" fill="#475569">read once</text>
+
+  <rect x="520" y="84" width="400" height="118" rx="10" fill="#F0FDF4" stroke="#86EFAC" stroke-width="1.25"/>
+  <text x="720" y="107" text-anchor="middle" font-size="13" font-weight="700" fill="#166534">pdfnative-mcp v1.8.0 — boot</text>
+  <text x="720" y="126" text-anchor="middle" font-size="11" fill="#16A34A">every .ttf / .otf parsed by the engine's font compiler</text>
+  <text x="720" y="142" text-anchor="middle" font-size="11" fill="#16A34A">Brand Sans.ttf → brand-sans, registered as custom:brand-sans</text>
+  <text x="720" y="158" text-anchor="middle" font-size="11" fill="#16A34A">slug collision, unparsable file, over 64 files: refuses to start</text>
+  <text x="720" y="174" text-anchor="middle" font-size="11" fill="#16A34A">base URL checked: http(s), no credentials / query / fragment</text>
+  <text x="720" y="190" text-anchor="middle" font-size="11" fill="#16A34A">registry fingerprint joins the response-cache namespace</text>
+
+  <!-- Server → result -->
+  <line x1="720" y1="202" x2="720" y2="238" stroke="#475569" stroke-width="1.75" marker-end="url(#ucmk-ah)"/>
+  <rect x="625" y="211" width="190" height="18" rx="9" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1"/>
+  <text x="720" y="224" text-anchor="middle" font-size="10.5" fill="#475569">renders · writes · formats url</text>
+
+  <!-- Row 2: agent call → result -->
+  <rect x="40" y="240" width="400" height="120" rx="10" fill="#EFF6FF" stroke="#93C5FD" stroke-width="1.25"/>
+  <text x="240" y="263" text-anchor="middle" font-size="13" font-weight="700" fill="#1E40AF">Agent — tools/call generate_basic_pdf</text>
+  <text x="240" y="282" text-anchor="middle" font-size="11" fill="#3B82F6">"font": "brand-sans" · "embedFonts": true</text>
+  <text x="240" y="298" text-anchor="middle" font-size="11" fill="#3B82F6">"outputPath": "acme/2026/quarterly-letter.pdf" · mode "file"</text>
+  <text x="240" y="314" text-anchor="middle" font-size="11" fill="#3B82F6">a slug and a sandbox-relative name — no path, no bytes</text>
+  <text x="240" y="330" text-anchor="middle" font-size="11" fill="#3B82F6">the catalogue (tools/list) never varies by operator</text>
+  <text x="240" y="346" text-anchor="middle" font-size="11" fill="#3B82F6">font: generate_basic_pdf · add_international_text · inspect_layout</text>
+
+  <line x1="440" y1="300" x2="518" y2="300" stroke="#2563EB" stroke-width="1.75" marker-end="url(#ucmk-ah-blue)"/>
+  <rect x="445" y="280" width="70" height="18" rx="9" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1"/>
+  <text x="480" y="293" text-anchor="middle" font-size="10.5" fill="#475569">tools/call</text>
+
+  <rect x="520" y="240" width="400" height="120" rx="10" fill="#FFFBEB" stroke="#FCD34D" stroke-width="1.25"/>
+  <text x="720" y="263" text-anchor="middle" font-size="13" font-weight="700" fill="#92400E">tools/call result — back to the agent</text>
+  <text x="720" y="282" text-anchor="middle" font-size="11" fill="#B45309">text: generate_basic_pdf: wrote &lt;n&gt; bytes to</text>
+  <text x="720" y="298" text-anchor="middle" font-size="11" fill="#B45309">https://files.example.com/pdf/acme/2026/quarterly-letter.pdf</text>
+  <text x="720" y="314" text-anchor="middle" font-size="11" fill="#B45309">resource_link: pdfnative://output/…/quarterly-letter.pdf</text>
+  <text x="720" y="330" text-anchor="middle" font-size="11" fill="#B45309">structuredContent: { mode, sizeBytes, filePath, url }</text>
+  <text x="720" y="346" text-anchor="middle" font-size="11" fill="#B45309">url = base + sandbox-relative path, percent-encoded</text>
+
+  <!-- Agent → unknown slug -->
+  <line x1="240" y1="360" x2="240" y2="394" stroke="#DC2626" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#ucmk-ah-red)"/>
+  <rect x="195" y="368" width="90" height="18" rx="9" fill="#FFFFFF" stroke="#FCA5A5" stroke-width="1"/>
+  <text x="240" y="381" text-anchor="middle" font-size="10.5" fill="#B91C1C">unknown slug</text>
+
+  <!-- Result → the human's browser -->
+  <line x1="720" y1="360" x2="720" y2="394" stroke="#16A34A" stroke-width="1.75" stroke-dasharray="6 5" marker-end="url(#ucmk-ah-green)"/>
+  <rect x="660" y="368" width="120" height="18" rx="9" fill="#FFFFFF" stroke="#86EFAC" stroke-width="1"/>
+  <text x="720" y="381" text-anchor="middle" font-size="10.5" fill="#15803D">a human opens url</text>
+
+  <!-- Row 3: the refusal and the file server -->
+  <rect x="40" y="396" width="400" height="72" rx="10" fill="#FEF2F2" stroke="#FCA5A5" stroke-width="1.25" stroke-dasharray="5 4"/>
+  <text x="240" y="419" text-anchor="middle" font-size="13" font-weight="700" fill="#991B1B">"font": "brand-mono" → FONT_NOT_FOUND</text>
+  <text x="240" y="438" text-anchor="middle" font-size="11" fill="#B91C1C">isError result listing the slugs: brand-sans, brand-serif</text>
+  <text x="240" y="454" text-anchor="middle" font-size="11" fill="#B91C1C">never a protocol error, never a path — slugs are learnt here</text>
+
+  <rect x="520" y="396" width="400" height="72" rx="10" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="1.25"/>
+  <text x="720" y="419" text-anchor="middle" font-size="13" font-weight="700" fill="#334155">Operator's static file server — their own auth</text>
+  <text x="720" y="438" text-anchor="middle" font-size="11" fill="#64748B">serves /srv/pdfnative/out as https://files.example.com/pdf/</text>
+  <text x="720" y="454" text-anchor="middle" font-size="11" fill="#64748B">pdfnative-mcp never requests the URL — pure string formatting</text>
+
+  <!-- Footer -->
+  <rect x="40" y="482" width="880" height="60" rx="12" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="1"/>
+  <text x="480" y="506" text-anchor="middle" font-size="12" font-weight="600" fill="#334155">font on three tools only (generate_basic_pdf, add_international_text, inspect_layout) · one sandbox for every client, not per tenant</text>
+  <text x="480" y="526" text-anchor="middle" font-size="12" fill="#475569">No path ever travels in a tool argument · the HTTP transport binds 127.0.0.1 only · the bearer token reaches clients out of band</text>
+</svg>

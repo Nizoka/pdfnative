@@ -1906,37 +1906,228 @@ function contrastRatio(a: string, b: string): number {
     return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
 }
 
+/** `#abc` → `#aabbcc`, lower-cased, so literals compare equal however they are written. */
+function normaliseHex(hex: string): string {
+    const h = hex.slice(1).toLowerCase();
+    return '#' + (h.length === 3 ? h.split('').map((c) => c + c).join('') : h);
+}
+
+/**
+ * Replace every match of `re` by whitespace of the same length, newlines kept,
+ * so character offsets (and therefore `lineOf`) still point into the original.
+ */
+function blankOut(text: string, re: RegExp): string {
+    return text.replace(re, (m) => m.replace(/[^\n]/g, ' '));
+}
+
+/** Blank the whole `@media print { … }` block (nested braces included) — printed pages are not screen contrast. */
+function blankPrintBlock(css: string): string {
+    const start = css.indexOf('@media print');
+    if (start === -1) return css;
+    const open = css.indexOf('{', start);
+    let depth = 0;
+    for (let i = open; i < css.length; i++) {
+        if (css[i] === '{') depth++;
+        else if (css[i] === '}' && --depth === 0) {
+            return css.slice(0, start) + css.slice(start, i + 1).replace(/[^\n]/g, ' ') + css.slice(i + 1);
+        }
+    }
+    return css;
+}
+
+/**
+ * The three site stylesheets. Page-level `<style>` blocks (playgrounds, learn
+ * steps, the quickstart) are out of scope of `contrast` and `css-dead-class`:
+ * they are reviewed with the page they belong to.
+ */
 const STYLE = join(ROOT, 'docs', 'style.css');
+const SITE_STYLESHEETS = [STYLE, join(ROOT, 'docs', 'guides', 'guide.css'), join(ROOT, 'docs', 'learn', 'learn.css')];
+
+interface ContrastPair {
+    /** A `--c-*` token of docs/style.css or a literal hex colour. */
+    readonly fg: string;
+    readonly bg: string;
+    /** WCAG 2.2 floor: 4.5 (1.4.3, text — the default) or 3 (1.4.11, glyphs and icons). */
+    readonly min?: number;
+    /** Where the pair is rendered — quoted in the failure so the reader knows what regressed. */
+    readonly where: string;
+}
+
+/**
+ * Every text/background pair the three site stylesheets render. A `color:`
+ * these sheets declare whose value is not a `fg` here fails the omission
+ * check below, so a new text colour cannot ship unmeasured. Policy: links
+ * (`--c-primary`) are never placed on `--c-surface` — deliberately no pair.
+ */
+const CONTRAST_PAIRS: readonly ContrastPair[] = [
+    // Body, dim and muted text on the four surfaces they sit on (.btn-secondary,
+    // .ob-badge and .cmp-quiz-verdict put text on --c-surface).
+    ...(['--c-text', '--c-text-dim', '--c-text-muted'] as const).flatMap((fg) =>
+        (['--c-bg', '--c-bg-alt', '--c-bg-card', '--c-surface'] as const).map((bg) => ({ fg, bg, where: `${fg} on ${bg}` })),
+    ),
+    { fg: '--c-primary', bg: '--c-bg', where: 'links, .tab-btn.active, .cmp-table td:nth-child(2), .bench-value' },
+    { fg: '--c-primary', bg: '--c-bg-alt', where: '.section-alt links, .metric-value' },
+    { fg: '--c-primary', bg: '--c-bg-card', where: '.feature-card and .onboarding-card links' },
+    { fg: '--c-primary-fg', bg: '--c-primary', where: '.btn-primary, .skip-link, .demo-mode-btn.active, .playground-switcher a[aria-current]' },
+    { fg: '--c-primary-fg', bg: '--c-accent', where: '.playground-switcher a[aria-current]:hover' },
+    { fg: '--c-accent', bg: '--c-surface', where: '.pn-version-strip-pkg strong' },
+    { fg: '--c-accent', bg: '--c-bg', where: '.pn-versions-ver' },
+    { fg: '--c-code-text', bg: '--c-code-bg', where: 'pre, .install-cmd, .demo-editor, .copy-btn:hover' },
+    { fg: '#93c5fd', bg: '--c-code-bg', where: '.install-cmd code, .mcp-table td:first-child code' },
+    { fg: '#94a3b8', bg: '--c-code-bg', where: '.copy-btn' },
+    { fg: '--c-success', bg: '--c-bg', min: 3, where: '.cmp-check glyph' },
+    { fg: '--c-success', bg: '--c-code-bg', min: 3, where: '.copy-btn.copied glyph' },
+    { fg: '#dc2626', bg: '--c-bg', min: 3, where: '.cmp-cross glyph' },
+    { fg: '#991b1b', bg: '#fef2f2', where: '.demo-error, .guide-error (light)' },
+    { fg: '#fca5a5', bg: '#450a0a', where: '.demo-error, .guide-error ([data-theme="dark"])' },
+    // Feature icons: currentColor stroke SVGs on a tinted chip — non-text contrast.
+    { fg: '#2563eb', bg: '#dbeafe', min: 3, where: '.fi-zero icon' },
+    { fg: '#7c3aed', bg: '#f3e8ff', min: 3, where: '.fi-unicode icon' },
+    { fg: '#059669', bg: '#d1fae5', min: 3, where: '.fi-iso icon' },
+    { fg: '#dc2626', bg: '#fee2e2', min: 3, where: '.fi-security icon' },
+    { fg: '#ea580c', bg: '#ffedd5', min: 3, where: '.fi-content icon' },
+    { fg: '#b45309', bg: '#fef3c7', min: 3, where: '.fi-production icon' },
+    { fg: '#4338ca', bg: '#eef2ff', min: 3, where: '.fi-mcp icon' },
+    { fg: '#0e7490', bg: '#ecfeff', min: 3, where: '.fi-cli icon' },
+];
+
+/** `color:` values that never carry text (the version-strip separator is a border-coloured glyph). */
+const NON_TEXT_COLOURS: readonly string[] = ['--c-border'];
+
+/** The light palette and the two dark overrides, which must stay token-for-token identical. */
+const PALETTE_BLOCKS = [
+    { label: ':root', anchor: ':root {' },
+    { label: '[data-theme="dark"]', anchor: '[data-theme="dark"] {' },
+    { label: '@media (prefers-color-scheme: dark)', anchor: ':root:not([data-theme="light"]) {' },
+] as const;
+
 if (existsSync(STYLE)) {
     const css = read(STYLE);
-    // Check each themed block independently: :root (light) and every dark override.
-    const blocks = [...css.matchAll(/(:root(?:\[[^\]]*\])?|@media[^{]*prefers-color-scheme:\s*dark[^{]*\{\s*:root[^{]*)\s*\{([\s\S]*?)\}/g)];
-    for (const block of blocks) {
-        const body = block[2];
-        const pick = (token: string): string | undefined =>
-            new RegExp(`${token}:\\s*(#[0-9a-fA-F]{3,6})`).exec(body)?.[1];
-        // Every surface these tokens are actually placed on, not just --c-bg.
-        // Checking only the page background is why five real failures passed:
-        // .rs-verify sits on --c-surface, where the same token scored 4.34:1.
-        const surfaces: Array<[string, string | undefined]> = [
-            ['--c-bg', pick('--c-bg')],
-            ['--c-surface', pick('--c-surface')],
-            ['--c-bg-card', pick('--c-bg-card')],
-        ];
-        for (const token of ['--c-text-muted', '--c-text-dim']) {
-            const fg = pick(token);
-            if (!fg) continue;
-            for (const [surfaceName, bg] of surfaces) {
-                if (!bg) continue;
-                const ratio = contrastRatio(fg, bg);
-                if (ratio >= 4.5) continue;
+    type TokenMap = Map<string, { hex: string; line: number }>;
+    const blocks: Array<{ label: string; line: number; tokens: TokenMap }> = [];
+    for (const { label, anchor } of PALETTE_BLOCKS) {
+        const start = css.indexOf(anchor);
+        if (start === -1) {
+            fail('docs/style.css', 1, 'contrast', `palette block "${anchor}" not found — the three palette blocks are the contract of this rule`);
+            continue;
+        }
+        const bodyStart = start + anchor.length;
+        const body = css.slice(bodyStart, css.indexOf('}', bodyStart));
+        const tokens: TokenMap = new Map();
+        for (const m of body.matchAll(/(--c-[\w-]+):\s*(#[0-9a-fA-F]{3,6})\b/g)) {
+            tokens.set(m[1], { hex: normaliseHex(m[2]), line: lineOf(css, bodyStart + m.index!) });
+        }
+        blocks.push({ label, line: lineOf(css, start), tokens });
+    }
+    if (blocks.length === PALETTE_BLOCKS.length) {
+        const [light, darkAttr, darkMedia] = blocks;
+        // Parity: the attribute block (theme toggle) and the media block (OS
+        // preference, before app.js runs or with scripts off) render the same palette.
+        for (const token of new Set([...darkAttr.tokens.keys(), ...darkMedia.tokens.keys()])) {
+            const a = darkAttr.tokens.get(token);
+            const b = darkMedia.tokens.get(token);
+            if (a?.hex === b?.hex) continue;
+            fail(
+                'docs/style.css',
+                (a ?? b)!.line,
+                'contrast',
+                `${token} is ${a?.hex ?? 'absent'} in [data-theme="dark"] but ${b?.hex ?? 'absent'} in the prefers-color-scheme: dark block — the two dark blocks must agree`,
+            );
+        }
+        const pairFgs = new Set(CONTRAST_PAIRS.map((p) => (p.fg.startsWith('#') ? normaliseHex(p.fg) : p.fg)));
+        for (const block of blocks) {
+            // Dark blocks inherit every token they do not redefine from :root.
+            const palette: TokenMap = block === light ? light.tokens : new Map([...light.tokens, ...block.tokens]);
+            const resolve = (colour: string): { hex: string; desc: string; line?: number } | undefined => {
+                if (colour.startsWith('#')) return { hex: normaliseHex(colour), desc: colour };
+                const t = palette.get(colour);
+                if (!t) {
+                    fail('docs/style.css', block.line, 'contrast', `${colour} is not defined in :root — CONTRAST_PAIRS names a token style.css does not declare`);
+                    return undefined;
+                }
+                return { hex: t.hex, desc: `${colour} (${t.hex})`, line: block.tokens.get(colour)?.line };
+            };
+            for (const pair of CONTRAST_PAIRS) {
+                // A literal-on-literal pair is palette-independent: measure it once.
+                if (pair.fg.startsWith('#') && pair.bg.startsWith('#') && block !== light) continue;
+                const fg = resolve(pair.fg);
+                const bg = resolve(pair.bg);
+                if (!fg || !bg) continue;
+                const min = pair.min ?? 4.5;
+                const ratio = contrastRatio(fg.hex, bg.hex);
+                if (ratio >= min) continue;
                 fail(
                     'docs/style.css',
-                    lineOf(css, block.index! + block[0].indexOf(token)),
+                    fg.line ?? bg.line ?? block.line,
                     'contrast',
-                    `${token} (${fg}) on ${surfaceName} (${bg}) is ${ratio.toFixed(2)}:1 — WCAG AA body text needs 4.5:1`,
+                    `${fg.desc} on ${bg.desc} is ${ratio.toFixed(2)}:1 in ${block.label} — needs ${min}:1 (${pair.where})`,
                 );
             }
+        }
+        // Omission check: every `color:` the three sheets declare (a --c-* token
+        // or a hex literal) must be a fg of CONTRAST_PAIRS. `border-color`,
+        // `background-color`, `outline-color`, `caret-color` and
+        // `-webkit-text-fill-color` are excluded by the look-behind.
+        for (const sheet of SITE_STYLESHEETS) {
+            if (!existsSync(sheet)) continue;
+            const relSheet = rel(sheet);
+            const text = blankPrintBlock(blankOut(read(sheet), /\/\*[\s\S]*?\*\//g));
+            for (const m of text.matchAll(/(?<![\w-])color\s*:\s*([^;}]+)/g)) {
+                const value = m[1].trim();
+                const token = /^var\((--c-[\w-]+)/.exec(value)?.[1];
+                const literal = /^#[0-9a-fA-F]{3,6}$/.test(value) ? normaliseHex(value) : undefined;
+                const fg = token ?? literal;
+                if (!fg || pairFgs.has(fg) || NON_TEXT_COLOURS.includes(fg)) continue;
+                fail(
+                    relSheet,
+                    lineOf(text, m.index!),
+                    'contrast',
+                    `color: ${value} is not in CONTRAST_PAIRS — add a { fg, bg, where } pair for every surface it sits on, or list it in NON_TEXT_COLOURS with a reason`,
+                );
+            }
+        }
+    }
+}
+
+// ── Rule: css-dead-class ────────────────────────────────────────────
+
+/**
+ * Classes the stylesheets style but no markup or script names literally. Empty
+ * today: the classes added at runtime (`open`, `copied`, `cmp-hot`, `active` in
+ * app.js; `pre-wrap`, `copy-btn`, `guide-source-*` in guide.js; `ln-prereq` in
+ * learn.js) are literal strings the search below finds. Add an entry only
+ * with a reason, e.g. a class composed from fragments at runtime.
+ */
+const RUNTIME_CLASSES: readonly string[] = [];
+
+{
+    // Every page and script of the site; the generated llms-*.txt/.json files
+    // are neither and are not walked (walk() also skips node_modules and dotfiles).
+    const corpus = walk(join(ROOT, 'docs'), (p) => /\.(?:html|js)$/.test(p) && !/[\\/]llms[^\\/]*$/.test(p))
+        .map((p) => read(p))
+        .join('\n');
+    for (const sheet of SITE_STYLESHEETS) {
+        if (!existsSync(sheet)) continue;
+        const relSheet = rel(sheet);
+        const source = read(sheet);
+        // Blank comments, then every declaration block (innermost first, until
+        // nothing changes), so only selector text — rules and @media prelude — remains.
+        let css = blankOut(source, /\/\*[\s\S]*?\*\//g);
+        const collapse = (s: string): string => s.replace(/\{[^{}]*\}/g, (m) => '{' + m.slice(1, -1).replace(/[^\n]/g, ' ') + '}');
+        while (css !== (css = collapse(css)));
+        const seen = new Set<string>();
+        for (const m of css.matchAll(/\.(-?[_a-zA-Z][\w-]*)/g)) {
+            const name = m[1];
+            if (name.startsWith('language-') || seen.has(name)) continue;
+            seen.add(name);
+            if (RUNTIME_CLASSES.includes(name)) continue;
+            if (new RegExp(`(?<![\\w-])${name}(?![\\w-])`).test(corpus)) continue;
+            fail(
+                relSheet,
+                lineOf(css, m.index!),
+                'css-dead-class',
+                `.${name} is styled but no docs/**/*.html or *.js uses it — remove the rule or add it to RUNTIME_CLASSES with a reason`,
+            );
         }
     }
 }
@@ -2418,7 +2609,8 @@ const OFFLINE_RULES = [
     'switcher-parity', // playground switchers link every live playground, none link a noindex stub
     'learn-chain', // learn path prev/next links follow manifest.learnPath
     'bench-parity', // homepage benchmark bars round to bench/RESULTS.md
-    'contrast', // muted text tokens reach WCAG AA on every surface
+    'contrast', // every CONTRAST_PAIRS text/background pair reaches WCAG AA in the light and both dark palettes; the dark blocks agree; no unlisted `color:`
+    'css-dead-class', // every class the three site stylesheets style is named by a docs/**/*.html or *.js file (RUNTIME_CLASSES allow-list)
     'llms-sync', // docs/llms.txt equals root llms.txt; llms-full/recipes regenerated
     'llms-index-sync', // docs/llms-index.json regenerated
     'llms-index-quality', // every index summary is usable prose

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MCP use cases — pdfnative</title>
-  <meta name="description" content="Three pdfnative-mcp v1.7.0 architectures: one shared Streamable HTTP server with a bearer token and a file sandbox exposed as MCP resources, a token-frugal typesetting loop on inspect_layout, and PDF/A notices in every script the engine shapes from one tool call.">
+  <meta name="description" content="Four pdfnative-mcp v1.8.0 architectures: one shared Streamable HTTP server with a bearer token and a file sandbox exposed as MCP resources, a token-frugal typesetting loop on inspect_layout, PDF/A notices in every script the engine shapes from one tool call, and an operator font sandbox whose file results carry public URLs.">
   <link rel="canonical" href="https://pdfnative.dev/guides/use-cases-mcp.html">
   <link rel="alternate" hreflang="en" href="https://pdfnative.dev/guides/use-cases-mcp.html">
   <link rel="alternate" hreflang="x-default" href="https://pdfnative.dev/guides/use-cases-mcp.html">
@@ -15,21 +15,21 @@
   <meta property="og:locale" content="en_US">
   <meta property="og:url" content="https://pdfnative.dev/guides/use-cases-mcp.html">
   <meta property="og:title" content="MCP use cases — pdfnative">
-  <meta property="og:description" content="One shared pdfnative-mcp server behind a bearer token with sandboxed file outputs as MCP resources, a preview-produce-read-back typesetting loop that costs a few dozen tokens, and multilingual PDF/A notices in every script the engine shapes — three architectures with their limits.">
+  <meta property="og:description" content="One shared pdfnative-mcp server behind a bearer token with sandboxed file outputs as MCP resources, a preview-produce-read-back typesetting loop that costs a few dozen tokens, multilingual PDF/A notices in every script the engine shapes, and an operator font sandbox with public result URLs — four architectures with their limits.">
   <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
   <meta property="og:image:alt" content="pdfnative — pure native PDF generation, zero dependencies">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="MCP use cases — pdfnative">
-  <meta name="twitter:description" content="Three pdfnative-mcp v1.7.0 architectures: shared HTTP server with token and file sandbox, token-frugal inspect_layout loop, and PDF/A notices in every script the engine shapes.">
+  <meta name="twitter:description" content="Four pdfnative-mcp v1.8.0 architectures: shared HTTP server with token and file sandbox, token-frugal inspect_layout loop, PDF/A notices in every script the engine shapes, and operator fonts with public result URLs.">
   <meta name="twitter:image" content="https://pdfnative.dev/assets/og-image.png">
   <link rel="icon" type="image/svg+xml" href="../favicon.svg">
   <link rel="stylesheet" href="../style.css">
   <link rel="stylesheet" href="guide.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
   <!-- guide:ld:start -->
-  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://pdfnative.dev/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://pdfnative.dev/guides/"},{"@type":"ListItem","position":3,"name":"MCP use cases","item":"https://pdfnative.dev/guides/use-cases-mcp.html"}]},{"@type":"TechArticle","headline":"MCP use cases","description":"Three pdfnative-mcp v1.7.0 architectures: one shared Streamable HTTP server with a bearer token and a file sandbox exposed as MCP resources, a token-frugal typesetting loop on inspect_layout, and PDF/A notices in every script the engine shapes from one tool call.","inLanguage":"en","author":{"@type":"Organization","name":"Nizoka","url":"https://github.com/Nizoka"},"publisher":{"@type":"Organization","name":"pdfnative","url":"https://pdfnative.dev","logo":{"@type":"ImageObject","url":"https://pdfnative.dev/assets/logo.svg"}},"mainEntityOfPage":{"@type":"WebPage","@id":"https://pdfnative.dev/guides/use-cases-mcp.html"},"isPartOf":{"@type":"WebSite","name":"pdfnative","url":"https://pdfnative.dev"}}]}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://pdfnative.dev/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://pdfnative.dev/guides/"},{"@type":"ListItem","position":3,"name":"MCP use cases","item":"https://pdfnative.dev/guides/use-cases-mcp.html"}]},{"@type":"TechArticle","headline":"MCP use cases","description":"Four pdfnative-mcp v1.8.0 architectures: one shared Streamable HTTP server with a bearer token and a file sandbox exposed as MCP resources, a token-frugal typesetting loop on inspect_layout, PDF/A notices in every script the engine shapes from one tool call, and an operator font sandbox whose file results carry public URLs.","inLanguage":"en","author":{"@type":"Organization","name":"Nizoka","url":"https://github.com/Nizoka"},"publisher":{"@type":"Organization","name":"pdfnative","url":"https://pdfnative.dev","logo":{"@type":"ImageObject","url":"https://pdfnative.dev/assets/logo.svg"}},"mainEntityOfPage":{"@type":"WebPage","@id":"https://pdfnative.dev/guides/use-cases-mcp.html"},"isPartOf":{"@type":"WebSite","name":"pdfnative","url":"https://pdfnative.dev"}}]}</script>
   <!-- guide:ld:end -->
 </head>
 <body>
@@ -66,16 +66,18 @@
 <!-- guide:render:start -->
 <h1 id="mcp-use-cases">MCP use cases</h1>
 <blockquote>
-<p><strong>Three architectures on pdfnative-mcp v1.7.0 (pdfnative ≥ 1.8.0, Node ≥ 22):</strong>
+<p><strong>Four architectures on pdfnative-mcp v1.8.0 (requires pdfnative ≥ 1.9.0 — pins <code>^1.9.0</code>, Node ≥ 22):</strong>
 one shared HTTP server whose outputs are files, a token-frugal typesetting
-loop, and multilingual PDF/A notices in every script the engine shapes.</p>
+loop, multilingual PDF/A notices in every script the engine shapes, and an
+operator font sandbox whose results are public URLs.</p>
 </blockquote>
-<p>pdfnative-mcp v1.7.0 exposes the pdfnative ≥ 1.8.0 engine to conversational
-assistants as 28 tools and seven prompts, over stdio or Streamable HTTP
-(MCP 2026-07-28 with automatic legacy fallback), on Node ≥ 22. This guide is
-the MCP companion of the <a href="use-cases.html">ecosystem use cases</a>: three
-architectures assembled from inputs the <a href="mcp.html">MCP guide</a> documents, each
-with its building blocks, one load-bearing call and its limits.</p>
+<p>pdfnative-mcp v1.8.0 exposes the pdfnative ≥ 1.9.0 engine to conversational
+assistants as 28 tools, seven prompts and fourteen operator variables, over
+stdio or Streamable HTTP (MCP 2026-07-28 with automatic legacy fallback), on
+Node ≥ 22. This guide is the MCP companion of the <a href="use-cases.html">ecosystem use
+cases</a>: four architectures assembled from inputs the <a href="mcp.html">MCP
+guide</a> documents, each with its building blocks, one load-bearing
+call and its limits.</p>
 <h2 id="case-1--one-shared-server-sandboxed-files-bearer-token">Case 1 — One shared server, sandboxed files, bearer token<a class="heading-anchor" href="#case-1--one-shared-server-sandboxed-files-bearer-token" aria-label="Link to this section">#</a></h2>
 <p>The default MCP deployment is one stdio process per host: every desktop and
 every agent runtime spawns its own <code>npx pdfnative-mcp</code>, every generated PDF
@@ -217,8 +219,12 @@ content block, not duplicated into <code>structuredContent</code>; in file mode 
 <code>resource_link</code> (Case 1).</li>
 <li><strong>Nothing moves unless asked.</strong> Every typography key is off by default, so
 omitting the object changes nothing; the only byte differences from v1.6.0
-are the engine&#39;s own 1.8.0 corrections (embedded subsets, printer&#39;s marks,
-shaped scripts — see the migration notes in the MCP guide).</li>
+are the engine&#39;s own corrections — the 1.8.0 ones (embedded subsets,
+printer&#39;s marks, shaped scripts) and the 1.9.0 ones (lean compact subsets,
+<code>/ActualText</code> on untagged reordered runs — the compatibility ledger
+C1–C28 of the <a href="https://github.com/Nizoka/pdfnative/blob/main/release-notes/v1.9.0.md" target="_blank" rel="noopener">1.9.0 release
+note</a>);
+the migration notes in the MCP guide list what moved on the server side.</li>
 </ul>
 <p>Honest limits: <code>kerning</code>, <code>fontFeatures</code> and the narrow no-break space of the
 <code>&#39;fr&#39;</code> punctuation preset need <code>embedFonts: true</code> — base-14 Helvetica has no
@@ -227,10 +233,10 @@ there and <code>&#39;fr&#39;</code> degrades to <code>&#39;fr-CA&#39;</code>. No
 <code>hyphenationLanguage</code> is accepted and has no effect; soft hyphens (U+00AD) in
 long words are honoured. <code>tnum</code> and <code>lnum</code> change nothing on the bundled Noto
 Sans (diagnostic <code>TYPOGRAPHY_FEATURE_INEFFECTIVE</code>, an error under
-<code>strict: true</code>). And the catalogue is large: <code>tools/list</code> is about 306 kB
-because the typography fragment is inlined in every tool that carries it —
-hosts should honour its 24 h public cache hint rather than refetch it per
-session.</p>
+<code>strict: true</code>). And the catalogue is large: <code>tools/list</code> is about 357 kB
+(under a 384 KiB budget) because the typography fragment and the colour
+schemas are inlined in every tool that carries them — hosts should honour its
+24 h public cache hint rather than refetch it per session.</p>
 <h2 id="case-3--multilingual-notices-in-every-script-from-a-conversation">Case 3 — Multilingual notices in every script from a conversation<a class="heading-anchor" href="#case-3--multilingual-notices-in-every-script-from-a-conversation" aria-label="Link to this section">#</a></h2>
 <p>A safety notice, a consent form or a receipt that must exist in the reader&#39;s
 own script is usually a font-procurement project before it is a document
@@ -238,11 +244,13 @@ project. <code>add_international_text</code> removes the procurement: it routes 
 of text to the bundled Noto face that covers it, shapes it with the engine&#39;s
 script shapers, always embeds the fonts, and can claim PDF/A — from a single
 tool call inside a conversation.</p>
-<p>The building blocks: <code>add_international_text</code> with a <code>lang</code> array covering the
-every script of the engine it was built on — including, since v1.7.0, <code>lo</code> (Lao, dedicated shaper), <code>nod</code>
-(Tai Tham) and <code>cjm</code> (Cham) through the Universal Shaping Engine, <code>khb</code>
-(New Tai Lue) and <code>tdd</code> (Tai Le), plus the <code>latin</code> aliases <code>ha</code>, <code>yo</code>, <code>ig</code>
-and <code>sw</code> whose tone marks are anchored; <code>pdfA: &quot;pdfa2b&quot;</code> with <code>strict: true</code>
+<p>The building blocks: <code>add_international_text</code> with a <code>lang</code> array covering
+all 32 scripts of the engine it was built on — including, since v1.7.0, <code>lo</code>
+(Lao, dedicated shaper), <code>nod</code> (Tai Tham) and <code>cjm</code> (Cham) through the
+Universal Shaping Engine, <code>khb</code> (New Tai Lue) and <code>tdd</code> (Tai Le), and, since
+v1.8.0, the five Indic scripts <code>gu</code>, <code>pa</code>, <code>kn</code>, <code>ml</code> and <code>or</code> (Gujarati,
+Gurmukhi, Kannada, Malayalam, Odia) — plus the <code>latin</code> aliases <code>ha</code>, <code>yo</code>,
+<code>ig</code> and <code>sw</code> whose tone marks are anchored; <code>pdfA: &quot;pdfa2b&quot;</code> with <code>strict: true</code>
 so a diagnostic fails the call instead of shipping a wrong claim;
 <code>creationDate</code> for byte-identical output; and <code>extract_text</code>, which returns the
 <code>/ActualText</code> of tagged output so complex scripts round-trip exactly. The
@@ -263,7 +271,7 @@ strings below are copied from the server&#39;s <code>examples/scripts-lao-tai-ch
 </code></pre>
 <p><code>lang</code> is an array so each run is routed to the font that covers it — <code>latin</code>
 carries the English labels and is added automatically under a PDF/A claim.
-The claim is <code>pdfa2b</code> on purpose (see the limits). Feed the result to
+The claim is <code>pdfa2b</code> here; <code>pdfa2u</code> passes too since pdfnative 1.9.0 (see the limits). Feed the result to
 <code>extract_text</code> and the three paragraphs come back in logical order, because
 the tagged output carries <code>/ActualText</code> for every marked-content span.</p>
 <p>What you gain, concretely:</p>
@@ -279,22 +287,137 @@ holds the new scripts to that.</li>
 faces come from the local <code>pdfnative</code> install as lazily loaded modules, and
 the bytes are reproducible once <code>creationDate</code> is pinned.</li>
 </ul>
-<p>Honest limits: there are no custom fonts on the MCP surface — the operator-side
-font sandbox (<code>PDFNATIVE_MCP_FONT_DIR</code>) is on the roadmap, not in v1.7.0; a
-house typeface needs the CLI (<code>render --font-file</code>) or the library. Every
-script passes PDF/A-2<strong>u</strong> since pdfnative 1.9.0 (every shaper&#39;s glyph is named
-in <code>ToUnicode</code>, and <code>PDFA_GLYPH_WITHOUT_UNICODE</code> names any glyph that still is
-not). Text extraction from an <strong>untagged</strong> PDF returns
+<p>Honest limits: a house typeface is an operator decision, not a call-time one
+— since v1.8.0 <code>PDFNATIVE_MCP_FONT_DIR</code> registers the operator&#39;s <code>.ttf</code> /
+<code>.otf</code> files at boot and <code>font: &quot;&lt;slug&gt;&quot;</code> names one on <code>generate_basic_pdf</code>,
+<code>add_international_text</code> and <code>inspect_layout</code> (Case 4); a language code
+outside the closed <code>lang</code> enum still needs the CLI (<code>render --font-file</code>) or
+the library. Every script passes PDF/A-2<strong>u</strong> since pdfnative 1.9.0 (every
+shaper&#39;s glyph is named in <code>ToUnicode</code>, and <code>PDFA_GLYPH_WITHOUT_UNICODE</code> names
+any glyph that still is not). Text extraction from an <strong>untagged</strong> PDF returns
 the logical string since pdfnative 1.9.0 (every reordered run, right-to-left
-runs included, carries its text as <code>/ActualText</code>, tagged or not). And
-<code>annotate_pdf</code> in pdfnative-mcp 1.7.0 has no <code>link</code> annotation type yet — the
-engine added <code>{ type: &#39;link&#39; }</code> to its markup union in 1.9.0; the <code>link</code> block
-of <code>generate_basic_pdf</code> covers new documents.</p>
+runs included, carries its text as <code>/ActualText</code>, tagged or not) — except one
+Thai above-vowel + tone-mark pair, which still reads in drawn order untagged.
+And <code>annotate_pdf</code> takes <code>{ &quot;type&quot;: &quot;link&quot; }</code> since v1.8.0 — a <code>/Link</code>
+annotation with a <code>/URI</code> action on a 0-based <code>page</code>, a <code>rect</code> and an <code>http:</code>,
+<code>https:</code> or <code>mailto:</code> <code>url</code> of at most 2048 characters — so a link on a page
+the server did not build no longer means the <code>link</code> block of
+<code>generate_basic_pdf</code> and a rebuild.</p>
+<h2 id="case-4--operator-font-sandbox-and-public-result-urls">Case 4 — Operator font sandbox and public result URLs<a class="heading-anchor" href="#case-4--operator-font-sandbox-and-public-result-urls" aria-label="Link to this section">#</a></h2>
+<p>A brand typeface and a link a person can open are the two things a generated
+document most often lacks when it leaves a conversation: the bundled Noto
+faces are not the house font, and a <code>filePath</code> on the server&#39;s disk means
+nothing to the human who asked for the PDF. Since v1.8.0 two operator knobs
+close both gaps without widening the tool surface: <code>PDFNATIVE_MCP_FONT_DIR</code>
+registers the operator&#39;s <code>.ttf</code> / <code>.otf</code> files at boot, so an agent names a
+face by its slug; <code>PDFNATIVE_MCP_OUTPUT_BASE_URL</code> maps the file sandbox of
+Case 1 to a public base URL, so every file-mode result carries <code>url</code>. The
+agent sees <strong>a slug and a URL — never a path, never bytes it did not ask
+for</strong>.</p>
+<p><img src="../assets/use-case-mcp-operator-knobs.svg" alt="Architecture: the operator sets three environment variables read once at boot — PDFNATIVE_MCP_FONT_DIR, an absolute directory of at most 64 .ttf or .otf files of 16 MiB each, PDFNATIVE_MCP_OUTPUT_DIR, the file sandbox, and PDFNATIVE_MCP_OUTPUT_BASE_URL, the public base URL the operator serves that sandbox under. At boot pdfnative-mcp parses every font file with the engine&#39;s font compiler and registers it under the slug of its file name (Brand Sans.ttf becomes brand-sans); a slug collision, an unparsable file or an invalid base URL refuses to start, and the registry fingerprint joins the response-cache namespace. The agent calls generate_basic_pdf with font brand-sans, outputMode file and a sandbox-relative outputPath — a slug and a name, never a path or bytes. The result&#39;s text names the public URL, base plus sandbox-relative path, next to a resource_link under pdfnative://output/ and a structuredContent carrying mode, sizeBytes, filePath and url; a human opens the URL on the operator&#39;s own static file server, which pdfnative-mcp never requests. An unknown slug fails the call with FONT_NOT_FOUND listing the registered slugs. The font input exists on three tools only, and there is one font directory and one sandbox for every client."></p>
+<p>The building blocks, all operator-side, all in the server&#39;s <a href="mcp.html#environment-variables">environment
+variables</a> and all read once at boot:</p>
+<ul>
+<li><code>PDFNATIVE_MCP_FONT_DIR=/srv/fonts</code> — an absolute, existing directory of at
+most 64 <code>.ttf</code> / <code>.otf</code> files of at most 16 MiB each, read once and not
+recursively. Each file is parsed by the engine&#39;s own font compiler (metrics,
+<code>cmap</code>, widths, GSUB / GPOS — the path the bundled faces take) and registered
+under <code>custom:&lt;slug&gt;</code>, where the slug is the file&#39;s base name lower-cased and
+folded to <code>[a-z0-9-]</code>: <code>Brand Sans.ttf</code> → <code>brand-sans</code>. A relative or missing
+directory, a file the engine cannot parse, a file over the size limit, more
+than 64 files, or two files folding to one slug (<code>Brand.ttf</code> and
+<code>brand.otf</code>) <strong>refuse to start</strong> rather than serve an incomplete registry;
+the startup line on stderr lists the registered slugs.</li>
+<li><code>font: &quot;&lt;slug&gt;&quot;</code> on <code>generate_basic_pdf</code>, <code>add_international_text</code> and
+<code>inspect_layout</code> — the schema is static (<code>^[a-z0-9][a-z0-9-]{0,63}$</code>), so
+<code>tools/list</code> never varies by operator. The face is the document&#39;s primary
+font, the bundled faces follow as fallbacks for the characters it lacks, and
+it is always embedded as a subset, so a PDF/A claim holds with it. Omit
+<code>font</code> and the bytes are those of a server without the variable.</li>
+<li><code>PDFNATIVE_MCP_OUTPUT_DIR</code> plus
+<code>PDFNATIVE_MCP_OUTPUT_BASE_URL=https://files.example.com/pdf/</code> — the base
+URL must be an absolute <code>http:</code> / <code>https:</code> URL without credentials, query or
+fragment (a missing trailing slash is added), and it must accompany an
+output directory: a base URL with nothing to map refuses to start, like an
+invalid one. The <code>url</code> of a result is the base plus the sandbox-relative
+path, one percent-encoded segment per level (<code>reports/Q3 plan.pdf</code> →
+<code>…/reports/Q3%20plan.pdf</code>).</li>
+<li>The response cache of Case 1, when enabled, namespaces its keys by a
+fingerprint of the font registry (slug, size and SHA-256 of every file), so
+a face replaced on disk and a restart never serve bytes rendered with the
+earlier file although the slug did not change.</li>
+</ul>
+<pre><code class="language-bash"># /srv/fonts holds &quot;Brand Sans.ttf&quot; and &quot;Brand Serif.otf&quot;; the operator&#39;s own static
+# file server exposes /srv/pdfnative/out read-only at https://files.example.com/pdf/.
+PDFNATIVE_MCP_FONT_DIR=/srv/fonts \
+PDFNATIVE_MCP_OUTPUT_DIR=/srv/pdfnative/out \
+PDFNATIVE_MCP_OUTPUT_BASE_URL=https://files.example.com/pdf/ \
+npx -y pdfnative-mcp
+# stderr: [pdfnative-mcp] 2 custom font(s) registered from PDFNATIVE_MCP_FONT_DIR: brand-sans, brand-serif
+</code></pre>
+<pre><code class="language-json">{ &quot;tool&quot;: &quot;generate_basic_pdf&quot;, &quot;arguments&quot;: {
+  &quot;title&quot;: &quot;Quarterly letter&quot;,
+  &quot;font&quot;: &quot;brand-sans&quot;,
+  &quot;embedFonts&quot;: true,
+  &quot;outputMode&quot;: &quot;file&quot;,
+  &quot;outputPath&quot;: &quot;acme/2026/quarterly-letter.pdf&quot;,
+  &quot;creationDate&quot;: &quot;2026-09-01T00:00:00Z&quot;,
+  &quot;blocks&quot;: [
+    { &quot;type&quot;: &quot;heading&quot;, &quot;text&quot;: &quot;Quarterly letter&quot;, &quot;level&quot;: 1 },
+    { &quot;type&quot;: &quot;paragraph&quot;, &quot;text&quot;: &quot;Set in the operator&#39;s brand face; characters it lacks fall back to the bundled Noto Sans.&quot; }
+  ]
+}}
+</code></pre>
+<p>The result&#39;s text block is <code>generate_basic_pdf: wrote &lt;n&gt; bytes to https://files.example.com/pdf/acme/2026/quarterly-letter.pdf</code> — the URL, not
+the host&#39;s path — followed by the <code>resource_link</code>
+<code>pdfnative://output/acme/2026/quarterly-letter.pdf</code>; <code>structuredContent</code> is
+<code>{ mode: &quot;file&quot;, sizeBytes, filePath, url }</code>, <code>filePath</code> kept for the clients
+that read it before the base URL existed. The same <code>url</code> joins every
+file-mode result: <code>parts[].url</code> on <code>split_pdf</code>, <code>url</code> on
+<code>draft_governance_issue</code>. Ask for a face the operator did not install and the
+call fails as a plain <code>isError</code> result, never a protocol error:</p>
+<pre><code class="language-text">generate_basic_pdf failed [FONT_NOT_FOUND]: font &#39;brand-mono&#39; is unknown. Registered custom fonts: brand-sans, brand-serif.
+</code></pre>
+<p><code>resources/list</code> answers with the two governance resources first —
+<code>pdfnative://governance/policy</code> (<code>application/json</code>) and
+<code>pdfnative://governance/rules</code> (<code>text/markdown</code>), listed whether or not file
+output is enabled — then every PDF of the sandbox as
+<code>pdfnative://output/{+path}</code>, so the letter is at once a public URL for the
+human and an MCP resource for the client.</p>
+<p>What you gain, concretely:</p>
+<ul>
+<li><strong>A house font without a schema change.</strong> The catalogue is the same on
+every server; the agent learns the registered slugs from the operator — or
+from the first <code>FONT_NOT_FOUND</code>, which lists them — and names a face with
+one word. <code>inspect_layout</code> measures with the real metrics, so the
+preview-produce loop of Case 2 holds with the brand face.</li>
+<li><strong>A link a human can open.</strong> The model context carries
+<code>https://files.example.com/pdf/…</code> instead of <code>/srv/pdfnative/out/…</code>: the
+host&#39;s layout stays out of the conversation, and the URL is the operator&#39;s
+to serve, cache and protect.</li>
+<li><strong>Refusal at boot, not surprise at call time.</strong> Every font file is parsed
+before the first registration and the base URL is validated before the
+first request, so a malformed face or a mistyped URL is a line in the
+operator&#39;s log, never an <code>isError</code> result in a client.</li>
+</ul>
+<p>Honest limits: <code>font</code> exists on three tools only — <code>generate_basic_pdf</code>,
+<code>add_international_text</code> and <code>inspect_layout</code>; the other seven document tools
+(<code>add_table</code>, <code>add_chart</code>, <code>add_barcode</code>, <code>embed_image</code>, <code>add_form</code>,
+<code>add_attachment</code>, <code>prepare_signature_placeholder</code>) keep the bundled faces.
+The server never requests the base URL: <code>url</code> is pure string formatting, and
+whether <code>https://files.example.com/pdf/…</code> actually serves the file, and behind
+which authentication, is the business of the operator&#39;s static file server,
+not of the MCP server. There is one font directory and one sandbox for every
+client, not one per tenant: every client holding the token can name every
+slug and list every resource. No path ever travels in a tool argument — the
+directory is never listed to a client, and results and errors name slugs. And
+the transport limits of Case 1 still hold: the HTTP server binds <code>127.0.0.1</code>
+only, and the bearer token must reach the clients out of band.</p>
 <h2 id="see-also">See also<a class="heading-anchor" href="#see-also" aria-label="Link to this section">#</a></h2>
 <ul>
 <li><a href="use-cases.html">Ecosystem use cases</a> — the hub: five cross-surface
 architectures, four with diagrams.</li>
-<li><a href="mcp.html">MCP guide</a> — the complete v1.7.0 tool, prompt, environment and
+<li><a href="mcp.html">MCP guide</a> — the complete v1.8.0 tool, prompt, environment and
 error reference.</li>
 <li><a href="use-cases-cli.html">CLI use cases</a> — the same engine from a shell and a CI
 runner.</li>

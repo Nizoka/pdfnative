@@ -130,7 +130,7 @@
   </nav>
   <article class="guide-content">
     <h1>Images — JPEG, PNG and JPEG 2000, since 1.9.0 for JPEG 2000</h1>
-    <p>An <code>image</code> block embeds the file's own bytes: a JPEG as <code>/DCTDecode</code>, a PNG as <code>/FlateDecode</code> with its alpha channel split into a soft mask, and since 1.9.0 a JPEG 2000 file as <code>/JPXDecode</code> — colour space and bit depth left to the codestream when its header declares them, an opacity channel as <code>/SMaskInData 1</code>, the header raised to PDF 1.5. Nothing is decoded or recompressed. The fixtures are tiny images inlined in this page; pick a file of your own for the last preset.</p>
+    <p>An <code>image</code> block embeds the file's own bytes: a JPEG as <code>/DCTDecode</code>, a PNG as <code>/FlateDecode</code> (8-bit greyscale or RGB, no alpha channel — flatten a transparent PNG first), and since 1.9.0 a JPEG 2000 file as <code>/JPXDecode</code> — colour space and bit depth left to the codestream when its header declares them, an opacity channel as <code>/SMaskInData 1</code>, the header raised to PDF 1.5. Nothing is decoded or recompressed. The fixtures are tiny images inlined in this page; pick a file of your own for the last preset.</p>
 
     <div id="status" style="display:none;padding:10px 14px;border-radius:6px;margin:16px 0;font-size:14px;"></div>
 
@@ -156,7 +156,7 @@
 
     <details style="margin-top:16px;" open>
       <summary style="cursor:pointer;font-weight:600;">View underlying code</summary>
-      <div style="display:flex;justify-content:flex-end;margin-top:8px;"><button class="copy-btn" id="copy" type="button" style="padding:4px 10px;font-size:12px;background:var(--c-primary);color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:600;">Copy</button></div>
+      <div style="display:flex;justify-content:flex-end;margin-top:8px;"><button class="copy-btn" id="copy" type="button" style="padding:4px 10px;font-size:12px;background:var(--c-primary);color:var(--c-primary-fg);border:none;border-radius:4px;cursor:pointer;font-weight:600;">Copy</button></div>
       <pre style="margin-top:8px;"><code id="code-view" class="language-typescript"></code></pre>
     </details>
 
@@ -169,7 +169,7 @@
         <li><strong>What is read:</strong> the JPEG SOF marker (dimensions, components), the PNG IHDR and IDAT chunks (8-bit, non-interlaced), the JP2 <code>ihdr</code>/<code>colr</code>/<code>cdef</code> boxes or the codestream's SIZ marker. <code>parseImage()</code>, <code>parseJPX()</code> and <code>detectImageFormat()</code> expose the same readers.</li>
         <li><strong>JPEG 2000 is not decoded.</strong> pdfnative has no wavelet decoder; the viewer draws the codestream (Acrobat, Chrome's PDFium and Firefox's pdf.js do). The header becomes <code>%PDF-1.5</code>, the version that introduced <code>/JPXDecode</code>.</li>
         <li><strong>PDF/A-1</strong> (PDF 1.4) has no JPXDecode: <code>tagged: 'pdfa1b'</code> with a JPEG 2000 image raises <code>PDFA1_JPX_IMAGE</code> — a warning by default, a thrown error under <code>strict</code>. <strong>PDF/A-2 and 3</strong> accept one, three or four colour channels and no opacity channel; anything else raises <code>PDFA_JPX_IMAGE</code> (a warning, an error under <code>strict</code>).</li>
-        <li><strong>Alpha:</strong> a PNG's alpha channel becomes a separate <code>/SMask</code> image; a JPEG 2000 opacity channel stays in the codestream and the XObject says <code>/SMaskInData 1</code>.</li>
+        <li><strong>Alpha:</strong> a PNG with an alpha channel (colour types 4 and 6) is refused by <code>parsePNG</code> — flatten it first; a JPEG 2000 opacity channel stays in the codestream and the XObject says <code>/SMaskInData 1</code>.</li>
         <li><strong>Sizing:</strong> <code>width</code> and <code>height</code> are points; give one and the aspect ratio supplies the other. <code>alt</code> becomes the <code>/Figure</code>'s <code>/Alt</code> in tagged mode.</li>
       </ul>
       <p style="color:#065f46;margin-top:8px;font-size:14px;">See the <a href="../guides/images.html">Images guide</a> for the full rules.</p>
@@ -281,7 +281,7 @@ const bytes = buildDocumentPDFBytes(
       { type: 'heading', text: 'JPEG, PNG and JPEG 2000', level: 1 },
       { type: 'paragraph', text: 'JPEG is written as /DCTDecode: the file is the stream.' },
       { type: 'image', data: fromBase64(JPEG_B64), width: 120, alt: 'A 2 by 2 baseline JPEG' },
-      { type: 'paragraph', text: 'PNG is written as /FlateDecode with a PNG predictor; an alpha channel would become an /SMask image.' },
+      { type: 'paragraph', text: 'PNG is written as /FlateDecode with a PNG predictor; a PNG with an alpha channel is refused — flatten it first.' },
       { type: 'image', data: fromBase64(PNG_B64), width: 120, alt: 'A 4 by 4 RGB PNG' },
       { type: 'paragraph', text: 'JPEG 2000 is written as /JPXDecode; colour and opacity come from the codestream.' },
       { type: 'image', data: fromBase64(JP2_B64), width: 120, alt: 'An 8 by 8 JPEG 2000 with an opacity channel' },
@@ -467,7 +467,7 @@ const BUILDERS = {
       { type: 'heading', text: 'JPEG, PNG and JPEG 2000', level: 1 },
       { type: 'paragraph', text: 'JPEG is written as /DCTDecode: the file is the stream.' },
       { type: 'image', data: fromBase64(JPEG_B64), width: 120, alt: 'A 2 by 2 baseline JPEG' },
-      { type: 'paragraph', text: 'PNG is written as /FlateDecode with a PNG predictor; an alpha channel would become an /SMask image.' },
+      { type: 'paragraph', text: 'PNG is written as /FlateDecode with a PNG predictor; a PNG with an alpha channel is refused — flatten it first.' },
       { type: 'image', data: fromBase64(PNG_B64), width: 120, alt: 'A 4 by 4 RGB PNG' },
       { type: 'paragraph', text: 'JPEG 2000 is written as /JPXDecode; colour and opacity come from the codestream.' },
       { type: 'image', data: fromBase64(JP2_B64), width: 120, alt: 'An 8 by 8 JPEG 2000 with an opacity channel' },

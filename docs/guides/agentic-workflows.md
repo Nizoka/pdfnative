@@ -109,15 +109,23 @@ MCP tool call renders with it — no release of either package in the loop. That
 is exactly how the mathematical-symbols gap above was closed locally before
 Noto Sans Math shipped upstream.
 
-Two honest limits, so the pattern is used with open eyes:
+One honest limit and one shipped alternative, so the pattern is used with open
+eyes:
 
 - The **published** `add_international_text` tool exposes a closed `lang` enum
   in its JSON Schema (an unknown code is rejected with `UNSUPPORTED_LANG`), so
   serving a *new* language code requires the agent to adjust the local mapping
   too — it is a local code-level extension, not a configuration flag.
-- There is **no operator-facing extension point yet** (no fonts-directory
-  environment variable). Exposing one is a roadmap candidate, not a shipped
-  capability.
+- Since pdfnative-mcp 1.8.0 there **is an operator-facing extension point**:
+  `PDFNATIVE_MCP_FONT_DIR`. The operator points it at a directory of
+  `.ttf` / `.otf` files; at boot every file is compiled by the engine's own
+  font compiler (`parseFontData` from `pdfnative/tools`) and registered under
+  a slug (the file's base name folded to `[a-z0-9-]`), which a call then names
+  through the `font` input of `generate_basic_pdf`, `add_international_text`
+  and `inspect_layout` — an unknown slug is `FONT_NOT_FOUND`. No tool argument
+  ever carries a path, and an invalid directory refuses to start. The
+  local-install pattern above remains the way to add a *language code* to the
+  closed `lang` enum; the font directory is the way to add a *face*.
 
 Local, in-place extension by an agent and upstreaming through the
 [governance contract](ai-governance.md) are complementary: the first unblocks
@@ -140,7 +148,8 @@ photos. Image-generating agents (for example Antigravity, ChatGPT, and other
 multimodal assistants) can pipe that output straight into a pdfnative document.
 pdfnative treats a generated PNG/JPEG exactly like any other image: it parses it
 natively and embeds it as an Image XObject (`/DCTDecode` for JPEG,
-`/FlateDecode` for PNG) — no rasterization, no headless browser.
+`/FlateDecode` for PNG, and since 1.9.0 `/JPXDecode` for JPEG 2000) — no
+rasterization, no headless browser.
 
 ### Via the MCP server — `embed_image`
 
@@ -157,6 +166,10 @@ An agent that produced an image returns it as base64 and calls `embed_image`:
   }
 }
 ```
+
+`mimeType` is `image/png`, `image/jpeg` or — since pdfnative-mcp 1.8.0 —
+`image/jp2` (a JP2 file or a raw JPEG 2000 codestream); the magic bytes are
+checked against it, so a mislabelled payload is rejected rather than embedded.
 
 For a richer layout, the same base64 payload can be dropped into an `image`
 block on `generate_basic_pdf`, alongside headings, tables, and barcodes the agent

@@ -5,23 +5,23 @@
     {
       "url": "https://pdfnative.dev/llms.txt",
       "description": "Documentation index (llmstxt.org convention).",
-      "bytes": 28145,
-      "approxTokens": 7036,
-      "sha256": "8bb92222a5877d414a31627c08ecf906a22782a9da46694614490174269fbf9b"
+      "bytes": 29791,
+      "approxTokens": 7448,
+      "sha256": "459e736bc6294f35d8c1fedd0002c4346d650b83919f809849084f3da478e79a"
     },
     {
       "url": "https://pdfnative.dev/agent-brief.md",
       "description": "Compact paste-into-context briefing for coding agents: core API, verified pitfalls, surface decision tree, self-verification loop.",
-      "bytes": 19951,
-      "approxTokens": 4988,
-      "sha256": "7570b122d4911ed33cc8d7fd02d7cbc1087da28642cc14d9abaf203f1c8ed4a6"
+      "bytes": 21899,
+      "approxTokens": 5475,
+      "sha256": "ed7f47b908d0c4a546a62c6495145203c756894a9fcccbf18a33564e31f32af2"
     },
     {
       "url": "https://pdfnative.dev/llms-full.txt",
       "description": "Full corpus: index + README + every guide, one request.",
-      "bytes": 784044,
-      "approxTokens": 196011,
-      "sha256": "5682245477bc842a9c7303ef8afb7d1a2fce3f8fe96776f204f7409aa50987dd"
+      "bytes": 918995,
+      "approxTokens": 229749,
+      "sha256": "35493bde3cca5bd686cfc16587fa1ade6aba716c296521fe1d6577475d9b4533"
     },
     {
       "url": "https://pdfnative.dev/llms-recipes.txt",
@@ -40,30 +40,30 @@
     {
       "url": "https://pdfnative.dev/data/surfaces.json",
       "description": "The capability × surface matrix (library / CLI / MCP / React) behind the choose guide, with an honest note on every unsupported cell.",
-      "bytes": 23134,
-      "approxTokens": 5784,
-      "sha256": "9ef3137363df43d679a0272515693506bd38f872ccd5ee29ae294f9cf4b04bc8"
+      "bytes": 36485,
+      "approxTokens": 9121,
+      "sha256": "32c406afb4d0be814c9e3c1e46cd56f83afcec486c8a65ab50b4a2fdefc7f5e9"
     },
     {
       "url": "https://pdfnative.dev/data/errors.json",
       "description": "The engine error registry: every diagnostic code of the PdfDiagnosticCode union and every build-time error message (PDF/X, print, OutputIntent), two-way checked against src/ by the error-parity rule.",
       "bytes": 23011,
       "approxTokens": 5753,
-      "sha256": "e1ec021bd120d9b4116c2958543a1ec191ec313f4f01013031d957cc6317c33b"
+      "sha256": "de1147419dd1cabe996946deacea6485ac760b1cc728376e691de3a683cda733"
     },
     {
       "url": "https://pdfnative.dev/data/playgrounds.json",
       "description": "Inventory of the live playgrounds — URL, purpose, DOM controls, options exercised, preconditions — so an agent can drive or reproduce one without scraping the page.",
-      "bytes": 39255,
-      "approxTokens": 9814,
-      "sha256": "1abec3d675bea2e6a372be58c4b192f9c835138447c83c79d1089c82984a455e"
+      "bytes": 45570,
+      "approxTokens": 11393,
+      "sha256": "ae1d25b5bf29744bd6fb0b3d468c2649d762b35d947a88a410c48a53a3573737"
     },
     {
       "url": "https://github.com/Nizoka/pdfnative/blob/main/README.md",
       "description": "Complete feature and API reference (also embedded in llms-full.txt).",
-      "bytes": 133530,
-      "approxTokens": 33383,
-      "sha256": "6d07208209f104686052538f9e27b3f2a910d42841294c7ee3debb5689dc05e8"
+      "bytes": 140336,
+      "approxTokens": 35084,
+      "sha256": "b5936372b051e67b172186614a916d53855b0eea44c5446fd5e9d35b2ea8f76e"
     }
   ],
   "guides": [
@@ -98,9 +98,9 @@
         "how-the-patterns-fit-together",
         "see-also"
       ],
-      "bytes": 15017,
-      "approxTokens": 3754,
-      "sha256": "589c42c9901901f46e3632f170d0b8564b3906d94b495dd5392c1e773c5b8a4a"
+      "bytes": 15911,
+      "approxTokens": 3978,
+      "sha256": "5f3d2e3363454bb762613bde50476572e7ca94d2a53c5ae480d7b80c05396f51"
     },
     {
       "title": "AI governance & human-in-the-loop",
@@ -117,9 +117,9 @@
         "what-agents-must-never-do",
         "in-short"
       ],
-      "bytes": 7336,
-      "approxTokens": 1834,
-      "sha256": "65bdeeac38c57592fe8f72f9f020c2df2039a5de12b64351a86752b308db795c"
+      "bytes": 7840,
+      "approxTokens": 1960,
+      "sha256": "2c5793e2d1892d3af749ebad1a3460a944b45908710d6cdbe10e79540250d1a8"
     },
     {
       "title": "Annotations (read & write)",
@@ -149,9 +149,9 @@
         "key-design-decisions",
         "ecosystem"
       ],
-      "bytes": 11674,
-      "approxTokens": 2919,
-      "sha256": "f34ff10dc28f2876ec39f25c20920fce14816c4268283b40106cbd3a9408cf63"
+      "bytes": 11871,
+      "approxTokens": 2968,
+      "sha256": "03a762143adb6870518aa6a5f9b1f79734055f2994681ed540b4469c9df3177c"
     },
     {
       "title": "Charts (native vector)",
@@ -184,13 +184,13 @@
         "you-can-switch-later",
         "further-reading"
       ],
-      "bytes": 12854,
-      "approxTokens": 3214,
-      "sha256": "3b78b5e57eb9bdfcf87bacec8d11186b60ffe80f4b96673fa5109660084fb21f"
+      "bytes": 19313,
+      "approxTokens": 4828,
+      "sha256": "a4f98ff246313aea9e8651c58851a928975b473d339f1228ce00f1f71620ef2d"
     },
     {
       "title": "pdfnative-cli — Command-Line Interface Guide",
-      "summary": "Tracks the latest published `pdfnative-cli` (v1.5.0, requires pdfnative ≥ 1.8.0 — pins `^1.8.0`). The CLI versions independently from the library. Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the documentation home. Full history: pdfnative-cli releases.",
+      "summary": "Tracks the latest published `pdfnative-cli` (v1.6.0, requires pdfnative ≥ 1.9.0 — pins `^1.9.0`). The CLI versions independently from the library. Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the documentation home. Full history: pdfnative-cli releases.",
       "html": "https://pdfnative.dev/guides/cli.html",
       "markdown": "https://pdfnative.dev/guides/cli.md",
       "anchors": [
@@ -205,6 +205,7 @@
         "comparison-with-the-library-api",
         "examples--ready-to-run",
         "release-history",
+        "migration-v150--v160",
         "migration-v140--v150",
         "migration-v030--v110",
         "migration-v020--v030",
@@ -213,9 +214,9 @@
         "resources",
         "citation"
       ],
-      "bytes": 98042,
-      "approxTokens": 24511,
-      "sha256": "910c9a741f9cd19468f4565054275e0762fd2d934c333dff0b6ac71143571e8b"
+      "bytes": 128883,
+      "approxTokens": 32221,
+      "sha256": "77e9af0e9d7931b718ba8849622223f535890b8f4620678031e64a85473eacd5"
     },
     {
       "title": "Colour-emoji font CLI (pdfnative-build-emoji-font)",
@@ -290,9 +291,9 @@
         "why-pdfnative",
         "common-errors"
       ],
-      "bytes": 15633,
-      "approxTokens": 3908,
-      "sha256": "b2e956100237732b6d308d56aa61463d68c11320f68186247058da8a72710209"
+      "bytes": 16844,
+      "approxTokens": 4211,
+      "sha256": "c91a78fb1387eb5202dc1ad58f9a5976a5f6103d21cd381700c43fddee5f6f63"
     },
     {
       "title": "Font-data validation",
@@ -329,7 +330,7 @@
     },
     {
       "title": "Images — JPEG, PNG and JPEG 2000",
-      "summary": "JPEG and PNG since v1.0.0; JPEG 2000 since v1.9.0. An `image` block embeds the file's own bytes — nothing is decoded, recompressed or rasterised: a JPEG travels as `/DCTDecode`, a PNG as `/FlateDecode` with its alpha channel split into a soft mask, a JPEG 2000 file as `/JPXDecode` with the colour and opacity the codestream declares.",
+      "summary": "JPEG and PNG since v1.0.0; JPEG 2000 since v1.9.0. An `image` block embeds the file's own bytes — nothing is decoded, recompressed or rasterised: a JPEG travels as `/DCTDecode`, a PNG as `/FlateDecode` (greyscale or RGB, 8-bit, no alpha channel — flatten a transparent PNG first), a JPEG 2000 file as `/JPXDecode` with the colour and opacity the codestream declares.",
       "html": "https://pdfnative.dev/guides/images.html",
       "markdown": "https://pdfnative.dev/guides/images.md",
       "anchors": [
@@ -341,9 +342,9 @@
         "samples-and-playground",
         "see-also"
       ],
-      "bytes": 5992,
-      "approxTokens": 1498,
-      "sha256": "528ba8074f7f0c558be9eb34c7cd1139b3b62c5c98b60ff4d019e24c9afade17"
+      "bytes": 6432,
+      "approxTokens": 1608,
+      "sha256": "08f04d46b3f079828b61f534d12ff79b00135b8f45d653672a824f8d3031461b"
     },
     {
       "title": "Long-term validation (LTV) — PAdES B-B to B-LTA",
@@ -366,7 +367,7 @@
     },
     {
       "title": "pdfnative-mcp — AI Client Integration Guide",
-      "summary": "Tracks the latest published `pdfnative-mcp` (v1.7.0, requires pdfnative ≥ 1.8.0). Full release notes: pdfnative-mcp releases. Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the documentation home.",
+      "summary": "Tracks the latest published `pdfnative-mcp` (v1.8.0, requires pdfnative ≥ 1.9.0 — pins `^1.9.0`). Full release notes: pdfnative-mcp releases. Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the documentation home.",
       "html": "https://pdfnative.dev/guides/mcp.html",
       "markdown": "https://pdfnative.dev/guides/mcp.md",
       "anchors": [
@@ -385,9 +386,9 @@
         "release-history",
         "further-reading"
       ],
-      "bytes": 83862,
-      "approxTokens": 20966,
-      "sha256": "27b3a2b1623444a52668333922c5062772ca20ab30776b71ea02d31d9a4c98dc"
+      "bytes": 116792,
+      "approxTokens": 29198,
+      "sha256": "dc9d0e6b5ca000c5bf6156a44bfb0fc02ec33abefd9cba9ac184a0e15a8eb26c"
     },
     {
       "title": "The native family: pdfnative, zipnative and pkinative",
@@ -402,9 +403,9 @@
         "picking-parts-not-a-platform",
         "see-also"
       ],
-      "bytes": 15518,
-      "approxTokens": 3880,
-      "sha256": "faac115df3bfa20e3c129c1ae6914191e63871270ef5d5c82eac8bbc639bac7c"
+      "bytes": 15666,
+      "approxTokens": 3917,
+      "sha256": "770110bb96e82ff15d0d9b3d8f002ca3260cb6936aa38c0e0c0d5763fed29648"
     },
     {
       "title": "Onboarding — the pdfnative ecosystem in 90 seconds",
@@ -418,9 +419,9 @@
         "4-react-nextjs-remix-any-react-19-app--30-seconds",
         "what-to-read-next"
       ],
-      "bytes": 6849,
-      "approxTokens": 1712,
-      "sha256": "830b5f22a35ca341b927407437eb35cebbf2bcd7ecfd6be7e017607a8800c843"
+      "bytes": 7184,
+      "approxTokens": 1796,
+      "sha256": "4f8a1ef09dfaabc1e2bdf97e2a2b070aa9cc8e9a29c6a1093b4cb13eed23793d"
     },
     {
       "title": "Outlines & page labels",
@@ -478,9 +479,9 @@
         "hard-invariants-for-contributors",
         "see-also"
       ],
-      "bytes": 19481,
-      "approxTokens": 4870,
-      "sha256": "b05aa54834061ec58a6b9d3fda5d66ab27e793f5d0ff867c3132402670469eda"
+      "bytes": 19710,
+      "approxTokens": 4928,
+      "sha256": "fae16060645efe474f328e6bcb069c5e93268e46ce29525259b5ae7f69121519"
     },
     {
       "title": "Print production — bleed, trim & printer's marks",
@@ -501,9 +502,9 @@
         "large-formats--userunit",
         "limits--scope-v190"
       ],
-      "bytes": 18693,
-      "approxTokens": 4673,
-      "sha256": "3174b33c3572ee0059c4ff91cbd757998b4237f26f395c58d502b0b67e85431c"
+      "bytes": 18694,
+      "approxTokens": 4674,
+      "sha256": "aca96292b128556e9a85e434937222363751574516378598255bb9ba21ebc728"
     },
     {
       "title": "Quick Start",
@@ -529,7 +530,7 @@
     },
     {
       "title": "pdfnative-react — Declarative JSX Renderer Guide",
-      "summary": "Tracks the latest published `pdfnative-react` (v1.3.0, requires pdfnative ≥ 1.8.0), with React 19 and `pdfnative` ^1.8.0 as peer dependencies. Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the documentation home. Full history: pdfnative-react releases.",
+      "summary": "Tracks the latest published `pdfnative-react` (v1.4.0, requires pdfnative ≥ 1.9.0 — pins `^1.9.0`), with React 19 and `pdfnative` `^1.9.0` as peer dependencies. Live package versions — and the `pdfnative` version each one is built on — are shown at the top of the documentation home. Full history: pdfnative-react releases.",
       "html": "https://pdfnative.dev/guides/react.html",
       "markdown": "https://pdfnative.dev/guides/react.md",
       "anchors": [
@@ -541,6 +542,7 @@
         "charts",
         "print-production--conformance-diagnostics-_v120_",
         "typography-print--reproducible-output-_v130_",
+        "right-to-left-spot-colours-the-dual-claim--jpeg-2000-_v140_",
         "linting",
         "agent-surface",
         "rendering",
@@ -552,9 +554,9 @@
         "release-history",
         "resources"
       ],
-      "bytes": 40576,
-      "approxTokens": 10144,
-      "sha256": "5f158e11b4253ea7b0913e13ae887bd51a9668447b2126d489c7da0b70c6857d"
+      "bytes": 62826,
+      "approxTokens": 15707,
+      "sha256": "ed145621ba68736935ad2a7858809c1fb13f0cd5e3d0fcf82d8a0ee442b20ca9"
     },
     {
       "title": "Right-to-left documents — Arabic, Hebrew and bidirectional text",
@@ -592,9 +594,9 @@
         "wire-it-into-ci-and-agent-loops",
         "further-reading"
       ],
-      "bytes": 17794,
-      "approxTokens": 4449,
-      "sha256": "4b39a7a2fce349c2644b5db9eeaf136bc608843246eb2dc76af65fbc5568f847"
+      "bytes": 18722,
+      "approxTokens": 4681,
+      "sha256": "abbb4c96e83ae6413c257dd6e2048e29c257832639d47a72f44bf444255069bb"
     },
     {
       "title": "Digital signatures in pdfnative",
@@ -615,9 +617,9 @@
         "full-example",
         "related-guides"
       ],
-      "bytes": 18309,
-      "approxTokens": 4577,
-      "sha256": "479e40689892a87b9766815d796da71596ccb5746fa52a7b9a599cc5d805833e"
+      "bytes": 18607,
+      "approxTokens": 4652,
+      "sha256": "3aad63c65e30bdbda20d449e103a2e54edeb06f42f132b90e4c1b34ffbc53257"
     },
     {
       "title": "Streaming output",
@@ -724,7 +726,7 @@
     },
     {
       "title": "CLI use cases",
-      "summary": "Four architectures on pdfnative-cli v1.5.0 (pdfnative ≥ 1.8.0, Node ≥ 22), each assembled from flags that ship today. They extend the ecosystem use cases with what only a command line does well — byte-reproducible builds, a PDF/X-4 press handoff, a house font without a code change and a process contract any language can drive — and every flag below is documented in the CLI guide.",
+      "summary": "Five architectures on pdfnative-cli v1.6.0 (requires pdfnative ≥ 1.9.0 — pins `^1.9.0`; Node ≥ 22), each assembled from flags that ship today. They extend the ecosystem use cases with what only a command line does well — byte-reproducible builds, a PDF/X-4 press handoff, a house font without a code change, a process contract any language can drive and a right-to-left letter that extracts as…",
       "html": "https://pdfnative.dev/guides/use-cases-cli.html",
       "markdown": "https://pdfnative.dev/guides/use-cases-cli.md",
       "anchors": [
@@ -732,41 +734,44 @@
         "case-2--press-handoff-pdfx-4-from-a-json-template",
         "case-3--a-house-font-and-book-typesetting-without-a-code-change",
         "case-4--any-language-orchestrator-on-the-process-contract",
+        "case-5--right-to-left-letter-in-logical-order-text-out",
         "see-also"
       ],
-      "bytes": 19683,
-      "approxTokens": 4921,
-      "sha256": "240b3f40303b766b72d3f529011dde14c81257407b6670a44199d889f97a3763"
+      "bytes": 29994,
+      "approxTokens": 7499,
+      "sha256": "d29900f249a5c7db2479e33921cfbcdea983aa10c0b65bc493348f5aba37858d"
     },
     {
       "title": "MCP use cases",
-      "summary": "Three architectures on pdfnative-mcp v1.7.0 (pdfnative ≥ 1.8.0, Node ≥ 22): one shared HTTP server whose outputs are files, a token-frugal typesetting loop, and multilingual PDF/A notices in every script the engine shapes.",
+      "summary": "Four architectures on pdfnative-mcp v1.8.0 (requires pdfnative ≥ 1.9.0 — pins `^1.9.0`, Node ≥ 22): one shared HTTP server whose outputs are files, a token-frugal typesetting loop, multilingual PDF/A notices in every script the engine shapes, and an operator font sandbox whose results are public URLs.",
       "html": "https://pdfnative.dev/guides/use-cases-mcp.html",
       "markdown": "https://pdfnative.dev/guides/use-cases-mcp.md",
       "anchors": [
         "case-1--one-shared-server-sandboxed-files-bearer-token",
         "case-2--token-frugal-typesetting-loop-preview-produce-read-back",
         "case-3--multilingual-notices-in-every-script-from-a-conversation",
+        "case-4--operator-font-sandbox-and-public-result-urls",
         "see-also"
       ],
-      "bytes": 15179,
-      "approxTokens": 3795,
-      "sha256": "c1637c8f700960073fbf0bb99360dfe1877e2197d7a35c98d022e0bacd69ed56"
+      "bytes": 24289,
+      "approxTokens": 6072,
+      "sha256": "ab7cd6c04a983cb8b3a6a47098dbc4b8c82737d94589de2da92184b3a35d9eb8"
     },
     {
       "title": "React use cases",
-      "summary": "Three architectures built on pdfnative-react v1.3.0 (peer `pdfnative ^1.8.0`, React `^19.0.0`, Node ≥ 22). Lint a document model in CI before any PDF exists; typeset long-form documents like a book from JSX; and render one component tree into a screen PDF/A file and a press PDF/X-4 file. Every prop, export and lint rule named below ships in v1.3.0.",
+      "summary": "Four architectures built on pdfnative-react v1.4.0 (peer `pdfnative ^1.9.0`, React `^19.0.0`, Node ≥ 22). Lint a document model in CI before any PDF exists; typeset long-form documents like a book from JSX; render one component tree into a screen PDF/A file and a press PDF/X-4 file; and ship a spot-colour press sheet that claims PDF/A-2b and PDF/X-4 in one file.",
       "html": "https://pdfnative.dev/guides/use-cases-react.html",
       "markdown": "https://pdfnative.dev/guides/use-cases-react.md",
       "anchors": [
         "case-1--a-docspec-lint-gate-in-ci-before-any-pdf-exists",
         "case-2--long-form-documents-typeset-like-a-book-in-jsx",
         "case-3--one-component-tree-two-palettes-screen-pdfa-and-press-pdfx-4",
+        "case-4--spot-colour-press-sheet-with-the-dual-claim",
         "see-also"
       ],
-      "bytes": 13749,
-      "approxTokens": 3437,
-      "sha256": "73763dfa834e3084a4b3a5cbf4bca58f9d31760f31af12a1e88e2ffbc1257559"
+      "bytes": 22900,
+      "approxTokens": 5725,
+      "sha256": "518a6ae35d7bdbdadac1cb7d63a89efacc38677329a25f272eb8ebebb824ac67"
     },
     {
       "title": "Ecosystem use cases",
@@ -782,9 +787,9 @@
         "picking-parts-not-a-platform",
         "see-also"
       ],
-      "bytes": 17352,
-      "approxTokens": 4338,
-      "sha256": "c61325946f4e6441669684e0ec202df86274ed96e9b466d3457d1f955b8bce18"
+      "bytes": 17614,
+      "approxTokens": 4404,
+      "sha256": "cef82b8763d5ed8e904828e29c9835cd6dc924a7afa4560a54ee33b8de868dfd"
     },
     {
       "title": "Viewer preferences",

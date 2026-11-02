@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DocSpec Lint — pdfnative-react playground</title>
-  <meta name="description" content="Paste a DocSpec JSON, run pdfnative-react's validateSpec and lintSpec (37 rules) in the browser, read the report, fix the spec and render it to a PDF with renderSpecToBytes — no install.">
+  <meta name="description" content="Paste a DocSpec JSON, run pdfnative-react's validateSpec and lintSpec (41 rules) in the browser, read the report, fix the spec and render it to a PDF with renderSpecToBytes — no install.">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://pdfnative.dev/playgrounds/docspec-lint.html">
   <link rel="alternate" hreflang="en" href="https://pdfnative.dev/playgrounds/docspec-lint.html">
@@ -14,14 +14,14 @@
   <meta property="og:locale" content="en_US">
   <meta property="og:url" content="https://pdfnative.dev/playgrounds/docspec-lint.html">
   <meta property="og:title" content="DocSpec Lint — pdfnative-react playground">
-  <meta property="og:description" content="Lint the token-frugal DocSpec JSON that agents and CMS store: validateSpec for the shape, lintSpec for the 37 rules that catch accessibility gaps and engine throws before rendering, then renderSpecToBytes on-device. Presets, live report, PDF preview. Zero install.">
+  <meta property="og:description" content="Lint the token-frugal DocSpec JSON that agents and CMS store: validateSpec for the shape, lintSpec for the 41 rules that catch accessibility gaps and engine throws before rendering, then renderSpecToBytes on-device. Presets, live report, PDF preview. Zero install.">
   <meta property="og:image" content="https://pdfnative.dev/assets/og-image.png">
   <meta property="og:image:alt" content="pdfnative — pure native PDF generation, zero dependencies">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="DocSpec Lint — pdfnative-react playground">
-  <meta name="twitter:description" content="validateSpec + lintSpec (37 rules) on a DocSpec JSON in your browser, then render the clean spec to a PDF with renderSpecToBytes. Zero install.">
+  <meta name="twitter:description" content="validateSpec + lintSpec (41 rules) on a DocSpec JSON in your browser, then render the clean spec to a PDF with renderSpecToBytes. Zero install.">
   <meta name="twitter:image" content="https://pdfnative.dev/assets/og-image.png">
   <link rel="icon" type="image/svg+xml" href="../favicon.svg">
   <link rel="stylesheet" href="../style.css">
@@ -36,7 +36,7 @@
     .dl-editor { width: 100%; min-height: 420px; resize: vertical; padding: 14px; border: 1px solid var(--c-border); border-radius: 8px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; line-height: 1.5; background: var(--c-code-bg); color: var(--c-code-text); tab-size: 2; }
     .dl-actions { display: flex; gap: 10px; align-items: center; margin: 14px 0 0; flex-wrap: wrap; }
     .dl-btn { padding: 9px 18px; font-size: 14px; font-weight: 600; border: none; border-radius: 6px; cursor: pointer; }
-    .dl-btn.primary { background: var(--c-primary); color: #fff; }
+    .dl-btn.primary { background: var(--c-primary); color: var(--c-primary-fg); }
     .dl-btn.primary:hover { background: var(--c-accent); }
     .dl-btn.primary:disabled { opacity: 0.55; cursor: not-allowed; }
     .dl-btn.secondary { background: var(--c-surface); color: var(--c-text); border: 1px solid var(--c-border); }
@@ -83,7 +83,7 @@
     "operatingSystem": "Any (browser-based)",
     "browserRequirements": "Requires JavaScript and ES modules",
     "url": "https://pdfnative.dev/playgrounds/docspec-lint.html",
-    "description": "Paste a DocSpec JSON, run pdfnative-react's validateSpec and lintSpec (37 rules) in the browser, read the report, fix the spec and render it to a PDF with renderSpecToBytes.",
+    "description": "Paste a DocSpec JSON, run pdfnative-react's validateSpec and lintSpec (41 rules) in the browser, read the report, fix the spec and render it to a PDF with renderSpecToBytes.",
     "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
     "isPartOf": { "@type": "WebSite", "name": "pdfnative", "url": "https://pdfnative.dev" },
     "author": { "@type": "Organization", "name": "Nizoka", "url": "https://github.com/Nizoka" }
@@ -143,17 +143,21 @@
     <h1>DocSpec lint playground</h1>
     <p>A <strong>DocSpec</strong> is the token-frugal JSON grammar of <a href="https://github.com/Nizoka/pdfnative-react" target="_blank" rel="noopener">pdfnative-react</a>: plain data — positional tuples such as <code>["h1", "Invoice"]</code> under a handful of top-level fields — that agents emit and a CMS can store, and that compiles to exactly the same document as the equivalent JSX. Paste one below (or pick a preset), click <strong>Lint</strong>, and the page runs <code>validateSpec</code> then <code>lintSpec</code> <em>in your browser</em>; when the report carries no error, <strong>Render PDF</strong> hands the very same spec to <code>renderSpecToBytes</code>. Grammar and field reference: <a href="../guides/react.html#agent-authoring--the-token-frugal-docspec">Agent authoring — the token-frugal DocSpec</a>; where it fits: <a href="../guides/use-cases.html">use cases</a>.</p>
 
-    <p><strong>What lint checks.</strong> The <em>authoring model</em>, not the bytes. <code>validateSpec</code> is the shape tier — unknown tuple kind, wrong arity, wrong payload type, path-anchored (<code>blocks[3][1]</code>) and it never throws. <code>lintSpec</code> compiles the spec once and applies 37 rules with stable <code>L_*</code> codes in pdfnative-react 1.3.0: twenty of them pre-empt an exception the engine raises at build time (the eight <code>L_CHART_*</code> errors, print geometry, the six PDF/X coherence rules, the output-intent profile check…), five mirror an engine diagnostic that becomes a throw under <code>layout.strict</code>, and the rest catch accessibility gaps (alt text, header rows, heading hierarchy, link text, field labels) or output that renders but is wrong (an empty document, a PDF/A or PDF/X claim without embedded fonts, overflow, a colour-bar strip too thin to measure). Gate on <code>report.ok</code>, which is <code>true</code> when no finding has severity <code>error</code>.</p>
+    <p><strong>What lint checks.</strong> The <em>authoring model</em>, not the bytes. <code>validateSpec</code> is the shape tier — unknown tuple kind, wrong arity, wrong payload type, path-anchored (<code>blocks[3][1]</code>) and it never throws. <code>lintSpec</code> compiles the spec once and applies 41 rules with stable <code>L_*</code> codes in pdfnative-react 1.4.0 (26 errors, 14 warnings, 1 info): twenty-three of them pre-empt an exception the engine raises at build time (the nine <code>L_CHART_*</code> errors — <code>L_CHART_SERIES_COLORS</code> since 1.4.0 — print geometry, the two spot-colour rules <code>L_SPOT_UNDECLARED</code> and <code>L_SPOT_INK_MIX</code>, the six PDF/X coherence rules, the output-intent profile check…), six mirror an engine diagnostic that becomes a throw under <code>layout.strict</code> (<code>L_PDFA_JPX_IMAGE</code>, a JPEG 2000 image under a PDF/A claim, among them), and the rest catch accessibility gaps (alt text, header rows, heading hierarchy, link text, field labels) or output that renders but is wrong (an empty document, a PDF/A or PDF/X claim without embedded fonts, overflow, a colour-bar strip too thin to measure). One rule relaxed in 1.4.0: <code>L_PDFX_TAGGED_CONFLICT</code> only fires for <code>tagged: 'pdfa1b'</code> or <code>'pdfa3b'</code> beside <code>pdfx</code> — engine 1.9.0 writes PDF/A-2b or PDF/A-2u and PDF/X-4 as one file carrying both claims. Gate on <code>report.ok</code>, which is <code>true</code> when no finding has severity <code>error</code>.</p>
 
     <div class="dl-note">
-      <strong>What this page does not do.</strong> A clean lint report is a precondition, not a conformance certificate. A PDF/A claim (<code>tagged</code>) still needs an external <a href="https://verapdf.org" target="_blank" rel="noopener">veraPDF</a> run on the bytes, and a PDF/X-4 claim (<code>pdfx</code>) still needs the engine's <code>validatePdfX()</code> report afterwards — try it in the <a href="./print.html">Print &amp; PDF/X playground</a>. No preset here embeds fonts, so the PDF/A and PDF/X presets stop at the linter on purpose: the rules that fire are exactly the ones that would have made those files non-conformant.
+      <strong>What this page does not do.</strong> A clean lint report is a precondition, not a conformance certificate. A PDF/A claim (<code>tagged</code>) still needs an external <a href="https://verapdf.org" target="_blank" rel="noopener">veraPDF</a> run on the bytes, and a PDF/X-4 claim (<code>pdfx</code>) still needs the engine's <code>validatePdfX()</code> report afterwards — try it in the <a href="./print.html">Print &amp; PDF/X playground</a>. No preset here embeds fonts, so the PDF/A, PDF/X and dual-claim presets stop at the linter on purpose: the rules that fire are exactly the ones that would have made those files non-conformant. The <code>img</code> block takes its bytes as a <code>Uint8Array</code>, which JSON cannot carry, so the JPEG 2000 rule (<code>L_PDFA_JPX_IMAGE</code>) has no preset on this page — it is exercised in the <a href="./react.html">React renderer playground</a>.
     </div>
 
     <div class="dl-presets">
       <label for="preset"><strong>Preset:</strong></label>
       <select id="preset">
         <option value="valid-invoice">Valid invoice — lints clean, renders</option>
-        <option value="pdfx-incoherent">PDF/X incoherent — pdfx + tagged, no outputIntent</option>
+        <option value="pdfx-incoherent">PDF/X incoherent — pdfx + tagged pdfa1b, no outputIntent</option>
+        <option value="dual-claim">Dual claim — pdfx4 + pdfa2b, one file, no fonts</option>
+        <option value="spot-undeclared">Spot colour undeclared — { spot } without print.spotColours</option>
+        <option value="spot-ink-mix">Ink mix across spaces — CMYK and RGB alternates in one { inks }</option>
+        <option value="chart-series-colors">Chart series colors — one colour per value, or none</option>
         <option value="typography-ineffective">Typography ineffective — features without embedded fonts</option>
         <option value="tagged-no-fonts">PDF/A without fonts — tagged, no fontEntries</option>
         <option value="colour-bars-off-print">Colour bars on a 3 pt bleed — silently skipped</option>
@@ -197,7 +201,7 @@
 <pre><code id="code-view" class="language-typescript"></code></pre>
 
     <div class="dl-note">
-      <strong>How this demo loads.</strong> React 19, <code>pdfnative-react</code> 1.3.0 and <code>pdfnative</code> 1.8.0 are imported from the <a href="https://esm.sh" target="_blank" rel="noopener">esm.sh</a> CDN through an import map, purely to make a zero-install browser demo; nothing is uploaded and the PDF is produced on your device. No JSX is involved, so there is no transpiler on this page. <strong>This CDN tooling does not affect the published packages: the core <code>pdfnative</code> engine stays zero-dependency, and React is a peer dependency of <code>pdfnative-react</code> only.</strong>
+      <strong>How this demo loads.</strong> React 19, <code>pdfnative-react</code> 1.4.0 and <code>pdfnative</code> 1.9.0 are imported from the <a href="https://esm.sh" target="_blank" rel="noopener">esm.sh</a> CDN through an import map, purely to make a zero-install browser demo; nothing is uploaded and the PDF is produced on your device. No JSX is involved, so there is no transpiler on this page. <strong>This CDN tooling does not affect the published packages: the core <code>pdfnative</code> engine stays zero-dependency, and React is a peer dependency of <code>pdfnative-react</code> only.</strong>
     </div>
   </article>
 </main>
@@ -223,7 +227,7 @@
     "react/jsx-runtime": "https://esm.sh/react@19/jsx-runtime",
     "pdfnative": "https://esm.sh/pdfnative@1.9.0",
     "pdfnative/": "https://esm.sh/pdfnative@1.9.0/",
-    "pdfnative-react": "https://esm.sh/pdfnative-react@1.3.0?external=react,pdfnative"
+    "pdfnative-react": "https://esm.sh/pdfnative-react@1.4.0?external=react,pdfnative"
   }
 }
 </script>
@@ -256,15 +260,19 @@
 </script>
 
 <script type="module">
-// Every preset is a valid 1.3.0 DocSpec (validateSpec passes) except
+// Every preset is a valid 1.4.0 DocSpec (validateSpec passes) except
 // `schema-error`, which exists to show the difference between the shape tier
 // and the lint tier. The rule ids each one triggers were confirmed against
-// pdfnative-react 1.3.0 before this page shipped.
+// pdfnative-react 1.4.0 before this page shipped.
 const PRESETS = {
+  // No findings. `direction: 'auto'` is the 19th DocSpec field (1.4.0, sugar
+  // over layout.direction; the schema $id is
+  // https://pdfnative.dev/schema/react/1.4.0/doc-spec.schema.json).
   'valid-invoice': {
     title: 'Invoice #1024',
     footerText: 'Acme Inc',
     creationDate: '2026-09-01T00:00:00Z',
+    direction: 'auto',
     metadata: { author: 'Acme Inc' },
     blocks: [
       ['h1', 'Invoice #1024'],
@@ -274,16 +282,58 @@ const PRESETS = {
       ['p', 'Total due: $690.00'],
     ],
   },
-  // L_PDFX_TAGGED_CONFLICT, L_PDFX_OUTPUT_INTENT, L_PDFX_NO_FONTS, L_TAGGED_NO_FONTS (errors) + L_PDFX_ANNOTATIONS (warning)
+  // L_PDFX_TAGGED_CONFLICT (pdfa1b is PDF 1.4, PDF/X-4 is PDF 1.6), L_PDFX_OUTPUT_INTENT, L_PDFX_NO_FONTS, L_TAGGED_NO_FONTS (errors) + L_PDFX_ANNOTATIONS (warning)
   'pdfx-incoherent': {
     title: 'Autumn poster - print run',
     pdfx: 'pdfx4',
-    tagged: 'pdfa2b',
+    tagged: 'pdfa1b',
     creationDate: '2026-09-01T00:00:00Z',
     blocks: [
       ['h1', 'Autumn poster'],
       ['p', 'Sent to the printer as PDF/X-4.'],
       ['link', 'Order online', { url: 'https://example.com/order' }],
+    ],
+  },
+  // L_PDFX_OUTPUT_INTENT, L_PDFX_NO_FONTS, L_TAGGED_NO_FONTS (errors) — no L_PDFX_TAGGED_CONFLICT:
+  // since engine 1.9.0 PDF/A-2b and PDF/X-4 are one file carrying both claims
+  'dual-claim': {
+    title: 'Autumn poster - archive and press',
+    pdfx: 'pdfx4',
+    tagged: 'pdfa2b',
+    creationDate: '2026-09-01T00:00:00Z',
+    blocks: [
+      ['h1', 'Autumn poster'],
+      ['p', 'Archived as PDF/A-2b and sent to the printer as PDF/X-4, from the same bytes.'],
+    ],
+  },
+  // L_SPOT_UNDECLARED (error): a { spot } colour names an ink that print.spotColours does not declare
+  'spot-undeclared': {
+    title: 'Brand guide',
+    blocks: [
+      ['h1', 'Brand guide', { color: { spot: 'Brand Blue' } }],
+      ['p', 'Headlines are printed in the Brand Blue spot ink.'],
+    ],
+  },
+  // L_SPOT_INK_MIX (error): both inks are declared, but one alternate is CMYK and the other RGB
+  'spot-ink-mix': {
+    title: 'Brand guide - duotone',
+    print: {
+      spotColours: [
+        { name: 'Brand Blue', alternate: [100, 60, 0, 10] },
+        { name: 'Warm Grey', alternate: [180, 170, 160] },
+      ],
+    },
+    blocks: [
+      ['h1', 'Brand guide'],
+      ['p', 'Body copy is a duotone of the two house inks.', { color: { inks: { 'Brand Blue': 0.6, 'Warm Grey': 0.4 } } }],
+    ],
+  },
+  // L_CHART_SERIES_COLORS (error): three values, two colours + L_CHART_ALT (info)
+  'chart-series-colors': {
+    title: 'Quarterly revenue',
+    blocks: [
+      ['h1', 'Quarterly revenue'],
+      ['chart', { chartType: 'bar', categories: ['Q1', 'Q2', 'Q3'], series: [{ label: 'Revenue', values: [15400, 21200, 18900], colors: ['#2563eb', '#10b981'] }] }],
     ],
   },
   // L_TYPOGRAPHY_INEFFECTIVE x3 (warnings): quotas without splitParagraphs, an unknown feature tag, features without a registered font

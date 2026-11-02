@@ -129,10 +129,10 @@ means the surface does not offer it.</p>
 </tr>
 <tr>
 <td>Native vector charts</td>
-<td><code>chart</code> block <em>(v1.6.0)</em></td>
-<td><code>render</code> (<code>chart</code> block) <em>(v1.3.0)</em></td>
-<td><code>add_chart</code> <em>(v1.5.0)</em></td>
-<td><code>&lt;Chart&gt;</code> <em>(v1.1.0; charts v2 — nine kinds, secondary axis, log/time scales, data labels — since v1.2.0)</em></td>
+<td><code>chart</code> block <em>(v1.6.0; per-value <code>ChartSeries.colors</code> on the four bar kinds and optional <code>label</code> since v1.9.0)</em></td>
+<td><code>render</code> (<code>chart</code> block) <em>(v1.3.0; <code>series[].colors</code> and optional <code>label</code> since v1.6.0)</em></td>
+<td><code>add_chart</code> <em>(v1.5.0; <code>series[].colors</code> and optional <code>label</code> since v1.8.0)</em></td>
+<td><code>&lt;Chart&gt;</code> <em>(v1.1.0; charts v2 — nine kinds, secondary axis, log/time scales, data labels — since v1.2.0; <code>ChartSeries.colors</code> + <code>L_CHART_SERIES_COLORS</code> since v1.4.0)</em></td>
 </tr>
 <tr>
 <td>Digital signatures (PAdES CMS)</td>
@@ -144,8 +144,8 @@ means the surface does not offer it.</p>
 <tr>
 <td>LTV ladder (B-T → B-LTA)</td>
 <td><code>signPdfBytesWithTimestamp</code>, <code>addValidationInfo</code>, <code>addDocumentTimestamp</code> <em>(v1.7.0)</em></td>
-<td><code>sign --timestamp</code>, <code>ltv</code>, <code>doc-timestamp</code> <em>(v1.4.0)</em></td>
-<td><code>add_ltv</code>, <code>timestamp_pdf</code> <em>(v1.6.0)</em></td>
+<td><code>sign --timestamp</code>, <code>ltv</code>, <code>doc-timestamp</code> <em>(v1.4.0; <code>ltv embed --cert/--ocsp/--crl --match all|chain</code> since v1.6.0)</em></td>
+<td><code>add_ltv</code>, <code>timestamp_pdf</code> <em>(v1.6.0; <code>mode: &#39;offline&#39;</code> + <code>match</code> since v1.8.0)</em></td>
 <td>—</td>
 </tr>
 <tr>
@@ -164,9 +164,9 @@ means the surface does not offer it.</p>
 </tr>
 <tr>
 <td>Extract text</td>
-<td><code>extractText</code> <em>(v1.6.0)</em></td>
-<td><code>extract-text</code> <em>(v1.3.0)</em></td>
-<td><code>extract_text</code></td>
+<td><code>extractText</code> <em>(v1.6.0; <code>onStreamError: &#39;limit&#39; | &#39;throw&#39; | &#39;skip&#39;</code> and logical-order right-to-left runs since v1.9.0)</em></td>
+<td><code>extract-text</code> <em>(v1.3.0; <code>--on-stream-error limit|throw|skip</code> since v1.6.0)</em></td>
+<td><code>extract_text</code> (<code>onStreamError</code> since v1.8.0)</td>
 <td>—</td>
 </tr>
 <tr>
@@ -178,9 +178,9 @@ means the surface does not offer it.</p>
 </tr>
 <tr>
 <td>Markup annotations</td>
-<td><code>buildAnnotation</code> + <code>PdfModifier.addAnnotation</code> <em>(v1.5.0)</em></td>
-<td><code>annotate</code> <em>(v1.2.0)</em></td>
-<td><code>annotate_pdf</code> <em>(v1.4.0)</em></td>
+<td><code>buildAnnotation</code> + <code>PdfModifier.addAnnotation</code> <em>(v1.5.0; <code>{ type: &#39;link&#39; }</code> since v1.9.0)</em></td>
+<td><code>annotate</code> <em>(v1.2.0; <code>link</code> type since v1.5.0, its body built by the engine since v1.6.0)</em></td>
+<td><code>annotate_pdf</code> <em>(v1.4.0; <code>link</code> type since v1.8.0 — colours stay hex / RGB / CMYK, no spot form)</em></td>
 <td>—</td>
 </tr>
 <tr>
@@ -214,8 +214,8 @@ means the surface does not offer it.</p>
 <tr>
 <td>Runtime font registration</td>
 <td><code>registerFont</code> / <code>registerFonts</code> <em>(v1.5.0, any loader — incl. fonts you compile with <code>compileFontData</code>)</em></td>
-<td><code>render --font</code> (bundled fonts only) <em>(v1.1.0)</em></td>
-<td>— (fixed <code>lang</code> enum; fonts resolved from the local <code>pdfnative</code> install)</td>
+<td><code>render --font</code> (the 36 bundled font modules) <em>(v1.1.0)</em> / <code>--font-file &lt;path&gt;</code> for a font you ship <em>(v1.5.0)</em></td>
+<td><code>font: &#39;&lt;slug&gt;&#39;</code> on <code>generate_basic_pdf</code> / <code>add_international_text</code> / <code>inspect_layout</code>, faces registered at boot from <code>PDFNATIVE_MCP_FONT_DIR</code> (operator-level; the <code>lang</code> enum stays fixed) <em>(v1.8.0)</em></td>
 <td><code>registerFont</code> / <code>registerFonts</code> (re-exported)</td>
 </tr>
 <tr>
@@ -230,7 +230,7 @@ means the surface does not offer it.</p>
 <td><code>[c, m, y, k]</code> tuples (percent) or <code>&#39;c m y k&#39;</code> strings on any colour field; <code>parseColor</code> / <code>resolveColor</code> / <code>fillOp</code> / <code>strokeOp</code> <em>(v1.8.0)</em></td>
 <td><code>render</code> (<code>&quot;c m y k&quot;</code> or <code>[c, m, y, k]</code> colour fields in the document JSON) <em>(v1.5.0)</em></td>
 <td><code>&#39;0 0.6 1 0&#39;</code> or <code>[0, 60, 100, 0]</code> on every colour input <em>(v1.7.0)</em></td>
-<td><code>Color</code> accepts a CMYK tuple or string on every colour prop; <code>L_CMYK_INTENT_MISMATCH</code> <em>(v1.3.0)</em></td>
+<td><code>Color</code> accepts a CMYK tuple or string on every colour prop; <code>L_CMYK_INTENT_MISMATCH</code> (<code>layout.colors</code> is accepted but never read by the block-flow renderer; <code>outline[].color</code> stays a process colour) <em>(v1.3.0)</em></td>
 </tr>
 <tr>
 <td>CMYK / Gray OutputIntent with RGB content kept conforming</td>
@@ -242,36 +242,36 @@ means the surface does not offer it.</p>
 <tr>
 <td>Spot colours (Separation and DeviceN)</td>
 <td><code>layout.print.spotColours</code>; <code>{ spot, tint? }</code> and <code>{ inks }</code> on any colour field and in <code>ChartSeries.colors</code> <em>(v1.9.0)</em></td>
-<td>— (pdfnative-cli 1.5.0 predates the 1.9.0 engine)</td>
-<td>— (pdfnative-mcp 1.7.0 predates it)</td>
-<td>— (pdfnative-react 1.3.0 predates it)</td>
+<td><code>render</code> — <code>print.spotColours</code> + <code>{ spot, tint? }</code> / <code>{ inks }</code> in the document JSON only (no flag, no CLI-side validator; the engine&#39;s <code>Spot colour …</code> / <code>Ink mix …</code> refusals → <code>E_INPUT</code>) <em>(v1.6.0)</em></td>
+<td><code>print.spotColours</code> on the nine document tools; <code>{ spot, tint? }</code> / <code>{ inks }</code> at 46 colour sites — not on <code>annotate_pdf</code>, nor on outline entries (schema-admitted, engine-refused) <em>(v1.8.0)</em></td>
+<td><code>&lt;Document print={{ spotColours }}&gt;</code>; <code>PdfSpotColor</code> / <code>PdfInkMix</code> in <code>Color</code>; <code>L_SPOT_UNDECLARED</code>, <code>L_SPOT_INK_MIX</code>; outline colours stay process <em>(v1.4.0)</em></td>
 </tr>
 <tr>
 <td>JPEG 2000 images</td>
 <td><code>image</code> block or <code>embedImage</code> with a <code>.jp2</code> / <code>.j2k</code> codestream, <code>/JPXDecode</code> pass-through; <code>parseJPX</code> <em>(v1.9.0)</em></td>
-<td>— (PNG and JPEG documented)</td>
-<td>— (PNG and JPEG documented)</td>
-<td>— (PNG and JPEG documented)</td>
+<td><code>render</code> — <code>image</code> block <code>src</code> / <code>dataBase64</code> / <code>data</code> with a <code>.jp2</code> / <code>.j2k</code> file (magic bytes sniffed; <code>PDFA1_JPX_IMAGE</code> / <code>PDFA_JPX_IMAGE</code> fail under <code>--strict</code>) <em>(v1.6.0)</em></td>
+<td><code>embed_image</code>, <code>image</code> blocks and <code>watermark.image</code> with <code>mimeType: &#39;image/jp2&#39;</code> <em>(v1.8.0)</em></td>
+<td><code>&lt;Image data&gt;</code> with a <code>.jp2</code> / <code>.j2k</code> codestream; <code>L_PDFA_JPX_IMAGE</code> <em>(v1.4.0)</em></td>
 </tr>
 <tr>
 <td>Right-to-left paragraphs (UAX #9)</td>
 <td><code>layout.direction: &#39;auto&#39;</code>, <code>ParagraphBlock.direction</code>; <code>resolveBidiLevels</code> <em>(v1.9.0)</em></td>
-<td>— (no <code>direction</code> field yet; the engine still shapes and reorders)</td>
-<td>—</td>
-<td>—</td>
+<td><code>render --direction auto|ltr|rtl</code> (no default — omitted means unset) and <code>--actual-text false</code> <em>(v1.6.0)</em></td>
+<td><code>direction</code> + <code>actualText</code> on the nine document tools and <code>inspect_layout</code>; paragraph-level <code>direction</code> in <code>generate_basic_pdf</code> <em>(v1.8.0)</em></td>
+<td><code>&lt;Document direction&gt;</code> (sugar over <code>layout.direction</code>) · <code>&lt;Paragraph direction&gt;</code>; <code>TextDirection</code> re-exported, 19th DocSpec field <em>(v1.4.0)</em></td>
 </tr>
 <tr>
 <td>PDF/X-4 conformance claim</td>
 <td><code>layout: { pdfx: &#39;pdfx4&#39;, outputIntent, metadata.trapped }</code> <em>(v1.8.0; exclusive with encryption; since v1.9.0 combinable with <code>tagged: &#39;pdfa2b&#39; | &#39;pdfa2u&#39;</code> into one file that claims both)</em></td>
-<td><code>render --pdfx pdfx4 --output-intent-icc &lt;file.icc&gt; --trapped true|false|unknown</code> (coherence errors → <code>E_INPUT</code>, <code>PDFX_*</code> diagnostics fail under <code>--strict</code>) <em>(v1.5.0)</em></td>
-<td><code>pdfx: &#39;pdfx4&#39;</code> on six document tools (needs a <code>prtr</code> <code>outputIntent</code> and <code>embedFonts: true</code>; exclusive with <code>pdfA</code> / <code>encrypt</code>) <em>(v1.7.0)</em></td>
-<td><code>&lt;Document pdfx=&quot;pdfx4&quot; outputIntent metadata={{ trapped }}&gt;</code> with eight <code>L_PDFX_*</code> lint rules <em>(v1.3.0)</em></td>
+<td><code>render --pdfx pdfx4 --output-intent-icc &lt;file.icc&gt; --trapped true|false|unknown</code> (coherence errors → <code>E_INPUT</code>, <code>PDFX_*</code> diagnostics fail under <code>--strict</code>) <em>(v1.5.0; with <code>--tagged pdfa2b|pdfa2u</code> since v1.6.0)</em></td>
+<td><code>pdfx: &#39;pdfx4&#39;</code> on six document tools (needs a <code>prtr</code> <code>outputIntent</code> and <code>embedFonts: true</code>; exclusive with <code>encrypt</code> only — combines with <code>pdfA: &#39;pdfa2b&#39; | &#39;pdfa2u&#39;</code> since v1.8.0) <em>(v1.7.0)</em></td>
+<td><code>&lt;Document pdfx=&quot;pdfx4&quot; outputIntent metadata={{ trapped }}&gt;</code> with eight <code>L_PDFX_*</code> lint rules (<code>L_PDFX_TAGGED_CONFLICT</code> fires only for <code>pdfa1b</code> / <code>pdfa3b</code> since v1.4.0) <em>(v1.3.0)</em></td>
 </tr>
 <tr>
 <td>Validate PDF/X-4</td>
 <td><code>validatePdfX</code> <em>(v1.8.0; structural ISO 15930-7 prerequisites, not a certified preflight)</em></td>
 <td><code>inspect --pdfx</code> / <code>--check pdfx</code> <em>(v1.5.0)</em></td>
-<td><code>validate_pdf</code> with <code>standard: &#39;pdf-x-4&#39;</code> (result carries <code>caveats[]</code>); <code>inspect_pdf</code> reports <code>pdfX</code> <em>(v1.7.0)</em></td>
+<td><code>validate_pdf</code> with <code>standard: &#39;pdf-x-4&#39;</code> (two <code>caveats[]</code>: not a certified preflight; blend spaces, optional content and rendering-dependent checks not covered — colour inside XObjects, images and tint transforms checked since v1.8.0); <code>inspect_pdf</code> reports <code>pdfX</code> <em>(v1.7.0)</em></td>
 <td>— (import <code>validatePdfX</code> from the <code>pdfnative</code> peer and run it on the rendered bytes)</td>
 </tr>
 <tr>
@@ -279,7 +279,7 @@ means the surface does not offer it.</p>
 <td><code>layout.print.marks</code> (<code>true</code>, or <code>{ colourBars: true | { tints, size } }</code>) <em>(v1.8.0; bars off by default and byte-neutral when off)</em></td>
 <td><code>render</code> (<code>print.marks</code> incl. <code>colourBars</code> in the document JSON or a <code>--layout</code> file) <em>(v1.5.0)</em></td>
 <td><code>print.marks: true</code> <em>(v1.6.0)</em> or <code>{ colourBars: true | { tints, size } }</code> <em>(v1.7.0)</em></td>
-<td><code>&lt;Document print={{ marks: { colourBars: true } }}&gt;</code> (<code>ColourBarOptions</code>, <code>L_PRINT_COLOUR_BARS</code>) <em>(v1.3.0)</em></td>
+<td><code>&lt;Document print={{ marks: { colourBars: true } }}&gt;</code> (<code>ColourBarOptions</code>, <code>L_PRINT_COLOUR_BARS</code>) <em>(v1.3.0; boolean <code>marks</code> since v1.2.0)</em></td>
 </tr>
 <tr>
 <td>Reproducible bytes</td>
@@ -287,6 +287,41 @@ means the surface does not offer it.</p>
 <td>global <code>--creation-date &lt;iso8601&gt;</code> (<code>SOURCE_DATE_EPOCH</code> fallback), echoed in the <code>--json</code> envelope <em>(v1.5.0)</em></td>
 <td><code>creationDate</code> on all nine document tools <em>(v1.6.0)</em>; server-wide <code>PDFNATIVE_MCP_CREATION_DATE</code> → <code>SOURCE_DATE_EPOCH</code> → clock <em>(v1.7.0)</em></td>
 <td><code>&lt;Document creationDate&gt;</code> (also a DocSpec field); <code>setDefaultCreationDate</code> / <code>getDefaultCreationDate</code> re-exported; no environment variable is read <em>(v1.3.0)</em></td>
+</tr>
+<tr>
+<td>Dual claim: PDF/A-2b | 2u and PDF/X-4 in one file</td>
+<td><code>layout: { tagged: &#39;pdfa2b&#39; | &#39;pdfa2u&#39;, pdfx: &#39;pdfx4&#39;, outputIntent, metadata.trapped }</code> (PDF/A-1 and PDF/A-3 refused; encryption exclusive) <em>(v1.9.0)</em></td>
+<td><code>render --tagged pdfa2b|pdfa2u --pdfx pdfx4 …</code> (<code>pdfa1b</code> / <code>pdfa3b</code> → <code>E_INPUT</code>, encryption → exit 2); assert with <code>inspect --check pdfa,pdfx</code> <em>(v1.6.0)</em></td>
+<td><code>pdfA: &#39;pdfa2b&#39; | &#39;pdfa2u&#39;</code> + <code>pdfx: &#39;pdfx4&#39;</code> on the six PDF/X tools; <code>validate_pdf</code> + <code>inspect_pdf check: [&#39;pdfa&#39;, &#39;pdfx&#39;]</code> <em>(v1.8.0)</em></td>
+<td><code>&lt;Document tagged=&quot;pdfa2b&quot; pdfx=&quot;pdfx4&quot; …&gt;</code> (also DocSpec fields) <em>(v1.4.0)</em></td>
+</tr>
+<tr>
+<td>LTV from material you already hold (offline B-LT)</td>
+<td><code>composeLtvData</code> + <code>embedValidationInfo</code> (<code>ocspResponseMatchesCertificate</code>); <code>match: &#39;all&#39; | &#39;chain&#39;</code> <em>(v1.9.0)</em></td>
+<td><code>ltv embed --cert &lt;pem|der&gt; --ocsp &lt;der&gt; --crl &lt;der&gt; --match all|chain</code> (exclusive with <code>--data</code>; no network) <em>(v1.6.0)</em></td>
+<td><code>add_ltv</code> <code>mode: &#39;offline&#39;</code> with <code>certificatesDerBase64</code> / <code>ocspResponsesDerBase64</code> / <code>crlsDerBase64</code> + <code>match</code> <em>(v1.8.0)</em></td>
+<td>— (import <code>composeLtvData</code> / <code>embedValidationInfo</code> from the <code>pdfnative</code> peer)</td>
+</tr>
+<tr>
+<td>Per-value bar colours and optional series labels</td>
+<td><code>ChartSeries.colors</code> (one colour per value on the four bar kinds); <code>label</code> optional <em>(v1.9.0)</em></td>
+<td><code>series[].colors</code> and optional <code>label</code> in <code>chart</code> blocks <em>(v1.6.0)</em></td>
+<td><code>add_chart</code> <code>series[].colors</code> (length must equal <code>values</code>, else <code>CHART_ERROR</code>), <code>label</code> optional <em>(v1.8.0)</em></td>
+<td><code>&lt;Chart series={[{ values, colors }]}&gt;</code>; <code>L_CHART_SERIES_COLORS</code> <em>(v1.4.0)</em></td>
+</tr>
+<tr>
+<td>Stream-error policy on text extraction</td>
+<td><code>extractText</code> <code>onStreamError: &#39;limit&#39; | &#39;throw&#39; | &#39;skip&#39;</code> (<code>limit</code> default: a stream past the decompression cap throws <code>PdfStreamLimitError</code>) <em>(v1.9.0)</em></td>
+<td><code>extract-text</code> / <code>compare</code> <code>--on-stream-error limit|throw|skip</code> (default <code>limit</code> → <code>E_INPUT</code> naming the remedies) <em>(v1.6.0)</em></td>
+<td><code>extract_text</code> <code>onStreamError</code> (default <code>limit</code> → <code>PDF_PARSE_FAILED</code> with the remedy) <em>(v1.8.0)</em></td>
+<td>— (the renderer reads no PDF; import <code>extractText</code> from the <code>pdfnative</code> peer)</td>
+</tr>
+<tr>
+<td>AI-governance contract (policy, protocol, draft check)</td>
+<td>— (repository files: <code>.github/ai-governance.json</code>, <code>.github/AGENT_RULES.md</code>, <code>npm run verify:issue</code>)</td>
+<td><code>govern rules | policy | verify-issue &lt;draft&gt;</code> (<code>E_POLICY</code> on a non-compliant draft) <em>(v1.2.0)</em></td>
+<td><code>draft_governance_issue</code> + the <code>governance_contract</code> / <code>draft_issue_workflow</code> prompts <em>(v1.4.0)</em>; resources <code>pdfnative://governance/policy</code> and <code>pdfnative://governance/rules</code>, always listed <em>(v1.8.0)</em></td>
+<td><code>aiGovernancePolicy</code> / <code>agentRulesText</code> / <code>validateIssueDraft</code> <em>(v1.1.0)</em></td>
 </tr>
 </tbody></table>
 <h2 id="honest-notes">Honest notes<a class="heading-anchor" href="#honest-notes" aria-label="Link to this section">#</a></h2>
@@ -305,11 +340,32 @@ and embedded fully offline.</li>
 <li><strong>The engine ships no cryptographic signature verifier.</strong> <code>listSignatures</code>
 is an inventory; full verification (digest, CMS, chain, trust, timestamps,
 revocation) lives in <code>pdfnative-cli verify</code> and the MCP <code>verify_pdf</code> tool.</li>
-<li><strong>React is an authoring surface.</strong> It generates documents (including charts,
-barcodes, SVG, form <em>widgets</em> and build-time encryption via the <code>layout</code>
-render option) but does not operate on existing PDFs — no fill, extract,
-merge or signing. When a React app needs those, call the library directly:
-it is already installed as the renderer&#39;s peer dependency.</li>
+<li><strong>Operator knobs are MCP-only and never tool arguments.</strong> The font sandbox
+(<code>PDFNATIVE_MCP_FONT_DIR</code> — faces parsed at boot and named by slug through
+the <code>font</code> input of three tools), the public result URLs
+(<code>PDFNATIVE_MCP_OUTPUT_BASE_URL</code>, never requested by the server) and the
+LTV transport are set by whoever runs the server; no tool call can point
+the server at a path, a host or a URL. The CLI&#39;s counterpart is explicit
+per invocation (<code>--font-file</code>, <code>--timestamp &lt;url&gt;</code>); the library and the
+React renderer read no environment variable at all.</li>
+<li><strong>Spot colours need a declaration, and two places refuse them.</strong> Every
+<code>{ spot }</code> / <code>{ inks }</code> value names an ink declared in <code>print.spotColours</code>
+first (the React linter says so before rendering: <code>L_SPOT_UNDECLARED</code>,
+<code>L_SPOT_INK_MIX</code>); <code>annotate_pdf</code> colours stay hex / RGB / CMYK, and an
+outline bookmark&#39;s colour (<code>/C</code>) is a process colour on every surface. No
+surface converts RGB to CMYK — the alternate plate values are authored.</li>
+<li><strong>The dual claim is PDF/A-2b | 2u + PDF/X-4, nothing else.</strong> One file can
+carry both identifications on all four surfaces; <code>pdfa1b</code> and <code>pdfa3b</code>
+next to <code>pdfx</code> are refused by the engine (CLI <code>E_INPUT</code>, MCP refuses the
+pair, React <code>L_PDFX_TAGGED_CONFLICT</code>), and encryption stays exclusive with
+the PDF/X claim (CLI exit 2, MCP <code>encrypt</code> refused).</li>
+<li><strong>React is still an authoring surface.</strong> It generates documents — charts,
+barcodes, SVG, form <em>widgets</em>, build-time encryption via the <code>layout</code>
+render option and, since v1.4.0, right-to-left paragraphs, spot colours,
+the dual claim and JPEG 2000 images — but does not operate on existing
+PDFs: no fill, extract, merge, signing, offline LTV or stream-error policy.
+When a React app needs those, call the library directly: it is already
+installed as the renderer&#39;s peer dependency.</li>
 <li><strong>The MCP tool names, CLI commands and library exports in the table are the
 complete story for these capabilities</strong>, not a sample — where a cell is an
 em-dash, the surface genuinely lacks the capability today rather than

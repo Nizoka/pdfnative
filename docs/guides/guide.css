@@ -51,6 +51,16 @@
   border-radius: 4px;
 }
 
+/* Linked inline code keeps the link colour on the page background instead of
+   the --c-surface chip (#60a5fa on #334155 is 4.07:1 in dark); the underline
+   marks it as a link. */
+.guide-content a code {
+  background: transparent;
+  padding: 0 1px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 .guide-content pre {
   background: var(--c-code-bg);
   color: var(--c-code-text);
@@ -120,7 +130,6 @@
 
 .guide-content a { font-weight: 500; }
 
-.guide-loading,
 .guide-error {
   padding: 24px;
   text-align: center;
@@ -155,11 +164,18 @@
   background: rgba(255,255,255,.08);
 }
 
+/* `.guide-content ul` (0,1,1) would otherwise beat this padding reset and
+   indent the card list by 28px — a quarter of a phone's width. */
+.guide-content .guide-toc-list,
 .guide-toc-list {
   list-style: none;
   padding: 0;
   margin: 0;
   display: grid;
+  /* An implicit `auto` track grows to the widest card's min-content and pushes
+     every card past a narrow viewport; minmax(0, 1fr) keeps the track at the
+     container width and the cards wrap their text instead. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 12px;
 }
 
@@ -168,6 +184,8 @@
   border: 1px solid var(--c-border);
   border-radius: var(--radius-sm);
   padding: 16px 18px;
+  min-width: 0;
+  overflow-wrap: anywhere;
   transition: border-color .15s, transform .1s;
 }
 

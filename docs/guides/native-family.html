@@ -293,8 +293,8 @@ const verdict = await verifySignedData({ signedData: trim(sig.contents), content
 <tr>
 <td>Sign, timestamp, LTV</td>
 <td>pdfnative <code>signPdfBytesWithTimestamp()</code>, <code>composeLtvData()</code></td>
-<td><code>pdfnative sign --timestamp</code>, <code>pdfnative ltv</code></td>
-<td>pdfnative-mcp <code>sign_pdf</code>, <code>add_ltv</code></td>
+<td><code>pdfnative sign --timestamp</code>, <code>pdfnative ltv</code> (offline material: <code>ltv embed --cert/--ocsp/--crl</code>)</td>
+<td>pdfnative-mcp <code>sign_pdf</code>, <code>add_ltv</code> (<code>mode: &#39;offline&#39;</code> with caller-supplied DER material)</td>
 </tr>
 <tr>
 <td>Pack</td>
@@ -311,8 +311,8 @@ const verdict = await verifySignedData({ signedData: trim(sig.contents), content
 <tr>
 <td>Read back</td>
 <td>pdfnative <code>listSignatures()</code>, <code>extractText()</code></td>
-<td><code>pdfnative inspect</code>, <code>pdfnative verify</code></td>
-<td>pdfnative-mcp <code>inspect_pdf</code>, <code>verify_pdf</code></td>
+<td><code>pdfnative inspect</code>, <code>pdfnative verify</code>, <code>pdfnative extract-text</code></td>
+<td>pdfnative-mcp <code>inspect_pdf</code>, <code>verify_pdf</code>, <code>extract_text</code></td>
 </tr>
 </tbody></table>
 <p><strong>What you gain</strong></p>

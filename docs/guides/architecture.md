@@ -126,7 +126,7 @@ The architecture diagram above shows the **internal library modules**. External 
 
 ### pdfnative-cli
 
-[pdfnative-cli](https://github.com/Nizoka/pdfnative-cli) is the **official command-line interface**. It exposes twenty-one commands — `render`, `fill`, `annotate`, `metadata`, `merge`, `split`, `extract`, `sign`, `verify`, `ltv`, `doc-timestamp`, `encrypt`, `decrypt`, `inspect`, `extract-text`, `compare`, `batch`, `doctor`, `schema`, `completion`, `govern` — that map directly to public `pdfnative` APIs, with an agent-native `--json`/`E_*`/`--dry-run` automation contract:
+[pdfnative-cli](https://github.com/Nizoka/pdfnative-cli) is the **official command-line interface**. It exposes 21 commands — `render`, `fill`, `annotate`, `metadata`, `merge`, `split`, `extract`, `sign`, `verify`, `ltv`, `doc-timestamp`, `encrypt`, `decrypt`, `inspect`, `extract-text`, `compare`, `batch`, `doctor`, `schema`, `completion`, `govern` — that map directly to public `pdfnative` APIs, with an agent-native `--json`/`E_*`/`--dry-run` automation contract:
 
 ```
 [shell / Makefile / GitHub Actions / Docker]
@@ -164,7 +164,7 @@ For setup instructions, tool reference, and per-client configuration, see the [M
 
 ### pdfnative-react
 
-[pdfnative-react](https://github.com/Nizoka/pdfnative-react) v1.3.0 is the **declarative React renderer**. A custom React reconciler compiles a JSX component tree — synchronously, with no DOM — into the pdfnative `DocumentParams` model, which the engine renders to bytes:
+[pdfnative-react](https://github.com/Nizoka/pdfnative-react) v1.4.0 is the **declarative React renderer**. A custom React reconciler compiles a JSX component tree — synchronously, with no DOM — into the pdfnative `DocumentParams` model, which the engine renders to bytes; v1.4.0 passes the 1.9.0 engine features through as props (`<Document direction>`, spot-colour and ink-mix `Color` values, the PDF/A + PDF/X dual claim, JPEG 2000 `<Image>` sources, per-bar chart colours):
 
 ```
 [React / Next.js / Remix component tree]
