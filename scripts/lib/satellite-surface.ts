@@ -893,7 +893,8 @@ const BUDGETS: readonly RenderBudget[] = [
 ];
 
 const dash = (v: string | number | null | undefined): string => (v === null || v === undefined ? '—' : String(v));
-const cell = (s: string): string => s.replace(/\|/g, '\\|');
+// A Markdown table cell: backslashes first, then pipes, so an escaped pipe cannot be un-escaped by a preceding backslash.
+const cell = (s: string): string => s.replace(/\\/g, '\\\\').replace(/\|/g, '\\|');
 
 function renderLines(facts: SatelliteFacts, budget: RenderBudget): string[] {
     const lines: string[] = [];
