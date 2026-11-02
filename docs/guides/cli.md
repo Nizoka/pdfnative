@@ -1261,7 +1261,7 @@ v1.4.0 requires **pdfnative ≥ 1.7.0** (pin `^1.7.0`) and completes the signatu
 | `render` | charts v1 (5 types) | **`--strict`** PDF/A gate, image blocks from JSON, print production (`layout.print`, output intent, viewer preferences, `/Trapped`), **charts v2** (9 types, dual axes, log/time scales, data labels), `--chunk-size` |
 | Automation | per-directory `batch` | **`batch --manifest`** — declarative pipeline with `@id` references, a 14-command whitelist, `--allow-network` opt-in and `--continue-on-error` |
 | Hardening | — | global **`--max-inflate-size`** (anti zip-bomb, default 100 MiB); all network paths opt-in behind the SSRF guard |
-| Agent contract | 11 codes, 15 subjects | **`E_NETWORK`**; `schema` grows to 19 subjects (`metadata`, `ltv-data`, `compare`, `batch-manifest`); 600 tests on Node 22/24 |
+| Agent contract | 11 codes, 15 subjects <!-- verify-docs:allow count-tokens (migration history) --> | **`E_NETWORK`**; `schema` grows to 19 subjects (`metadata`, `ltv-data`, `compare`, `batch-manifest`); 600 tests on Node 22/24 |
 | Compatibility | `pdfnative ^1.6.0`, Node ≥ 20 | `pdfnative ^1.7.0`, **Node ≥ 22** |
 
 Full changelog: [pdfnative-cli release notes v1.4.0](https://github.com/Nizoka/pdfnative-cli/releases/tag/v1.4.0). <!-- verify-docs:allow version-token (historical link) -->

@@ -28,6 +28,7 @@ import { join, relative, resolve, dirname, posix, sep } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { findNonEnglishProse } from './lib/prose-language.js';
+import { blindSpotTable } from './lib/satellite-surface.js';
 import {
     INSTRUCTIONS_DIR,
     RULES_DIR,
@@ -106,8 +107,16 @@ interface PackageEntry {
     pin: string | null;
     toolCount?: number;
     tools?: string[];
+    prompts?: string[];
     commandCount?: number;
     commandGroups?: Record<string, string[]>;
+    /**
+     * The package's own counters (prompts, error codes, lint rules…), the
+     * figures its guides quote; `packages.<name>.counts.<key>` is a valid
+     * `expectFrom` / count-tokens source. Where the manifest also carries the
+     * list, manifest-shape ties the count to its length.
+     */
+    counts?: Record<string, number>;
 }
 
 interface Assertion {
@@ -209,9 +218,27 @@ for (const [name, pkg] of Object.entries(manifest.packages)) {
     }
 }
 
+// packages.<name>.counts: the satellite's own counters. Where the manifest
+// also carries the list the count must equal its length, a split must sum
+// to its total, and a figure a satellite quotes about the engine (scripts,
+// bundled font modules) must equal the engine's declared value — one truth.
+for (const [name, pkg] of Object.entries(manifest.packages)) {
+    for (const [key, value] of Object.entries(pkg.counts ?? {})) {
+        if (!Number.isInteger(value) || value < 0) {
+            fail(MANIFEST_REL, 1, 'manifest-shape', `${name}.counts.${key} must be a non-negative integer`);
+        }
+    }
+}
+
 const mcp = manifest.packages['pdfnative-mcp'];
 if (mcp?.tools && mcp.toolCount !== mcp.tools.length) {
     fail(MANIFEST_REL, 1, 'manifest-shape', `pdfnative-mcp.toolCount is ${mcp.toolCount} but ${mcp.tools.length} tools are listed`);
+}
+if (mcp?.tools && mcp.counts?.['tools'] !== undefined && mcp.counts['tools'] !== mcp.tools.length) {
+    fail(MANIFEST_REL, 1, 'manifest-shape', `pdfnative-mcp.counts.tools is ${mcp.counts['tools']} but ${mcp.tools.length} tools are listed`);
+}
+if (mcp?.prompts && mcp.counts?.['prompts'] !== undefined && mcp.counts['prompts'] !== mcp.prompts.length) {
+    fail(MANIFEST_REL, 1, 'manifest-shape', `pdfnative-mcp.counts.prompts is ${mcp.counts['prompts']} but ${mcp.prompts.length} prompts are listed`);
 }
 
 const cli = manifest.packages['pdfnative-cli'];
@@ -220,22 +247,64 @@ if (cli?.commandGroups) {
     if (cli.commandCount !== listed) {
         fail(MANIFEST_REL, 1, 'manifest-shape', `pdfnative-cli.commandCount is ${cli.commandCount} but ${listed} commands are grouped`);
     }
+    if (cli.counts?.['commands'] !== undefined && cli.counts['commands'] !== listed) {
+        fail(MANIFEST_REL, 1, 'manifest-shape', `pdfnative-cli.counts.commands is ${cli.counts['commands']} but ${listed} commands are grouped`);
+    }
 }
+// The engine figures a satellite restates are cross-checked here rather than
+// policed in prose twice (declared.scripts / declared.bundledFontModules
+// already own the prose tokens).
+const CROSS_CHECKED: ReadonlyArray<readonly [string, string]> = [
+    ['packages.pdfnative-cli.counts.unicodeScripts', 'declared.scripts'],
+    ['packages.pdfnative-cli.counts.bundledFontModules', 'declared.bundledFontModules'],
+];
+for (const [claim, truth] of CROSS_CHECKED) {
+    const claimed = cli?.counts?.[claim.replace(/^.*\./, '')];
+    const engine = manifest.declared[truth.replace(/^declared\./, '')];
+    if (claimed !== undefined && typeof engine === 'number' && claimed !== engine) {
+        fail(MANIFEST_REL, 1, 'manifest-shape', `${claim} is ${claimed} but ${truth} is ${engine} — the satellite restates an engine figure`);
+    }
+}
+
+const react = manifest.packages['pdfnative-react'];
+if (react?.counts) {
+    const { lintRules, lintErrors, lintWarnings, lintInfos } = react.counts;
+    if (lintRules !== undefined && lintErrors !== undefined && lintWarnings !== undefined && lintInfos !== undefined
+        && lintErrors + lintWarnings + lintInfos !== lintRules) {
+        fail(MANIFEST_REL, 1, 'manifest-shape', `pdfnative-react.counts: ${lintErrors} errors + ${lintWarnings} warnings + ${lintInfos} info = ${lintErrors + lintWarnings + lintInfos}, not lintRules = ${lintRules}`);
+    }
+}
+
+/** The reference forms manifestRef resolves, as a placeholder body. */
+const REF_FORMS = '(?:declared|derived)\\.\\w+|packages\\.[\\w-]+\\.(?:counts\\.\\w+|\\w+\\.length)';
+const PLACEHOLDER = new RegExp(`\\{(${REF_FORMS})\\}`, 'g');
 
 /**
- * `declared.<key>` / `derived.<key>` → the manifest number, or undefined when
- * the reference is malformed or the field is not a number.
+ * `declared.<key>` / `derived.<key>` / `packages.<name>.counts.<key>` /
+ * `packages.<name>.<list>.length` → the manifest number, or undefined when
+ * the reference is malformed or the field is not a number (or not a list).
  */
 function manifestRef(ref: string): number | undefined {
-    const m = /^(declared|derived)\.([A-Za-z_]\w*)$/.exec(ref);
-    if (!m) return undefined;
-    const value = (m[1] === 'declared' ? manifest.declared : manifest.derived)[m[2]];
-    return typeof value === 'number' ? value : undefined;
+    const top = /^(declared|derived)\.([A-Za-z_]\w*)$/.exec(ref);
+    if (top) {
+        const value = (top[1] === 'declared' ? manifest.declared : manifest.derived)[top[2]];
+        return typeof value === 'number' ? value : undefined;
+    }
+    const pkg = /^packages\.([A-Za-z][\w-]*)\.(?:counts\.([A-Za-z_]\w*)|([A-Za-z_]\w*)\.length)$/.exec(ref);
+    if (!pkg) return undefined;
+    const entry = manifest.packages[pkg[1]];
+    if (!entry) return undefined;
+    if (pkg[2] !== undefined) {
+        const value = entry.counts?.[pkg[2]];
+        return typeof value === 'number' ? value : undefined;
+    }
+    const list = (entry as unknown as Record<string, unknown>)[pkg[3]];
+    return Array.isArray(list) ? list.length : undefined;
 }
 
-/** Substitute `{declared.x}` / `{derived.x}` placeholders in a canonical sentence. */
+/** Substitute `{declared.x}` / `{derived.x}` / `{packages.<name>.counts.x}` placeholders in a canonical sentence. */
 function resolveCanonical(canonical: string): string {
-    return canonical.replace(/\{((?:declared|derived)\.\w+)\}/g, (whole, ref: string) => {
+    return canonical.replace(PLACEHOLDER, (whole, ref: string) => {
         const value = manifestRef(ref);
         return value === undefined ? whole : String(value);
     });
@@ -248,7 +317,7 @@ for (const assertion of manifest.assertions) {
     if (assertion.expectFrom === undefined) continue;
     const resolved = manifestRef(assertion.expectFrom);
     if (resolved === undefined) {
-        fail(MANIFEST_REL, 1, 'manifest-shape', `assertion "${assertion.id}" has expectFrom "${assertion.expectFrom}", which is not a numeric declared.* or derived.* field`);
+        fail(MANIFEST_REL, 1, 'manifest-shape', `assertion "${assertion.id}" has expectFrom "${assertion.expectFrom}", which is not a numeric declared.*, derived.*, packages.<name>.counts.* or packages.<name>.<list>.length field`);
         continue;
     }
     if (assertion.expect !== undefined && assertion.expect !== resolved) {
@@ -259,7 +328,7 @@ for (const assertion of manifest.assertions) {
     if (lead && !assertion.canonical.startsWith('{') && Number(lead[1].replace(/[\s ,]/g, '')) !== resolved) {
         fail(MANIFEST_REL, 1, 'manifest-shape', `assertion "${assertion.id}" canonical "${assertion.canonical}" contradicts ${assertion.expectFrom} = ${resolved} — use a {${assertion.expectFrom}} placeholder`);
     }
-    for (const placeholder of canonical.matchAll(/\{((?:declared|derived)\.\w+)\}/g)) {
+    for (const placeholder of canonical.matchAll(PLACEHOLDER)) {
         fail(MANIFEST_REL, 1, 'manifest-shape', `assertion "${assertion.id}" canonical references {${placeholder[1]}}, which is not a numeric manifest field`);
     }
 }
@@ -503,6 +572,60 @@ for (const [name, pkg] of Object.entries(manifest.packages)) {
     }
 }
 
+// ── Rule: satellite-stamps ──────────────────────────────────────────
+
+/**
+ * version-token reads "<package> vX.Y.Z" in prose; the 2026-11-01 satellite
+ * pass found every other stamp of a satellite version drifting out of its
+ * sight — the `versions.js` FALLBACK table, "New in vX" bullets with no
+ * package name beside them, cards whose name sits in a tag, use-case banners,
+ * SVG labels — and no rule at all policing the engine pin a satellite quotes
+ * in prose ("pins ^1.9.0", "Peer: pdfnative ^1.9.0"). The blind-spot table
+ * (scripts/lib/satellite-surface.ts) enumerates those forms, each a file (or
+ * '*' for the whole corpus), a global regex capturing the version and, when
+ * the row is not bound to one package, the package name. Expected is
+ * `packages.<name>.version`, or the pin stripped of its range operator for
+ * `kind: 'pin'`. An explicit file is read directly even when it is outside
+ * the doc corpus (package.json, versions.js); a missing one fails on the
+ * manifest line. Historical stamps opt out with `verify-docs:allow
+ * satellite-stamps` (a `version-token` allow is honoured too).
+ */
+for (const row of blindSpotTable()) {
+    const explicit = row.file === '*' ? null : join(ROOT, row.file);
+    if (explicit !== null && !existsSync(explicit)) {
+        fail(MANIFEST_REL, 1, 'satellite-stamps', `${row.id}: ${row.file} does not exist — the blind-spot table names it (${row.description})`);
+        continue;
+    }
+    const flags = row.pattern.flags.includes('g') ? row.pattern.flags : `${row.pattern.flags}g`;
+    for (const file of explicit === null ? DOC_FILES : [explicit]) {
+        const text = read(file);
+        const lines = text.split(/\r?\n/);
+        const re = new RegExp(row.pattern.source, flags);
+        let m: RegExpExecArray | null;
+        while ((m = re.exec(text)) !== null) {
+            if (m[0].length === 0) {
+                re.lastIndex++;
+                continue;
+            }
+            const captured = row.nameGroup !== undefined ? m[row.nameGroup] : undefined;
+            const name = row.package ?? (captured === undefined ? undefined : manifest.packages[captured] ? captured : `pdfnative-${captured}`);
+            const pkg = name === undefined ? undefined : manifest.packages[name];
+            const line = lineOf(text, m.index);
+            if (name === undefined || pkg === undefined) {
+                fail(rel(file), line, 'satellite-stamps', `"${m[0].trim().slice(0, 80)}" — ${row.id} names package "${captured ?? name ?? '?'}", which the manifest does not list`);
+                continue;
+            }
+            const expected = row.kind === 'pin' ? pkg.pin?.replace(/^[\^~]/, '') : pkg.version;
+            if (expected === undefined || expected === null) continue;
+            const found = m[row.versionGroup];
+            if (found === undefined || found === expected) continue;
+            if (isSuppressed(lines, line, 'satellite-stamps') || isSuppressed(lines, line, 'version-token')) continue;
+            const claim = row.kind === 'pin' ? `${name} pins pdfnative ${pkg.pin}` : `${name} is ${pkg.version}`;
+            fail(rel(file), line, 'satellite-stamps', `"${m[0].trim().slice(0, 80)}" — the manifest says ${claim} (${row.id}: ${row.description})`);
+        }
+    }
+}
+
 // ── Rule: count-tokens ──────────────────────────────────────────────
 
 /**
@@ -517,54 +640,141 @@ for (const [name, pkg] of Object.entries(manifest.packages)) {
  * measured "90.9 %" but never a percentage whose integer part is higher.
  *
  * Companion-package guides (cli, mcp, react) quote THEIR OWN test suites and
- * coverage; those figures are a companion-repo concern and are skipped, as
- * the api-exists span scan already does. Historical prose opts out with
- * `verify-docs:allow count-tokens` (a `stale-token` allow is honoured too).
+ * coverage; those figures are a companion-repo concern, so the engine tokens
+ * (`scope: 'engine'`) skip those guides, as the api-exists span scan already
+ * does. The satellites' own counters — prompts, operator variables, error
+ * codes, lint rules, DocSpec fields… — live in `packages.<name>.counts` and
+ * are policed in every document (`scope: 'all'`), the companion guides
+ * included, since that is where they drift first (the 2026-11-01 pass found
+ * "37 lint rules" in the README, "twelve operator variables" in the MCP
+ * guide). Three packages quote "N error codes" with three different N, so a
+ * token may carry `lineContext`, a regex the hit's "<relative path>:<line
+ * text>" must match, and `only`, a file-path filter; a satellite figure is
+ * digits-only where a word numeral would collide with engine prose ("four
+ * rules widen"). Historical prose opts out with `verify-docs:allow
+ * count-tokens` (a `stale-token` allow is honoured too).
  */
 {
     interface CountToken {
         readonly pattern: RegExp;
         readonly source: string;
         readonly mode: 'equal' | 'floor';
+        /** engine: every doc but the companion guides; companion: those guides only; all: the whole corpus. */
+        readonly scope: 'engine' | 'companion' | 'all';
+        /** Restricts the token to the files whose relative path matches. */
+        readonly only?: RegExp;
+        /** A hit counts only when `<relative path>:<line text>` matches — the per-package disambiguator. */
+        readonly lineContext?: RegExp;
         readonly requireIn?: readonly string[];
     }
+    const NUMERALS: Record<string, number> = {
+        one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10,
+        eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16,
+    };
+    const NUMERAL_ALT = `(\\d+|${Object.keys(NUMERALS).join('|')})`;
+    /** A pattern whose `{N}` is a digit string or a word numeral (one–sixteen), case-insensitive. */
+    const num = (body: string): RegExp => new RegExp(body.replace(/\{N\}/g, NUMERAL_ALT), 'gi');
+    const CLI = /\bcli\b|\bCLI\b|\bE_[A-Z]/;
+    const MCP = /\bmcp\b|\bMCP\b|TOOL_API_VERSION|server\.json/;
+    const REACT = /\breact\b|React|DocSpec|JSX|\bL_[A-Z]/;
     const COUNT_TOKENS: readonly CountToken[] = [
         {
-            pattern: /\b(\d{1,3}(?:[ , ]\d{3})*|\d+)\+?\s+tests\b/g,
+            pattern: /\b(\d{1,3}(?:[ , ]\d{3})*|\d+)\+?\s+tests\b/g,
             source: 'declared.tests',
             mode: 'equal',
+            scope: 'engine',
             requireIn: ['AGENTS.md', 'README.md'],
         },
-        { pattern: /\bacross\s+(\d+)\+?\s+(?:test\s+)?files\b/g, source: 'derived.testFiles', mode: 'equal' },
-        { pattern: /\((\d+)\+?\s+(?:test\s+)?files\b/g, source: 'derived.testFiles', mode: 'equal' },
-        { pattern: /\b(\d+)\+?\s+test files\b/g, source: 'derived.testFiles', mode: 'equal' },
-        { pattern: /\b(\d+)\s+sample PDFs\b/g, source: 'derived.samplePdfs', mode: 'equal' },
-        { pattern: /\b(\d+)\s+reference PDFs\b/g, source: 'derived.samplePdfs', mode: 'equal' },
-        { pattern: /\b(\d+)\s+(?:sample\s+)?generators\b/g, source: 'derived.sampleGenerators', mode: 'equal' },
-        { pattern: /\b(\d+)\s+PDF\/A-claiming samples\b/g, source: 'declared.pdfaSamples', mode: 'equal' },
-        { pattern: /\b(\d+)\s+PDF\/X-claiming samples\b/g, source: 'declared.pdfxSamples', mode: 'equal' },
+        { pattern: /\bacross\s+(\d+)\+?\s+(?:test\s+)?files\b/g, source: 'derived.testFiles', mode: 'equal', scope: 'engine' },
+        { pattern: /\((\d+)\+?\s+(?:test\s+)?files\b/g, source: 'derived.testFiles', mode: 'equal', scope: 'engine' },
+        { pattern: /\b(\d+)\+?\s+test files\b/g, source: 'derived.testFiles', mode: 'equal', scope: 'engine' },
+        { pattern: /\b(\d+)\s+sample PDFs\b/g, source: 'derived.samplePdfs', mode: 'equal', scope: 'engine' },
+        { pattern: /\b(\d+)\s+reference PDFs\b/g, source: 'derived.samplePdfs', mode: 'equal', scope: 'engine' },
+        { pattern: /\b(\d+)\s+(?:sample\s+)?generators\b/g, source: 'derived.sampleGenerators', mode: 'equal', scope: 'engine' },
+        { pattern: /\b(\d+)\s+PDF\/A-claiming samples\b/g, source: 'declared.pdfaSamples', mode: 'equal', scope: 'engine' },
+        { pattern: /\b(\d+)\s+PDF\/X-claiming samples\b/g, source: 'declared.pdfxSamples', mode: 'equal', scope: 'engine' },
         // "across 38 categories" — a chart's "2 series, 4 categories" alt text
         // is not a sample-tree claim, so the preposition is part of the token.
-        { pattern: /\b(?:across|in|into)\s+(\d+)\s+(?:sample\s+)?categories\b/g, source: 'derived.sampleCategories', mode: 'equal' },
-        { pattern: /(\d+(?:\.\d+)?)\s?%\+?\s+statement coverage\b/g, source: 'declared.coverageStatements', mode: 'floor' },
-        { pattern: /(\d+(?:\.\d+)?)\s?%\+?\s+statements\b/g, source: 'declared.coverageStatements', mode: 'floor' },
+        { pattern: /\b(?:across|in|into)\s+(\d+)\s+(?:sample\s+)?categories\b/g, source: 'derived.sampleCategories', mode: 'equal', scope: 'engine' },
+        { pattern: /(\d+(?:\.\d+)?)\s?%\+?\s+statement coverage\b/g, source: 'declared.coverageStatements', mode: 'floor', scope: 'engine' },
+        { pattern: /(\d+(?:\.\d+)?)\s?%\+?\s+statements\b/g, source: 'declared.coverageStatements', mode: 'floor', scope: 'engine' },
         // "27 Unicode scripts", "27 scripts", "27-script world tour" — the
         // homepage heading and the all-scripts playground kept 22 through
         // the 1.8.0 bump while every sentence around them said 27. Word
         // numerals count too: the playground index said "Ten" playgrounds.
-        { pattern: /\b(\d+)[ -](?:Unicode\s+)?scripts?\b/gi, source: 'declared.scripts', mode: 'equal' },
+        { pattern: /\b(\d+)[ -](?:Unicode\s+)?scripts?\b/gi, source: 'declared.scripts', mode: 'equal', scope: 'engine' },
         // The 1.9.0 final pass found "Fourteen <a href>playgrounds</a>" and
         // "Fourteen hands-on environments" (a tag or a synonym between the
         // numeral and the noun), "27 writing systems" and "35 reference guides"
         // — all invisible to the three tokens above.
-        { pattern: /\b(\d+|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen)\s+(?:<a\s[^>]*>\s*)?(?:zero-install\s+|hands-on\s+|interactive\s+|live\s+)?(?:pdfnative\s+)?(?:playgrounds|environments)\b/gi, source: 'derived.playgrounds', mode: 'equal' },
-        { pattern: /\b(\d+)\s+writing systems\b/gi, source: 'declared.scripts', mode: 'equal' },
-        { pattern: /\b(\d+)\s+(?:<a\s[^>]*>\s*)?reference guides\b/gi, source: 'derived.guides', mode: 'equal' },
+        { pattern: num('\\b{N}\\s+(?:<a\\s[^>]*>\\s*)?(?:zero-install\\s+|hands-on\\s+|interactive\\s+|live\\s+)?(?:pdfnative\\s+)?(?:playgrounds|environments)\\b'), source: 'derived.playgrounds', mode: 'equal', scope: 'engine' },
+        { pattern: /\b(\d+)\s+writing systems\b/gi, source: 'declared.scripts', mode: 'equal', scope: 'engine' },
+        { pattern: /\b(\d+)\s+(?:<a\s[^>]*>\s*)?reference guides\b/gi, source: 'derived.guides', mode: 'equal', scope: 'engine' },
+        // The engine's diagnostic-code count is quoted by all three satellite
+        // guides ("13 diagnostic codes under --strict", "thirteen codes").
+        { pattern: num('\\b{N}\\s+(?:engine\\s+)?diagnostic codes\\b|\\b(\\d+)\\s+codes\\s+since\\s+v\\d'), source: 'declared.diagnosticCodes', mode: 'equal', scope: 'all' },
+
+        // ── pdfnative-mcp (packages.pdfnative-mcp.counts) ──
+        { pattern: num('\\b{N}\\s+(?:MCP\\s+)?prompts\\b'), source: 'packages.pdfnative-mcp.counts.prompts', mode: 'equal', scope: 'all' },
+        // "the operator sets three environment variables" (an architecture
+        // caption) and "Four operator variables turn the same binary into one
+        // shared server" are scenarios, not the catalogue — hence the lookarounds.
+        { pattern: num('(?<!\\bsets\\s)\\b{N}\\s+(?:operator|environment)\\s+variables\\b(?!\\s+turn\\b)|\\b(?:all|the)\\s+{N}\\s+variables\\b'), source: 'packages.pdfnative-mcp.counts.envVars', mode: 'equal', scope: 'all' },
+        { pattern: /\b(\d+)\s+(?:stable\s+)?error codes\b|\b(\d+)\s+codes in (?:all|v\d)/g, source: 'packages.pdfnative-mcp.counts.errorCodes', mode: 'equal', scope: 'all', lineContext: MCP },
+        { pattern: /\b(\d+)\s+executable examples\b|\bthe\s+(\d+)\s+examples\b/g, source: 'packages.pdfnative-mcp.counts.examples', mode: 'equal', scope: 'all' },
+        { pattern: /\b(\d+)\s+lang values\b/g, source: 'packages.pdfnative-mcp.counts.langValues', mode: 'equal', scope: 'all' },
+        { pattern: /\b(\d+)\s+colou?r sites\b/g, source: 'packages.pdfnative-mcp.counts.colourSites', mode: 'equal', scope: 'all' },
+
+        // ── pdfnative-cli (packages.pdfnative-cli.counts) ──
+        { pattern: /\b(\d+)\s+(?:stable\s+)?error codes\b|\bsame\s+(\d+)\s+codes\b/g, source: 'packages.pdfnative-cli.counts.errorCodes', mode: 'equal', scope: 'all', lineContext: CLI },
+        { pattern: /\b(\d+)\s+(?:schema\s+)?subjects\b/g, source: 'packages.pdfnative-cli.counts.schemaSubjects', mode: 'equal', scope: 'all', lineContext: CLI },
+        { pattern: /(?<![\d.])\b(\d+)\s+global flags\b/g, source: 'packages.pdfnative-cli.counts.globalFlags', mode: 'equal', scope: 'all' },
+        // "35-field `schema status`", "`schema status` has 35 fields", "status
+        // envelope (35 fields)", "envelope, 35 fields (v1.6)", "35 fields since v1.6.0".
+        { pattern: /\b(\d+)-field\s+(?:`|<code>)?schema status|\bschema status(?:`|<\/code>)?\s+(?:has|grows to|lists)\s+(\d+)\s+fields\b|\benvelope\s*(?:\(|,\s*)(\d+)\s+fields\b|\b(\d+)\s+fields\s+since\s+v\d/g, source: 'packages.pdfnative-cli.counts.statusFields', mode: 'equal', scope: 'all', lineContext: CLI },
+        // "render with its 59 flags", "`render` grows 57 → 59 flags".
+        { pattern: /\b(\d+)\s+render flags\b|\brender(?:`|<\/code>)?\s+(?:with\s+its\s+|has\s+)?(\d+)\s+flags\b|\b\d+\s+→\s+(\d+)\s+flags\b/g, source: 'packages.pdfnative-cli.counts.renderFlags', mode: 'equal', scope: 'all', lineContext: /\brender\b/ },
+        { pattern: /\b(\d+)\s+bundled font(?:-data)?\s+modules\b/g, source: 'packages.pdfnative-cli.counts.bundledFontModules', mode: 'equal', scope: 'all' },
+
+        // ── pdfnative-react (packages.pdfnative-react.counts) ──
+        // Digits only: "four rules widen" and "Two rules that are easy to get
+        // wrong" are not rule counts; "41-rule" (the lint-gate adjective) is.
+        { pattern: /(?<![\d.])\b(\d+)(?:\s+(?:deterministic\s+)?(?:lint\s+)?rules|-rule)\b/g, source: 'packages.pdfnative-react.counts.lintRules', mode: 'equal', scope: 'all', lineContext: REACT },
+        { pattern: /\b(\d+)\s+errors\s*[/,]\s*\d+\s+warnings\b/g, source: 'packages.pdfnative-react.counts.lintErrors', mode: 'equal', scope: 'all' },
+        { pattern: /\b\d+\s+errors\s*[/,]\s*(\d+)\s+warnings\b/g, source: 'packages.pdfnative-react.counts.lintWarnings', mode: 'equal', scope: 'all' },
+        { pattern: /\b\d+\s+warnings\s*[/,]\s*(?:and\s+)?(\d+)\s+info\b/g, source: 'packages.pdfnative-react.counts.lintInfos', mode: 'equal', scope: 'all' },
+        { pattern: /\b(\d+)\s+DocSpec fields\b/g, source: 'packages.pdfnative-react.counts.specFields', mode: 'equal', scope: 'all' },
+        { pattern: /\b(\d+)\s+(?:React\s+|JSX\s+)?components\b/g, source: 'packages.pdfnative-react.counts.components', mode: 'equal', scope: 'all', lineContext: REACT },
+        { pattern: num('\\b{N}\\s+client components\\b'), source: 'packages.pdfnative-react.counts.clientComponents', mode: 'equal', scope: 'all', lineContext: REACT },
+        // The engine has 13 block types; the DocSpec grammar has 14 kinds —
+        // the token keeps "DocSpec" inside the match so the two never collide.
+        { pattern: /\b(\d+)\s+block kinds\s+(?:of|in)\s+(?:the\s+)?DocSpec\b|\bDocSpec(?:'s)?\s+(\d+)\s+block kinds\b|\b(\d+)\s+DocSpec block kinds\b/g, source: 'packages.pdfnative-react.counts.blocks', mode: 'equal', scope: 'all' },
+        { pattern: /\b(\d+)\s+error codes\b/g, source: 'packages.pdfnative-react.counts.errorCodes', mode: 'equal', scope: 'all', lineContext: REACT },
+        { pattern: /\b(\d+)\s+schema subjects\b/g, source: 'packages.pdfnative-react.counts.schemaSubjects', mode: 'equal', scope: 'all', lineContext: REACT },
     ];
-    const NUMERALS: Record<string, number> = { ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16 };
     const COMPANION_DOC = /docs[\\/](?:guides|playgrounds)[\\/](?:react|cli|mcp)\.(?:md|html)$/;
-    const corpus = DOC_FILES.filter((f) => !COMPANION_DOC.test(f));
-    const texts = new Map(corpus.map((f) => [f, read(f)] as const));
+    const engineCorpus = DOC_FILES.filter((f) => !COMPANION_DOC.test(f));
+    const companionCorpus = DOC_FILES.filter((f) => COMPANION_DOC.test(f));
+    const texts = new Map(DOC_FILES.map((f) => [f, read(f)] as const));
+    const linesOf = new Map(DOC_FILES.map((f) => [f, texts.get(f)!.split(/\r?\n/)] as const));
+
+    // A satellite counter nothing polices is a number the manifest carries
+    // for no one — a typo in its key would hide silently.
+    {
+        const referenced = new Set<string>([
+            ...COUNT_TOKENS.map((t) => t.source),
+            ...manifest.assertions.flatMap((a) => (a.expectFrom === undefined ? [] : [a.expectFrom])),
+            ...CROSS_CHECKED.map(([claim]) => claim),
+        ]);
+        for (const [name, pkg] of Object.entries(manifest.packages)) {
+            for (const key of Object.keys(pkg.counts ?? {})) {
+                const ref = `packages.${name}.counts.${key}`;
+                if (!referenced.has(ref)) {
+                    warn(MANIFEST_REL, 1, 'manifest-shape', `${ref} is policed by no count-tokens pattern, assertion or cross-check — add a token or drop the counter`);
+                }
+            }
+        }
+    }
 
     for (const token of COUNT_TOKENS) {
         const expected = manifestRef(token.source);
@@ -572,23 +782,29 @@ for (const [name, pkg] of Object.entries(manifest.packages)) {
             fail(MANIFEST_REL, 1, 'manifest-shape', `${token.source} is missing — count-tokens needs it to police "${token.pattern.source}"`);
             continue;
         }
+        const corpus = (token.scope === 'engine' ? engineCorpus : token.scope === 'companion' ? companionCorpus : DOC_FILES)
+            .filter((f) => token.only === undefined || token.only.test(rel(f)));
         const seenIn = new Set<string>();
         for (const file of corpus) {
             const text = texts.get(file)!;
-            const lines = text.split(/\r?\n/);
+            const lines = linesOf.get(file)!;
             token.pattern.lastIndex = 0;
             let m: RegExpExecArray | null;
             while ((m = token.pattern.exec(text)) !== null) {
+                const line = lineOf(text, m.index);
+                if (token.lineContext !== undefined && !token.lineContext.test(`${rel(file)}:${lines[line - 1] ?? ''}`)) continue;
                 seenIn.add(rel(file));
-                const found = NUMERALS[m[1].toLowerCase()] ?? Number(m[1].replace(/[\s ,]/g, ''));
+                // Alternations put the figure in different groups; the first
+                // one that participated is it.
+                const raw = m.slice(1).find((g): g is string => g !== undefined) ?? '';
+                const found = NUMERALS[raw.toLowerCase()] ?? Number(raw.replace(/[\s ,]/g, ''));
                 if (!Number.isFinite(found)) continue;
                 // A coverage figure quoted with a decimal claims a measurement,
                 // not a floor: it must equal declared.coverageMeasured when the
                 // manifest records one (three different decimals shipped in 1.8.0).
                 const measured = manifest.declared['coverageMeasured'];
-                if (token.mode === 'floor' && m[1].includes('.') && typeof measured === 'number') {
+                if (token.mode === 'floor' && raw.includes('.') && typeof measured === 'number') {
                     if (Math.abs(found - measured) > 0.001) {
-                        const line = lineOf(text, m.index);
                         if (isSuppressed(lines, line, 'count-tokens') || isSuppressed(lines, line, 'stale-token')) continue;
                         fail(rel(file), line, 'count-tokens', `"${m[0].trim()}" — the manifest says the measured figure is ${measured} % (declared.coverageMeasured)`);
                     }
@@ -596,7 +812,6 @@ for (const [name, pkg] of Object.entries(manifest.packages)) {
                 }
                 const ok = token.mode === 'equal' ? found === expected : Math.floor(found) <= expected;
                 if (ok) continue;
-                const line = lineOf(text, m.index);
                 if (isSuppressed(lines, line, 'count-tokens') || isSuppressed(lines, line, 'stale-token')) continue;
                 const verdict = token.mode === 'equal'
                     ? `the manifest says ${expected} (${token.source})`
@@ -618,9 +833,9 @@ for (const [name, pkg] of Object.entries(manifest.packages)) {
     // so version-token cannot see it.
     const CURRENT_VERSION = /Current version:\s*(\d+\.\d+\.\d+)/g;
     const coreVersion = manifest.packages['pdfnative'].version;
-    for (const file of corpus) {
+    for (const file of engineCorpus) {
         const text = texts.get(file)!;
-        const lines = text.split(/\r?\n/);
+        const lines = linesOf.get(file)!;
         CURRENT_VERSION.lastIndex = 0;
         let m: RegExpExecArray | null;
         while ((m = CURRENT_VERSION.exec(text)) !== null) {
@@ -1540,6 +1755,82 @@ const PLAYGROUNDS = existsSync(join(ROOT, 'docs', 'playgrounds'))
         const declared = manifest.derived['playgrounds'];
         if (declared !== undefined && listed.size !== declared) {
             fail(relManifest, 1, 'playgrounds-manifest', `lists ${listed.size} playgrounds but derived.playgrounds says ${declared}`);
+        }
+    }
+}
+
+// ── Rule: surfaces-shape ────────────────────────────────────────────
+
+/**
+ * `docs/data/surfaces.json` is the machine-readable capability × surface
+ * table of the choose guide. Its $comment promised that CLI `command` names
+ * are checked against `commandGroups` and MCP `tool` names against `tools`;
+ * nothing did until this rule. A cell names one or several surfaces
+ * ("merge / split / extract", "add_ltv + timestamp_pdf", "render (font
+ * input)"): the names are split on "/", ",", "+" and "or", and the first
+ * token of each must be a listed command or tool. `since` is a semver triple
+ * no later than the column's package version (library → pdfnative); a
+ * `supported: false` cell names the honest alternative in `notes`; a note
+ * that is only "Since vX.Y.Z." belongs in the `since` field.
+ */
+{
+    const SURFACES_FILE = join(ROOT, 'docs', 'data', 'surfaces.json');
+    const relSurfaces = 'docs/data/surfaces.json';
+    interface Cell { readonly supported: boolean; readonly command?: string; readonly tool?: string; readonly call?: string; readonly since?: string; readonly notes?: string }
+    interface Capability { readonly id: string; readonly library?: Cell; readonly cli?: Cell; readonly mcp?: Cell; readonly react?: Cell }
+    const COLUMN_PACKAGE = { library: 'pdfnative', cli: 'pdfnative-cli', mcp: 'pdfnative-mcp', react: 'pdfnative-react' } as const;
+    const semverLte = (a: string, b: string): boolean => {
+        const [a1, a2, a3] = a.split('.').map(Number);
+        const [b1, b2, b3] = b.split('.').map(Number);
+        return a1 !== b1 ? a1 < b1 : a2 !== b2 ? a2 < b2 : a3 <= b3;
+    };
+    if (!existsSync(SURFACES_FILE)) {
+        fail(relSurfaces, 1, 'surfaces-shape', 'missing — the capability × surface table must be machine-readable');
+    } else {
+        let capabilities: Capability[] = [];
+        try {
+            capabilities = (JSON.parse(read(SURFACES_FILE)) as { capabilities?: Capability[] }).capabilities ?? [];
+        } catch (err) {
+            fail(relSurfaces, 1, 'surfaces-shape', `not valid JSON — ${(err as Error).message}`);
+        }
+        const commands = new Set(Object.values(manifest.packages['pdfnative-cli']?.commandGroups ?? {}).flat());
+        const tools = new Set(manifest.packages['pdfnative-mcp']?.tools ?? []);
+        const names = (cell: string): string[] => cell
+            .split(/\s*[/,+]\s*|\s+or\s+/)
+            .map((n) => n.trim().split(/\s+/)[0] ?? '')
+            .filter((n) => n.length > 0);
+        for (const capability of capabilities) {
+            for (const column of ['library', 'cli', 'mcp', 'react'] as const) {
+                const cell = capability[column];
+                if (cell === undefined) continue;
+                const where = `"${capability.id}".${column}`;
+                if (column === 'cli' && cell.command !== undefined) {
+                    for (const name of names(cell.command)) {
+                        if (!commands.has(name)) fail(relSurfaces, 1, 'surfaces-shape', `${where} names command "${name}", which packages.pdfnative-cli.commandGroups does not list`);
+                    }
+                }
+                if (column === 'mcp' && cell.tool !== undefined) {
+                    for (const name of names(cell.tool)) {
+                        if (!tools.has(name)) fail(relSurfaces, 1, 'surfaces-shape', `${where} names tool "${name}", which packages.pdfnative-mcp.tools does not list`);
+                    }
+                }
+                const pkgName = COLUMN_PACKAGE[column];
+                const current = manifest.packages[pkgName]?.version;
+                if (cell.since !== undefined) {
+                    if (!SEMVER.test(cell.since)) {
+                        fail(relSurfaces, 1, 'surfaces-shape', `${where} since "${cell.since}" is not a semver triple`);
+                    } else if (current !== undefined && !semverLte(cell.since, current)) {
+                        fail(relSurfaces, 1, 'surfaces-shape', `${where} since ${cell.since} is later than ${pkgName} ${current}`);
+                    }
+                }
+                if (cell.supported === false && !(cell.notes ?? '').trim()) {
+                    fail(relSurfaces, 1, 'surfaces-shape', `${where} is unsupported but carries no notes — name the honest alternative, or say there is none`);
+                }
+                if (cell.since === undefined && cell.notes !== undefined
+                    && /(?:^|[.;]\s+)(?:since|new in|added in)\s+v?\d+\.\d+\.\d+\s*(?:[.;]|$)/i.test(cell.notes)) {
+                    fail(relSurfaces, 1, 'surfaces-shape', `${where} states its introducing release in notes but has no since field — move it to since`);
+                }
+            }
         }
     }
 }
@@ -2546,16 +2837,6 @@ if (ONLINE) {
     }
 }
 
-// ── Report ──────────────────────────────────────────────────────────
-
-const errors = problems.filter((p) => p.severity === 'error');
-const warnings = problems.filter((p) => p.severity === 'warn');
-
-if (JSON_OUT) {
-    console.log(JSON.stringify(problems, null, 2));
-    process.exit(errors.length > 0 ? 1 : 0);
-}
-
 // ── prose-language: the project language is English ─────────────────
 //
 // Thirteen typography samples, the signature sample, the benchmark fixture
@@ -2578,13 +2859,28 @@ if (JSON_OUT) {
     }
 }
 
+// ── Report ──────────────────────────────────────────────────────────
+//
+// Nothing exits before this point: the --json output (and the error count)
+// used to be computed above prose-language, so a CI annotation run never
+// saw a French heading.
+
+const errors = problems.filter((p) => p.severity === 'error');
+const warnings = problems.filter((p) => p.severity === 'warn');
+
+if (JSON_OUT) {
+    console.log(JSON.stringify(problems, null, 2));
+    process.exit(errors.length > 0 ? 1 : 0);
+}
+
 const OFFLINE_RULES = [
     'manifest-shape', // manifest fields are well-formed; assertions' expectFrom agrees with declared/derived
     'derived-counts', // derived.* equals what the tree holds (test files, generators, guides, samples, categories)
     'stale-token', // every assertion's counted noun matches its expect
     'canonical-present', // every assertion's canonical sentence appears where requireIn says
     'version-token', // "<package> vX.Y.Z" in prose equals the manifest version
-    'count-tokens', // tests / files / sample PDFs / generators / categories / coverage / "Current version" tokens equal the manifest
+    'satellite-stamps', // the blind-spot table (versions.js, llms.txt lines, "New in vX", cards, banners, SVG labels, pins in prose) equals packages.<name>.version / .pin
+    'count-tokens', // tests / files / sample PDFs / generators / categories / coverage / "Current version" tokens, and every packages.<name>.counts figure, equal the manifest
     'claude-md-budget', // CLAUDE.md imports AGENTS.md; both ≤ 120 lines, Copilot file ≤ 16 KiB, no line > 240 chars
     'governance-sources', // ai-governance.json sources/on_demand exist; always-loaded sources < 16 KiB
     'node-pin-parity', // .nvmrc, .node-version, engines.node, the CI floor and every setup-node step agree; packageManager is npm@
@@ -2604,6 +2900,7 @@ const OFFLINE_RULES = [
     'social-image-fresh', // (full clones only) og-image.png and social-preview.png are not older than their SVG sources
     'cdn-sri', // third-party scripts carry integrity+crossorigin; pdfnative CDN imports are pinned
     'playgrounds-manifest', // docs/data/playgrounds.json lists every live playground with real control ids; count equals derived.playgrounds
+    'surfaces-shape', // docs/data/surfaces.json: CLI commands and MCP tools exist, since ≤ the package version, unsupported cells carry notes
     'jsonld-item-count', // the guides and playgrounds indexes' JSON-LD ItemList sizes equal derived.guides / derived.playgrounds
     'release-coverage', // every export added since the previous release is exercised by a playground (the page contains it), imported by a recipe, or exempted with a reason
     'switcher-parity', // playground switchers link every live playground, none link a noindex stub

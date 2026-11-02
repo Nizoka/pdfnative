@@ -50,6 +50,8 @@ Plans name the files, the commands and the expected gate outcome; keep gate outp
   Never edit a rule: edit the instruction file, then regenerate (`verify:docs` rule `claude-rules-sync` fails on drift).
 - `/release-audit [release-notes/vX.Y.Z.md] [previous-tag]` (`.claude/skills/release-audit/`) is the maintainer-invoked pre-release audit:
   two auditors, an adversarial verifier, a docs-autonomy pass and a GO/NO-GO ledger under `test-output/.audit/`.
+- `/satellite-align cli=<v> mcp=<v> react=<v>` (`.claude/skills/satellite-align/`) aligns the companion docs after a satellite release:
+  `scripts/satellite-sync.ts` writes the facts sheet and worklist under `test-output/.satellites/`; writers read facts only; one behavioural reviewer.
 
 ## Release
 

@@ -7,7 +7,7 @@
       "description": "Documentation index (llmstxt.org convention).",
       "bytes": 29791,
       "approxTokens": 7448,
-      "sha256": "459e736bc6294f35d8c1fedd0002c4346d650b83919f809849084f3da478e79a"
+      "sha256": "c061cd143303336c305ca515ef9dd00b8d0b1b8b77fe680f0fad120ba5261536"
     },
     {
       "url": "https://pdfnative.dev/agent-brief.md",
@@ -19,9 +19,9 @@
     {
       "url": "https://pdfnative.dev/llms-full.txt",
       "description": "Full corpus: index + README + every guide, one request.",
-      "bytes": 918995,
-      "approxTokens": 229749,
-      "sha256": "35493bde3cca5bd686cfc16587fa1ade6aba716c296521fe1d6577475d9b4533"
+      "bytes": 919395,
+      "approxTokens": 229849,
+      "sha256": "2be1e0bb003509a76066f6afc4cf7a7bc1f883c1732e95d8c7d5024186efc2a7"
     },
     {
       "url": "https://pdfnative.dev/llms-recipes.txt",
@@ -40,9 +40,9 @@
     {
       "url": "https://pdfnative.dev/data/surfaces.json",
       "description": "The capability × surface matrix (library / CLI / MCP / React) behind the choose guide, with an honest note on every unsupported cell.",
-      "bytes": 36485,
-      "approxTokens": 9121,
-      "sha256": "32c406afb4d0be814c9e3c1e46cd56f83afcec486c8a65ab50b4a2fdefc7f5e9"
+      "bytes": 37346,
+      "approxTokens": 9337,
+      "sha256": "141e271b564bfe04e25b68d73fd94784f7541f6f045fb1cdf8b9bd69ad3e378a"
     },
     {
       "url": "https://pdfnative.dev/data/errors.json",
@@ -63,7 +63,7 @@
       "description": "Complete feature and API reference (also embedded in llms-full.txt).",
       "bytes": 140336,
       "approxTokens": 35084,
-      "sha256": "b5936372b051e67b172186614a916d53855b0eea44c5446fd5e9d35b2ea8f76e"
+      "sha256": "bd3ff725fddf49a284db0a7e6c1fa1db2948cd59d46592ba4efa611380c8d40e"
     }
   ],
   "guides": [
@@ -214,9 +214,9 @@
         "resources",
         "citation"
       ],
-      "bytes": 128883,
-      "approxTokens": 32221,
-      "sha256": "77e9af0e9d7931b718ba8849622223f535890b8f4620678031e64a85473eacd5"
+      "bytes": 128943,
+      "approxTokens": 32236,
+      "sha256": "82ffae42246e0afad806d5c0f7fba885116b3323060e1d944573cd8b2ac80ac5"
     },
     {
       "title": "Colour-emoji font CLI (pdfnative-build-emoji-font)",
@@ -386,9 +386,9 @@
         "release-history",
         "further-reading"
       ],
-      "bytes": 116792,
-      "approxTokens": 29198,
-      "sha256": "dc9d0e6b5ca000c5bf6156a44bfb0fc02ec33abefd9cba9ac184a0e15a8eb26c"
+      "bytes": 116952,
+      "approxTokens": 29238,
+      "sha256": "c0926c91e4ee6b0f8af5533639a6acc575811701d909572b912d6bb3e94a79ae"
     },
     {
       "title": "The native family: pdfnative, zipnative and pkinative",
@@ -554,9 +554,9 @@
         "release-history",
         "resources"
       ],
-      "bytes": 62826,
-      "approxTokens": 15707,
-      "sha256": "ed145621ba68736935ad2a7858809c1fb13f0cd5e3d0fcf82d8a0ee442b20ca9"
+      "bytes": 63006,
+      "approxTokens": 15752,
+      "sha256": "21fe79da3ccf777d5ebb4b8a0eda3322ae8f25f9d961feb791a72a10e7f1419c"
     },
     {
       "title": "Right-to-left documents — Arabic, Hebrew and bidirectional text",

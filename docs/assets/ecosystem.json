@@ -50,6 +50,16 @@
           "completion",
           "govern"
         ]
+      },
+      "counts": {
+        "commands": 21,
+        "schemaSubjects": 19,
+        "errorCodes": 12,
+        "globalFlags": 10,
+        "statusFields": 35,
+        "renderFlags": 59,
+        "bundledFontModules": 36,
+        "unicodeScripts": 32
       }
     },
     "pdfnative-mcp": {
@@ -101,7 +111,16 @@
         "reproducible_output",
         "typography",
         "pdfa_valid"
-      ]
+      ],
+      "counts": {
+        "tools": 28,
+        "prompts": 7,
+        "envVars": 14,
+        "errorCodes": 48,
+        "examples": 51,
+        "langValues": 39,
+        "colourSites": 46
+      }
     },
     "pdfnative-react": {
       "version": "1.4.0",
@@ -113,12 +132,24 @@
         "react-reconciler"
       ],
       "nodeEngine": ">=22",
-      "reactPeer": "^19.0.0"
+      "reactPeer": "^19.0.0",
+      "counts": {
+        "components": 19,
+        "clientComponents": 3,
+        "blocks": 14,
+        "specFields": 19,
+        "lintRules": 41,
+        "lintErrors": 26,
+        "lintWarnings": 14,
+        "lintInfos": 1,
+        "errorCodes": 6,
+        "schemaSubjects": 7
+      }
     }
   },
   "derived": {
     "$comment": "Asserted against the filesystem by verify-docs. Never hand-edit to make a check pass — fix the docs or the tree instead.",
-    "testFiles": 179,
+    "testFiles": 181,
     "sampleGenerators": 50,
     "samplePdfs": 311,
     "sampleCategories": 39,
@@ -129,12 +160,13 @@
   },
   "declared": {
     "$comment": "Hand-maintained figures that no filesystem walk can derive. Every doc must echo these exactly.",
-    "tests": 4338,
+    "tests": 4396,
     "coverageStatements": 90,
     "coverageMeasured": 91.5,
     "scripts": 32,
     "bundledFontModules": 36,
     "blockTypes": 13,
+    "diagnosticCodes": 13,
     "barcodeFormats": 5,
     "chartTypes": 9,
     "pdfaSamples": 25,
@@ -184,9 +216,9 @@
     },
     {
       "id": "mcp-tool-count",
-      "canonical": "28 tools",
+      "canonical": "{packages.pdfnative-mcp.counts.tools} tools",
       "match": "\\b(\\d+)\\s+(?:[A-Za-z][\\w-]*\\s+){0,2}tools\\b",
-      "expect": 28,
+      "expectFrom": "packages.pdfnative-mcp.counts.tools",
       "requireIn": [
         "docs/guides/mcp.md",
         "docs/index.html",
@@ -197,9 +229,9 @@
     },
     {
       "id": "cli-command-count",
-      "canonical": "21 commands",
+      "canonical": "{packages.pdfnative-cli.counts.commands} commands",
       "match": "\\b(\\d+)\\s+(?:[A-Za-z][\\w-]*\\s+){0,2}commands\\b",
-      "expect": 21,
+      "expectFrom": "packages.pdfnative-cli.counts.commands",
       "requireIn": [
         "docs/guides/cli.md",
         "docs/index.html",

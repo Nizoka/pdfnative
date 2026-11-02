@@ -81,6 +81,12 @@ _Released YYYY-MM-DD_
 
 - **docs(scope):** ...
 
+## Downstream integration notes
+
+<!-- Every public-API addition, removal or behaviour shift the companion packages (pdfnative-cli, pdfnative-mcp, pdfnative-react) must react to: new options, new exports, changed defaults, byte-level changes (the compatibility ledger). The satellites mirror this heading in their own notes. -->
+
+- ...
+
 ## Install
 
 \`\`\`bash

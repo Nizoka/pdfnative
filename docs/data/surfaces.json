@@ -40,7 +40,7 @@
       "library": { "supported": true, "call": "signPdfBytesWithTimestamp + addValidationInfo + addDocumentTimestamp", "since": "1.7.0", "notes": "Network transport is injected by the caller via setTimestampProvider / setRevocationProvider — the engine opens no socket." },
       "cli": { "supported": true, "command": "sign / ltv / doc-timestamp", "since": "1.4.0", "notes": "sign --timestamp <url> (B-T), ltv collect|embed|add (B-LT — collect gathers evidence as replayable JSON, embed is fully offline for air-gapped workflows), doc-timestamp (B-LTA). Every network touch is an explicit per-invocation opt-in behind an SSRF guard; verify --revocation validates the ladder. Since 1.6.0 ltv embed also takes material you already hold — --cert <pem|der>, --ocsp <der>, --crl <der>, each repeatable and capped at 16 MiB — attributed to the signatures with --match all|chain (default all; exclusive with --data) through the engine's composeLtvData, still without any network." },
       "mcp": { "supported": true, "tool": "add_ltv + timestamp_pdf", "since": "1.6.0", "notes": "Transport is operator-configured via PDFNATIVE_MCP_TSA_URL / PDFNATIVE_MCP_REVOCATION and a host allow-list — never from tool arguments. verify_pdf with ltv: true reports the achieved level. Since 1.8.0 add_ltv mode: 'offline' embeds caller-supplied material — certificatesDerBase64 (≤ 64), ocspResponsesDerBase64 (≤ 64), crlsDerBase64 (≤ 16) — attributed with match: 'all' | 'chain' (default all); mode: 'online' (default) still needs the operator provider." },
-      "react": { "supported": false }
+      "react": { "supported": false, "notes": "Run the ladder on the rendered bytes with the library (signPdfBytesWithTimestamp, addValidationInfo, addDocumentTimestamp) or the CLI sign / ltv / doc-timestamp commands." }
     },
     {
       "id": "encrypt-decrypt",
@@ -64,7 +64,7 @@
       "library": { "supported": true, "call": "extractText", "since": "1.6.0", "notes": "Since 1.9.0 every shaper's glyph has a ToUnicode entry and reordered or right-to-left runs come back in logical order through /ActualText; onStreamError: 'limit' (default — a stream past the decompression cap rethrows PdfStreamLimitError so an unread page is never mistaken for an empty one, a corrupt stream is skipped) | 'throw' | 'skip' (StreamErrorPolicy) decides what an undecodable stream does; decodePdfTextString reads a PDF text string." },
       "cli": { "supported": true, "command": "extract-text", "since": "1.3.0", "notes": "Since 1.6.0 --on-stream-error limit|throw|skip (default limit: a stream past the decompression cap is E_INPUT naming the two remedies, a corrupt stream is skipped; throw fails on any undecodable stream; skip restores the earlier silent skip) — compare takes the same flag (only throw rules out an equal verdict over an unread stream; limit still skips a corrupt one); right-to-left and reordered runs of untagged PDFs come back in logical order through /ActualText." },
       "mcp": { "supported": true, "tool": "extract_text", "notes": "Since 1.8.0 onStreamError: 'limit' | 'skip' | 'throw' (default limit — a stream past the decompression cap is PDF_PARSE_FAILED with the remedy; skip restores the earlier behaviour); untagged right-to-left and reordered shaped runs come back in logical order through /ActualText." },
-      "react": { "supported": false }
+      "react": { "supported": false, "notes": "Deliberately not re-exported (the renderer reads no PDF): import extractText from pdfnative (already a dependency), or run the CLI extract-text command." }
     },
     {
       "id": "merge-split",
@@ -72,7 +72,7 @@
       "library": { "supported": true, "call": "mergePdfs + splitPdf + extractPages", "since": "1.4.0" },
       "cli": { "supported": true, "command": "merge / split / extract", "since": "1.2.0" },
       "mcp": { "supported": true, "tool": "merge_pdfs / split_pdf / extract_pages", "since": "1.3.0" },
-      "react": { "supported": false }
+      "react": { "supported": false, "notes": "Deliberately not re-exported (the renderer writes new documents only): import mergePdfs / splitPdf / extractPages from pdfnative, or run the CLI merge / split / extract commands." }
     },
     {
       "id": "annotate",
@@ -80,7 +80,7 @@
       "library": { "supported": true, "call": "buildAnnotation + PdfModifier.addAnnotation", "since": "1.5.0", "notes": "Ten MarkupAnnotation types; { type: 'link', rect, url } (LinkMarkupAnnotation, a /URI action through the URL allow-list) since 1.9.0." },
       "cli": { "supported": true, "command": "annotate", "since": "1.2.0", "notes": "type: 'link' ({ rect, url } — http, https or mailto) since 1.5.0; its body built by the engine's buildAnnotationBody since 1.6.0." },
       "mcp": { "supported": true, "tool": "annotate_pdf", "since": "1.4.0", "notes": "{ type: 'link', page (0-based), rect, url } (http, https or mailto, ≤ 2048 chars) since 1.8.0 — the engine's buildAnnotationBody builds the /Link + /URI body. Colours stay hex / RGB / CMYK: no spot form on annotate_pdf." },
-      "react": { "supported": false }
+      "react": { "supported": false, "notes": "<Link> writes link annotations into new documents; markup on an existing PDF goes through buildAnnotation + PdfModifier.addAnnotation from pdfnative, or the CLI annotate command." }
     },
     {
       "id": "inspect-layout",
@@ -112,7 +112,7 @@
       "library": { "supported": false, "notes": "Compose the readers yourself: openPdf, extractText, readFormFields, getAnnotations." },
       "cli": { "supported": true, "command": "compare", "since": "1.4.0", "notes": "Text and structure diff with CI-friendly exit codes (identical → 0, different → 1 / E_CHECK_FAILED). Not a visual diff — pdfnative has no rasteriser." },
       "mcp": { "supported": false, "notes": "Run inspect_pdf / extract_text on both documents and compare the reports." },
-      "react": { "supported": false }
+      "react": { "supported": false, "notes": "Render both trees to bytes and run the CLI compare command, or compose the library readers as the library column says." }
     },
     {
       "id": "register-fonts",
